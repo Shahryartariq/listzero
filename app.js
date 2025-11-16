@@ -20,6 +20,7 @@ initializeDatabase();
 
 app.get("/todos", async (req, res) => {
   const storedTodos = await getStoredTodos();
+  // await new Promise(resolve => setTimeout(resolve, 3000));
   res.json({ todos: storedTodos });
 });
 
