@@ -1,0 +1,26 @@
+# Listzero
+
+> Listzero is a free, open-source to-do list for busy minds, built with ADHD in mind. Type tasks the way you say them, see one day at a time, break big things into steps, and get today to zero. No account; tasks are saved in the browser and work offline.
+
+Listzero is a single-page web app. Every visitor starts with an empty list of their own, so the app screens (Inbox, Upcoming, Board, Settings) hold nothing to read. The pages below describe it.
+
+## Pages
+
+- [Listzero](https://listzero.vercel.app/): the app. Opens on Today, ready to type into.
+- [How Listzero works](https://listzero.vercel.app/about): what it does, the words quick add understands, keyboard shortcuts, where data is kept, and privacy.
+
+## Source
+
+- [Code on GitHub](https://github.com/Shahryartariq/listzero): React 19, TypeScript, Vite. MIT licence.
+- [README](https://github.com/Shahryartariq/listzero/blob/main/README.md): features, screenshots, how to run it, how it is tested.
+- [Changelog](https://github.com/Shahryartariq/listzero/blob/main/CHANGELOG.md)
+
+## Facts
+
+- Price: free. No sign-up, no ads.
+- Data: kept in the browser's local storage on the visitor's device. Nothing is synced. A backup file can be saved and loaded in Settings.
+- Views: Inbox, Today, Upcoming, Board (To do, Doing, Done), Done, Focus (one task at a time with a timer), Search, and lists.
+- Layouts for each view: list, cards, board, calendar, table, with sorting and filters.
+- Appearance: six colour palettes, each with a light and a dark mode; larger text; reduced motion.
+- Not included: accounts, sync between devices, reminders, sharing, streaks.
+- Made by Muhammad Shehryar (https://github.com/Shahryartariq).

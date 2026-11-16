@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { addDays, addMonths, fromDay, weekday } from "../../lib/dates";
 import type { Task } from "../../lib/types";
-import { useStore } from "../../state/store-context";
+import { useStore, type AddDefaults } from "../../state/store-context";
 import { useOpenTask } from "../../state/useOpenTask";
 import { Icon } from "../Icon";
+import { whereItWent } from "../QuickAdd";
 import { TaskRows } from "../TaskRow";
 
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -15,9 +16,17 @@ const monthOnly = new Intl.DateTimeFormat("en-GB", { month: "long" });
 /** How many task names fit in a day cell before "+N more". */
 const PER_DAY = 3;
 
-/** A month of tasks on their days. Drag a task to another day to move it. */
-export function CalendarLayout({ tasks }: { tasks: Task[] }) {
+interface CalendarProps {
+  tasks: Task[];
+  /** What the view gives a new task (its list, say). The chosen day is added to it. */
+  defaults?: AddDefaults;
+  staysHere?(task: Task): boolean;
+}
+
+/** A month of tasks on their days. Drag a task to another day to move it, or add one to the chosen day. */
+export function CalendarLayout({ tasks, defaults, staysHere }: CalendarProps) {
   const store = useStore();
+  const [draft, setDraft] = useState("");
   const open = useOpenTask();
   const today = store.today;
   const [month, setMonth] = useState(() => `${today.slice(0, 7)}-01`);
@@ -45,6 +54,22 @@ export function CalendarLayout({ tasks }: { tasks: Task[] }) {
 
   const go = (delta: number) => setMonth((m) => addMonths(m, delta));
   const onDay = byDay.get(selected) ?? [];
+  const selectedName = longDay.format(fromDay(selected));
+
+  const addOnDay = (e: FormEvent) => {
+    e.preventDefault();
+    if (!draft.trim()) return;
+    // A day typed in the task ("friday") still wins over the chosen one.
+    const [task] = store.addFromText([draft], { ...defaults, due: selected });
+    setDraft("");
+    if (!task) return;
+    if (task.due && task.due !== selected) {
+      // Follow the task so it does not seem to vanish.
+      setSelected(task.due);
+      setMonth(`${task.due.slice(0, 7)}-01`);
+    }
+    if (staysHere && !staysHere(task)) store.notify(`Added to ${whereItWent(task, today, store.data.lists)}.`);
+  };
 
   return (
     <div className="cal">
@@ -173,6 +198,24 @@ export function CalendarLayout({ tasks }: { tasks: Task[] }) {
         </div>
         <TaskRows tasks={onDay} showDay={false} />
         {onDay.length === 0 && <p className="hint cal__empty">Nothing on this day.</p>}
+        <form className="cal__add" onSubmit={addOnDay}>
+          <label className="sr-only" htmlFor="cal-add">
+            Add a task on {selectedName}
+          </label>
+          <input
+            id="cal-add"
+            className="field"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={`Add a task on ${selectedName}`}
+            autoComplete="off"
+            enterKeyHint="done"
+            maxLength={600}
+          />
+          <button type="submit" className="btn btn--quiet" disabled={!draft.trim()}>
+            Add to this day
+          </button>
+        </form>
       </section>
 
       {undated.length > 0 && (

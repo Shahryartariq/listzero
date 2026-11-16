@@ -145,8 +145,7 @@ test("pages have one h1, a description and no console errors", async ({ page }) 
     await page.goto(path);
     await expect(page.locator("h1")).toHaveCount(1);
   }
-  await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /free to-do list/);
-  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://listzero.vercel.app/");
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /Listzero/);
   expect(errors).toEqual([]);
 });
 

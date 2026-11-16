@@ -72,6 +72,8 @@ export interface Settings {
   dailyLimit: number;
   /** Turn off the small completion animations. */
   calm: boolean;
+  /** Let the public site count page visits. Never includes task content. */
+  analytics: boolean;
 }
 
 export interface AppData {
@@ -89,6 +91,7 @@ export const DEFAULT_SETTINGS: Settings = {
   display: {},
   dailyLimit: 5,
   calm: false,
+  analytics: true,
 };
 
 export function emptyData(): AppData {

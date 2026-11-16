@@ -103,6 +103,7 @@ function readSettings(v: unknown): Settings {
     display: readDisplays(v.display),
     dailyLimit: limit >= 1 && limit <= 20 ? limit : DEFAULT_SETTINGS.dailyLimit,
     calm: v.calm === true,
+    analytics: v.analytics !== false,
   };
 }
 

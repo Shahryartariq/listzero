@@ -1,13 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
+import { countScreen } from "../lib/analytics";
+import { downloadText } from "../lib/download";
 import { inboxView, todayView } from "../lib/store";
 import { useStore } from "../state/store-context";
+import { useSeo } from "../state/useSeo";
 import { useTheme } from "../state/useTheme";
 import { AppearanceSheet } from "./Appearance";
 import { Icon, type IconName } from "./Icon";
 import { ListSheet } from "./ListSheet";
-import { TaskSheet } from "./TaskSheet";
 import { Toasts } from "./Toasts";
+
+// The task sheet is the largest single component and is only needed once a task is opened.
+const TaskSheet = lazy(() => import("./TaskSheet").then((m) => ({ default: m.TaskSheet })));
 
 function isTyping(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -114,6 +119,13 @@ export function Shell() {
   const [appearance, setAppearance] = useState(false);
   const pendingG = useRef(0);
   useTheme(store.data.settings);
+  useSeo(location.pathname);
+
+  // Visit counting for the public site. Only the kind of screen is sent; see lib/analytics.
+  const counting = store.data.settings.analytics;
+  useEffect(() => {
+    countScreen(location.pathname, counting);
+  }, [location.pathname, counting]);
 
   const focusAdd = () => {
     const input = document.getElementById("quick-add");
@@ -163,9 +175,11 @@ export function Shell() {
   }, [navigate]);
 
   // Each view starts at the top, and screen readers hear where they are.
+  // (A link to a section, like /about#privacy, is left for that page to scroll to.)
+  const toSection = location.hash.length > 1;
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [location.pathname]);
+    if (!toSection) window.scrollTo(0, 0);
+  }, [location.pathname, toSection]);
 
   return (
     <div className="app">
@@ -181,15 +195,46 @@ export function Shell() {
       </aside>
 
       <main className="main" id="main" tabIndex={-1}>
-        {!store.persistent && (
+        {store.saving === "blocked" && (
           <div className="note" role="alert" style={{ marginTop: 0, marginBottom: "1.5rem" }}>
             <p>
               This browser is not saving data for this site, so your tasks will be gone when you close the tab. Turn
-              off private mode, or export a backup from Settings before you leave.
+              off private mode, or save a backup from <Link to="/settings">Settings</Link> before you leave.
             </p>
           </div>
         )}
-        <Outlet context={{ openNewList: () => setNewList(true), openAppearance: () => setAppearance(true) }} />
+        {store.saving === "full" && (
+          <div className="note" role="alert" style={{ marginTop: 0, marginBottom: "1.5rem" }}>
+            <p>
+              This browser has run out of room for this site, so your latest changes are not being saved. Save a
+              backup from <Link to="/settings">Settings</Link> now, then clear finished tasks in{" "}
+              <Link to="/done">Done</Link> to make room.
+            </p>
+          </div>
+        )}
+        {store.damaged !== null && (
+          <div className="note" role="alert" style={{ marginTop: 0, marginBottom: "1.5rem" }}>
+            <p>
+              The tasks saved in this browser could not be read, so Listzero started empty. A copy of what was there
+              has been kept. Download it before you clear anything; it can often be repaired.
+            </p>
+            <div className="note__actions">
+              <button
+                type="button"
+                className="btn btn--small"
+                onClick={() => downloadText(`listzero-unreadable-${store.today}.txt`, store.damaged ?? "", "text/plain")}
+              >
+                Download the copy
+              </button>
+              <button type="button" className="btn btn--quiet btn--small" onClick={store.forgetDamaged}>
+                Delete the copy
+              </button>
+            </div>
+          </div>
+        )}
+        <Suspense fallback={null}>
+          <Outlet context={{ openNewList: () => setNewList(true), openAppearance: () => setAppearance(true) }} />
+        </Suspense>
       </main>
 
       <nav className="tabs" aria-label="Main">
@@ -214,7 +259,11 @@ export function Shell() {
         </NavLink>
       </nav>
 
-      <TaskSheet />
+      {new URLSearchParams(location.search).has("task") && (
+        <Suspense fallback={null}>
+          <TaskSheet />
+        </Suspense>
+      )}
       {newList && (
         <ListSheet
           taken={store.data.lists.map((l) => l.name)}

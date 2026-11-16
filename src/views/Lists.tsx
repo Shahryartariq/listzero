@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { Icon } from "../components/Icon";
 import { DisplayMenu, FilterNote } from "../components/DisplayMenu";
 import { TaskLayout } from "../components/layouts/TaskLayout";
@@ -13,6 +13,7 @@ import type { Task } from "../lib/types";
 import { useStore, type Store } from "../state/store-context";
 import { useDisplay } from "../state/useDisplay";
 import { usePageTitle } from "../state/usePageTitle";
+import { NotFound } from "./Menu";
 
 /** A plain list reads best as one narrow column; every other layout uses the width of the screen. */
 export const wide = (layout: string) => (layout === "list" ? "view" : "view view--wide");
@@ -52,6 +53,7 @@ export function Inbox() {
           showList={false}
           sort={display.sort}
           onSort={(sort) => set({ ...display, sort })}
+          staysHere={(t) => t.listId === null}
         />
       )}
       {all.length === 0 && (
@@ -98,6 +100,7 @@ export function Upcoming() {
           showList
           sort={display.sort}
           onSort={(sort) => set({ ...display, sort })}
+          staysHere={(t) => t.due !== null && t.due > store.today}
         />
       )}
       {all.length === 0 && (
@@ -133,8 +136,9 @@ export function ListView() {
   const viewKey = `list:${listId}`;
   const { display, set } = useDisplay(viewKey);
   const list = store.data.lists.find((l) => l.id === listId);
-  usePageTitle(list?.name ?? "List");
-  if (!list) return <Navigate to="/inbox" replace />;
+  usePageTitle(list?.name ?? "List not found");
+  // A link to a list that is not in this browser: say so instead of quietly showing the Inbox.
+  if (!list) return <NotFound list />;
   const all = listView(store.data, list.id);
   const tasks = applyDisplay(all, display);
 
@@ -168,6 +172,8 @@ export function ListView() {
           showList={false}
           sort={display.sort}
           onSort={(sort) => set({ ...display, sort })}
+          defaults={{ listId: list.id }}
+          staysHere={(t) => t.listId === list.id}
         />
       )}
       {all.length === 0 && (

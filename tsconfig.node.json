@@ -21,6 +21,7 @@
     "playwright.config.ts",
     "tests/e2e",
     "src/styles/themes.test.ts",
+    "src/site.test.ts",
     "src/lib/types.ts"
   ]
 }

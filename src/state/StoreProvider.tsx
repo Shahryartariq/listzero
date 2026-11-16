@@ -27,6 +27,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const [data, dispatch] = useReducer(reducer, initial.data);
   const [persistent, setPersistent] = useState(initial.persistent);
+  const [damaged, setDamaged] = useState<string | null>(() => {
+    if (initial.damaged) return initial.damaged;
+    // A copy kept on an earlier visit is still offered until the user has dealt with it.
+    try {
+      return storage?.getItem(`${STORAGE_KEY}:unreadable`) ?? null;
+    } catch {
+      return null;
+    }
+  });
+  const forgetDamaged = useCallback(() => {
+    try {
+      storage?.removeItem(`${STORAGE_KEY}:unreadable`);
+    } catch {
+      /* nothing to remove */
+    }
+    setDamaged(null);
+  }, [storage]);
   const [today, setToday] = useState(() => todayOf());
   const [toasts, setToasts] = useState<Toast[]>([]);
   const dataRef = useRef(data);
@@ -139,6 +156,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       data,
       today,
       persistent,
+      saving: persistent ? "ok" : initial.persistent ? "full" : "blocked",
+      damaged,
+      forgetDamaged,
       toasts,
       dismissToast,
       undoToast,
@@ -184,6 +204,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (!task) return;
         if (task.completedAt !== null) {
           dispatch({ type: "reopenTask", id });
+          notify("Back on the list.", before);
           return;
         }
         dispatch({ type: "completeTask", id, at: Date.now(), today: todayOf(), logId: newId() });
@@ -238,7 +259,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       dayOf: (timestamp: number) => toDay(new Date(timestamp)),
     };
-  }, [data, today, persistent, toasts, dismissToast, undoToast, notify]);
+  }, [data, today, persistent, initial.persistent, damaged, forgetDamaged, toasts, dismissToast, undoToast, notify]);
 
   return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>;
 }

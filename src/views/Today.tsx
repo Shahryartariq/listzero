@@ -30,7 +30,8 @@ export function Today() {
   const overflow = filtering ? [] : view.due.slice(limit);
   const tomorrow = addDays(today, 1);
   const firstVisit = data.tasks.length === 0;
-  usePageTitle(left > 0 ? `${left} to zero` : "Today");
+  // A first visit (and a search engine) keeps the site's own title; after that the tab says how much is left.
+  usePageTitle(firstVisit ? null : left > 0 ? `${left} to zero` : "Today");
 
   let summary: string;
   if (left > 0) {
@@ -79,9 +80,10 @@ export function Today() {
         <div className="empty">
           <h2 className="empty__title">A clean slate.</h2>
           <p>
-            Add your first task above. Your tasks stay in this browser: there is no account, and nothing is sent
-            anywhere.
+            Listzero is a free to-do list for busy minds. Type a task the way you would say it, see one day at a
+            time, and get today to zero.
           </p>
+          <p>Add your first task above. There is no account, and your tasks never leave this browser.</p>
           <div className="empty__actions">
             <button
               type="button"
@@ -131,6 +133,7 @@ export function Today() {
           aboutToday
           sort={display.sort}
           onSort={(sort) => set({ ...display, sort })}
+          staysHere={(t) => t.due !== null && t.due <= today}
         />
       )}
 

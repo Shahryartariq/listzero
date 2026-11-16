@@ -1,9 +1,13 @@
+import { Suspense, lazy } from "react";
 import type { Layout, Sort } from "../../lib/display";
 import type { Task } from "../../lib/types";
+import type { AddDefaults } from "../../state/store-context";
 import { TaskRows } from "../TaskRow";
-import { BoardColumns } from "./BoardColumns";
-import { CalendarLayout } from "./CalendarLayout";
-import { TableLayout } from "./TableLayout";
+
+// Each of these is its own download, fetched when its layout is first chosen.
+const BoardColumns = lazy(() => import("./BoardColumns").then((m) => ({ default: m.BoardColumns })));
+const CalendarLayout = lazy(() => import("./CalendarLayout").then((m) => ({ default: m.CalendarLayout })));
+const TableLayout = lazy(() => import("./TableLayout").then((m) => ({ default: m.TableLayout })));
 
 interface TaskLayoutProps {
   layout: Exclude<Layout, "list">;
@@ -17,13 +21,27 @@ interface TaskLayoutProps {
   aboutToday?: boolean;
   sort: Sort;
   onSort(sort: Sort): void;
+  /** What a task added from inside a layout (a calendar day) starts with, and whether it stays in this view. */
+  defaults?: AddDefaults;
+  staysHere?(task: Task): boolean;
 }
 
 /** The layouts other than the plain list, which each view draws itself. */
-export function TaskLayout({ layout, tasks, done, showDay, showList, aboutToday, sort, onSort }: TaskLayoutProps) {
+export function TaskLayout(props: TaskLayoutProps) {
+  if (props.layout === "cards") {
+    return <TaskRows tasks={props.tasks} showDay={props.showDay} showList={props.showList} cards />;
+  }
+  return (
+    <Suspense fallback={null}>
+      <Loaded {...props} />
+    </Suspense>
+  );
+}
+
+function Loaded({ layout, tasks, done, showDay, aboutToday, sort, onSort, defaults, staysHere }: TaskLayoutProps) {
   switch (layout) {
     case "cards":
-      return <TaskRows tasks={tasks} showDay={showDay} showList={showList} cards />;
+      return null;
     case "board":
       return (
         <BoardColumns
@@ -35,7 +53,7 @@ export function TaskLayout({ layout, tasks, done, showDay, showList, aboutToday,
         />
       );
     case "calendar":
-      return <CalendarLayout tasks={tasks} />;
+      return <CalendarLayout tasks={tasks} defaults={defaults} staysHere={staysHere} />;
     case "table":
       return <TableLayout tasks={tasks} sort={sort} onSort={onSort} />;
   }

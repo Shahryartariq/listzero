@@ -520,9 +520,24 @@ test.describe("lists", () => {
     await expect(row(page, "Review the PR")).toBeVisible();
   });
 
-  test("a link to a list that no longer exists goes to the Inbox", async ({ page }) => {
+  test("a link to a list that is not in this browser says so, instead of quietly showing the Inbox", async ({ page }) => {
     await page.goto("/list/nope");
+    await expect(page.getByRole("heading", { level: 1, name: "This list does not exist." })).toBeVisible();
+    await expect(page).toHaveTitle("List not found | Listzero");
+    await page.getByRole("link", { name: "Open the Inbox" }).click();
     await expect(page).toHaveURL(/\/inbox$/);
+  });
+
+  test("deleting the list on screen goes to the Inbox, and Undo brings the list back", async ({ page }) => {
+    await seed(page, [{ title: "Kept task", listId: "work" }], [{ id: "work", name: "Work" }]);
+    await page.goto("/list/work");
+    await page.getByRole("button", { name: "List options" }).click();
+    await page.getByRole("button", { name: "Delete list" }).click();
+    await expect(page).toHaveURL(/\/inbox$/);
+    await expect(row(page, "Kept task")).toBeVisible();
+    await page.getByRole("button", { name: "Undo" }).click();
+    await page.goto("/list/work");
+    await expect(page.getByRole("heading", { level: 1, name: "Work" })).toBeVisible();
   });
 });
 

@@ -1,5 +1,5 @@
 /// <reference types="vitest/config" />
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { readFileSync } from "node:fs";
 import { VitePWA } from "vite-plugin-pwa";
@@ -15,21 +15,51 @@ const securityHeaders = Object.fromEntries(
     .map((h) => [h.key, h.value]),
 );
 
+// The script that sets the saved look before the first paint is tiny, so the built page carries it
+// inline instead of waiting on another request. The Content-Security-Policy allows exactly this
+// script by its hash (vercel.json); src/lib/site.test.ts fails if the two drift apart.
+const themeScript = readFileSync(new URL("./public/theme.js", import.meta.url), "utf8");
+function inlineThemeScript(): Plugin {
+  const tag = '<script src="/theme.js"></script>';
+  return {
+    name: "listzero:inline-theme-script",
+    apply: "build",
+    transformIndexHtml(html) {
+      if (!html.includes(tag)) throw new Error("index.html no longer loads /theme.js the way the build expects");
+      return html.replace(tag, () => `<script>${themeScript}</script>`);
+    },
+  };
+}
+
 export default defineConfig({
   preview: { headers: securityHeaders },
   plugins: [
     react(),
+    inlineThemeScript(),
     VitePWA({
       registerType: "autoUpdate",
+      // Registered from src/main.tsx after the page has loaded, so it is not render-blocking.
+      injectRegister: false,
       includeAssets: ["favicon.svg", "apple-touch-icon.png", "og.png"],
       manifest: {
+        id: "/",
         name: "Listzero",
         short_name: "Listzero",
+        lang: "en",
+        dir: "ltr",
+        categories: ["productivity", "utilities"],
         description:
           "A free to-do list for busy minds. Capture fast, see one day at a time, get today to zero.",
         start_url: "/today",
         scope: "/",
         display: "standalone",
+        orientation: "any",
+        shortcuts: [
+          { name: "Today", url: "/today" },
+          { name: "Inbox", url: "/inbox" },
+          { name: "Upcoming", url: "/upcoming" },
+          { name: "Focus", short_name: "Focus", url: "/focus" },
+        ],
         background_color: "#f1f2ec",
         theme_color: "#f1f2ec",
         icons: [
@@ -40,8 +70,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
-        globIgnores: ["**/og.png", "**/*-latin-ext-*.woff2"],
+        globIgnores: ["**/og.png", "**/*-latin-ext-*.woff2", "**/theme.js", "**/google*.html"],
         navigateFallback: "/index.html",
+        // Real files (robots.txt, sitemap.xml, llms.txt, .well-known/…) are not app screens.
+        navigateFallbackDenylist: [/^\/[^/]+\.[a-z0-9]+$/i, /^\/\.well-known\//],
         cleanupOutdatedCaches: true,
       },
     }),
