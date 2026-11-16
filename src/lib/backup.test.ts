@@ -53,6 +53,7 @@ describe("readData", () => {
       palette: "sage",
       textSize: "large",
       quiet: true,
+      display: {},
       dailyLimit: 3,
       calm: true,
     });

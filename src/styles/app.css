@@ -291,7 +291,7 @@ a {
 /* The one loud thing: how far today is from zero. */
 .zero-head {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: end;
   gap: 1.25rem;
   margin-bottom: 1.25rem;
@@ -1452,6 +1452,363 @@ kbd,
   margin-top: 1rem;
 }
 
+/* ---------- Display: button, sheet, and the layouts it switches between ---------- */
+
+.head__tools {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.display-btn {
+  flex: none;
+  align-self: start;
+}
+
+.display-btn__count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: var(--mark);
+  color: var(--mark-ink);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.display {
+  display: grid;
+  gap: 1.4rem;
+}
+
+.layouts {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.375rem;
+}
+
+.layout-opt {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  padding: 0.7rem 0.2rem 0.55rem;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--r-m);
+  background: transparent;
+  font-size: 0.875rem;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+
+.layout-opt:hover {
+  border-color: var(--ink);
+  background: var(--hover);
+}
+
+.layout-opt[aria-checked="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.display__filters {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.display__filters legend {
+  padding: 0;
+}
+
+.display__row {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.display__name {
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+
+.swatch[aria-pressed="true"] {
+  border-color: var(--ink);
+}
+
+.filter-note {
+  margin: 0 0 0.75rem;
+}
+
+/* Cards: the same task tiles, side by side. */
+.rows--cards {
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.rows--cards .row {
+  min-height: 6.5rem;
+  padding-bottom: 0.35rem;
+}
+
+.rows--cards .row__meta {
+  gap: 0.2rem 0.75rem;
+  margin-top: 0.4rem;
+}
+
+.rows--cards .row__side {
+  top: auto;
+  bottom: 0.25rem;
+}
+
+/* Calendar */
+.cal__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.cal__month {
+  font-family: var(--display);
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.cal__nav {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.cal__grid {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0.25rem;
+  table-layout: fixed;
+  margin: 0 -0.25rem;
+  width: calc(100% + 0.5rem);
+}
+
+.cal__grid th {
+  padding: 0 0 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
+  color: var(--muted);
+}
+
+.cal__grid td {
+  height: 7rem;
+  padding: 0.25rem;
+  border-radius: var(--r-s);
+  background: var(--surface);
+  vertical-align: top;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.cal__grid td[data-outside="true"] {
+  background: color-mix(in srgb, var(--surface) 45%, var(--bg));
+}
+
+.cal__grid td[data-selected="true"] {
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.cal__grid td[data-over="true"] {
+  background: color-mix(in srgb, var(--mark) 35%, var(--surface));
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.cal__day {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 1.75rem;
+  padding: 0 0.15rem;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font-size: 0.9375rem;
+}
+
+.cal__num {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+
+td[data-outside="true"] .cal__num {
+  color: var(--muted);
+}
+
+td[data-today="true"] .cal__num {
+  background: var(--mark);
+  color: var(--mark-ink);
+  font-weight: 700;
+}
+
+/* Read out everywhere; shown as a badge only on phones, where the task names do not fit. */
+.cal__count {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.cal__tasks {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.2rem;
+  margin-top: 0.2rem;
+}
+
+.cal__tasks li {
+  min-width: 0;
+}
+
+.cal__task {
+  --tint: var(--line-strong);
+  display: block;
+  width: 100%;
+  min-height: 1.5rem;
+  padding: 0.15rem 0.4rem;
+  border: 0;
+  border-left: 0.2rem solid var(--tint);
+  border-radius: 0.3rem;
+  background: color-mix(in srgb, var(--tint) 14%, var(--surface));
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: grab;
+}
+
+.cal__task:hover {
+  background: color-mix(in srgb, var(--tint) 26%, var(--surface));
+}
+
+.cal__more {
+  padding-left: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.cal__empty {
+  padding: 0 0.25rem;
+}
+
+/* Table */
+.table-scroll {
+  overflow-x: auto;
+  border-radius: var(--r-m);
+  background: var(--surface);
+}
+
+.grid {
+  width: 100%;
+  min-width: 46rem;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.grid th,
+.grid td {
+  padding: 0.35rem 0.9rem 0.35rem 0;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.grid tbody tr:last-child th,
+.grid tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.grid thead th {
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.grid th:first-child,
+.grid td:first-child {
+  width: 3.25rem;
+  padding-left: 0.75rem;
+  padding-right: 0;
+}
+
+.grid tbody th {
+  min-width: 14rem;
+  white-space: normal;
+  font-weight: 400;
+}
+
+.grid__sort {
+  padding: 0.2rem 0;
+  border: 0;
+  background: none;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+}
+
+.grid__sort:hover,
+.grid__sort[data-on="true"] {
+  color: var(--ink);
+  text-decoration-color: currentColor;
+}
+
+.grid__task {
+  display: block;
+  width: 100%;
+  padding: 0.35rem 0;
+  border: 0;
+  background: none;
+  font-size: 1rem;
+  text-align: left;
+  border-radius: var(--r-s);
+}
+
+.grid__none {
+  color: var(--muted);
+}
+
+.grid__late {
+  font-weight: 600;
+}
+
+.grid tbody tr:hover {
+  background: var(--hover);
+}
+
 .appearance {
   display: grid;
   gap: 1.4rem;
@@ -1597,6 +1954,71 @@ kbd,
 
   .zero-head {
     gap: 0.9rem;
+  }
+
+  .zero-head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .zero-head .display-btn {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .layouts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .display__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.3rem;
+  }
+
+  /* On a phone a day cell shows its number and how many tasks it holds; the list under the grid has the rest. */
+  .cal__grid {
+    border-spacing: 0.15rem;
+    margin: 0 -0.15rem;
+    width: calc(100% + 0.3rem);
+  }
+
+  .cal__grid th {
+    padding-left: 0;
+    text-align: center;
+  }
+
+  .cal__grid td {
+    height: 3.4rem;
+    padding: 0.15rem;
+  }
+
+  .cal__day {
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0.1rem;
+    height: 100%;
+    padding: 0;
+    border-radius: var(--r-s);
+  }
+
+  .cal__count {
+    position: static;
+    display: inline-grid;
+    place-items: center;
+    width: auto;
+    overflow: visible;
+    clip-path: none;
+    min-width: 1.2rem;
+    height: 1.2rem;
+    padding: 0 0.25rem;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .cal__tasks {
+    display: none;
   }
 
   /* One column at a time on a phone, picked with the tabs above the board. */

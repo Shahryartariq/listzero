@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
 import { STORAGE_KEY, load, parseBackup, safeStorage, save } from "../lib/backup";
 import { today as todayOf, toDay } from "../lib/dates";
+import { isDefault } from "../lib/display";
 import { newId } from "../lib/id";
 import { parseTask, type TokenKind } from "../lib/parse";
 import { findList, reducer, type TaskPatch } from "../lib/store";
@@ -223,6 +224,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       updateSettings(patch: Partial<Settings>) {
         dispatch({ type: "updateSettings", patch });
+      },
+
+      setDisplay(view, display) {
+        dispatch({ type: "setDisplay", view, display: display && !isDefault(display) ? display : null });
       },
 
       replaceAll(next: AppData, message: string) {

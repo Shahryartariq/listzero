@@ -1,5 +1,6 @@
 import { createContext, useContext } from "react";
 import type { TokenKind } from "../lib/parse";
+import type { Display } from "../lib/display";
 import type { TaskPatch } from "../lib/store";
 import type { AppData, ListColor, Settings, Task } from "../lib/types";
 
@@ -41,6 +42,8 @@ export interface Store {
   updateList(id: string, patch: { name?: string; color?: ListColor }): void;
   deleteList(id: string): void;
   updateSettings(patch: Partial<Settings>): void;
+  /** Saves how one view is displayed; null puts it back to the defaults. */
+  setDisplay(view: string, display: Display | null): void;
   replaceAll(next: AppData, message: string): void;
   dayOf(timestamp: number): string;
 }

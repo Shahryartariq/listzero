@@ -66,6 +66,8 @@ export interface Settings {
   textSize: TextSize;
   /** Show only task names in lists, hiding dates, lengths and list names. */
   quiet: boolean;
+  /** Layout, sort and filters chosen per view. Views not listed use the defaults. */
+  display: Record<string, import("./display").Display>;
   /** Above this many open tasks, Today suggests moving some to tomorrow. */
   dailyLimit: number;
   /** Turn off the small completion animations. */
@@ -84,10 +86,11 @@ export const DEFAULT_SETTINGS: Settings = {
   palette: "chalk",
   textSize: "normal",
   quiet: false,
+  display: {},
   dailyLimit: 5,
   calm: false,
 };
 
 export function emptyData(): AppData {
-  return { version: 1, tasks: [], lists: [], settings: { ...DEFAULT_SETTINGS } };
+  return { version: 1, tasks: [], lists: [], settings: { ...DEFAULT_SETTINGS, display: {} } };
 }

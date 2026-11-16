@@ -59,3 +59,15 @@ export async function addTask(page: Page, text: string) {
 export const row = (page: Page, title: string) => page.locator("[data-task]", { hasText: title });
 
 export const isPhone = (page: Page) => (page.viewportSize()?.width ?? 1280) < 768;
+
+/** A day in the current month by its number, e.g. the 10th. Always on the calendar's first screen. */
+export function monthDay(n: number): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(n)}`;
+}
+
+/** Opens the Display sheet of the view on screen. */
+export async function openDisplay(page: Page) {
+  await page.getByRole("button", { name: /^Display/ }).click();
+  return page.getByRole("dialog", { name: "Display" });
+}

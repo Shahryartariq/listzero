@@ -164,7 +164,11 @@ export function TaskRow({ task, showDay = true, showList = true, quick, leaving 
  * A list of task rows. A task that has just been finished stays in place for a moment,
  * ticked and fading, so the tick is seen before the row goes.
  */
-export function TaskRows({ tasks, ...rest }: { tasks: Task[] } & Omit<TaskRowProps, "task" | "leaving" | "onFinish">) {
+export function TaskRows({
+  tasks,
+  cards = false,
+  ...rest
+}: { tasks: Task[]; cards?: boolean } & Omit<TaskRowProps, "task" | "leaving" | "onFinish">) {
   const store = useStore();
   const [ghosts, setGhosts] = useState<{ task: Task; index: number }[]>([]);
   const timers = useRef<number[]>([]);
@@ -195,7 +199,7 @@ export function TaskRows({ tasks, ...rest }: { tasks: Task[] } & Omit<TaskRowPro
 
   if (rows.length === 0) return null;
   return (
-    <ul className="rows">
+    <ul className={cards ? "rows rows--cards" : "rows"}>
       {rows.map(({ task, leaving }) => (
         <TaskRow key={task.id} task={task} leaving={leaving} onFinish={onFinish} {...rest} />
       ))}
