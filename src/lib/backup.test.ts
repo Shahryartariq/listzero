@@ -56,7 +56,12 @@ describe("readData", () => {
       display: {},
       dailyLimit: 3,
       calm: true,
+      analytics: true,
     });
+    // Visit counting stays off only when it was turned off; anything else means the default.
+    const settingsWith = (analytics: unknown) => readData({ version: 1, tasks: [], settings: { analytics } })?.settings;
+    expect(settingsWith(false)?.analytics).toBe(false);
+    expect(settingsWith("no")?.analytics).toBe(true);
     // A file saved before palettes existed.
     const older = readData({ version: 1, tasks: [], settings: { theme: "dark", dailyLimit: 4, calm: false } });
     expect(older?.settings).toEqual({ ...DEFAULT_SETTINGS, theme: "dark", dailyLimit: 4 });

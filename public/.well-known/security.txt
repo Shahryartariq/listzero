@@ -1,0 +1,6 @@
+Contact: https://github.com/Shahryartariq/listzero/security/advisories/new
+Contact: https://github.com/Shahryartariq/listzero/issues
+Expires: 2027-11-16T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://listzero.vercel.app/.well-known/security.txt
+Policy: https://github.com/Shahryartariq/listzero/blob/main/SECURITY.md

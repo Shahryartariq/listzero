@@ -926,6 +926,16 @@ textarea.field {
   box-shadow: var(--lift);
 }
 
+.note__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.note a {
+  font-weight: 600;
+}
+
 .note p {
   flex: 1 1 16rem;
 }
@@ -1749,6 +1759,17 @@ td[data-today="true"] .cal__num {
   padding-left: 0.5rem;
   font-size: 0.8125rem;
   color: var(--muted);
+}
+
+.cal__add {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.cal__add .field {
+  flex: 1;
+  min-width: 0;
 }
 
 .cal__empty {

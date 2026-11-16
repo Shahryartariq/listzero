@@ -1,9 +1,16 @@
-import { Link, useOutletContext } from "react-router";
-import { NavItems } from "../components/Shell";
+import { useEffect } from "react";
+import { Link, useLocation } from "react-router";
 import { usePageTitle } from "../state/usePageTitle";
 
 export function About() {
+  const { hash } = useLocation();
   usePageTitle("How it works");
+
+  // A link such as /about#privacy lands on that section.
+  useEffect(() => {
+    if (hash.length > 1) document.getElementById(hash.slice(1))?.scrollIntoView();
+  }, [hash]);
+
   return (
     <div className="view prose">
       <h1 className="title">How Listzero works</h1>
@@ -153,9 +160,10 @@ export function About() {
             </td>
           </tr>
           <tr>
-            <th scope="row">Go to Inbox, Today, Upcoming, Board, Done, Focus</th>
+            <th scope="row">Go to Inbox, Today, Upcoming, Board, Done, Focus, Settings</th>
             <td>
-              <kbd>G</kbd> then <kbd>I</kbd> <kbd>T</kbd> <kbd>U</kbd> <kbd>B</kbd> <kbd>D</kbd> <kbd>F</kbd>
+              <kbd>G</kbd> then <kbd>I</kbd> <kbd>T</kbd> <kbd>U</kbd> <kbd>B</kbd> <kbd>D</kbd> <kbd>F</kbd>{" "}
+              <kbd>S</kbd>
             </td>
           </tr>
           <tr>
@@ -167,7 +175,7 @@ export function About() {
         </tbody>
       </table>
 
-      <h2>Your data</h2>
+      <h2 id="your-data">Your data</h2>
       <p>
         Listzero is free and has no accounts. Your tasks are saved in this browser on this device and are never sent
         to a server. It works offline, and you can install it from your browser’s menu.
@@ -175,6 +183,23 @@ export function About() {
       <p>
         The trade-off: tasks do not sync between devices, and clearing your browser data clears them. Save a backup
         file from <Link to="/settings">Settings</Link> now and then, and load it wherever you need it.
+      </p>
+
+      <h2 id="privacy">Privacy</h2>
+      <p>
+        The public site at listzero.vercel.app counts visits with Google Analytics, so its maker can see whether
+        anyone uses it. It records which screen was opened (for example “Today” or “a list”) and the usual browser
+        details Google collects: rough location, device and browser type. It uses cookies to tell a returning
+        visitor from a new one.
+      </p>
+      <p>
+        It never sends your task names, notes, steps, list names or search words. Addresses are replaced with fixed
+        ones before anything is sent, so even a list’s name in the page title stays here. Advertising features are
+        off.
+      </p>
+      <p>
+        You can turn the counting off in <Link to="/settings">Settings</Link>. It is also off when your browser
+        sends “Do Not Track” or “Global Privacy Control”, and it never runs on a copy of Listzero you host yourself.
       </p>
 
       <h2>What it does not do</h2>
@@ -189,39 +214,6 @@ export function About() {
         Listzero is built by <a href="https://github.com/Shahryartariq">Muhammad Shehryar</a>. The code is open on{" "}
         <a href="https://github.com/Shahryartariq/listzero">GitHub</a>.
       </p>
-    </div>
-  );
-}
-
-/** The phone's "Menu" tab: everything the sidebar holds on larger screens. */
-export function Menu() {
-  const { openNewList, openAppearance } = useOutletContext<{ openNewList(): void; openAppearance(): void }>();
-  usePageTitle("Menu");
-  return (
-    <div className="view">
-      <header className="head">
-        <h1 className="title">Menu</h1>
-      </header>
-      <div style={{ display: "grid", gap: "1.5rem" }}>
-        <NavItems onNewList={openNewList} onAppearance={openAppearance} />
-      </div>
-    </div>
-  );
-}
-
-export function NotFound() {
-  usePageTitle("Page not found");
-  return (
-    <div className="view">
-      <div className="empty" style={{ paddingTop: 0 }}>
-        <h1 className="empty__title">This page does not exist.</h1>
-        <p>The address may be mistyped, or the list it pointed to was deleted.</p>
-        <div className="empty__actions">
-          <Link to="/today" className="btn">
-            Go to Today
-          </Link>
-        </div>
-      </div>
     </div>
   );
 }

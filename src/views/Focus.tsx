@@ -5,6 +5,7 @@ import { describeMinutes } from "../lib/dates";
 import { isOpen, nextStep, todayView } from "../lib/store";
 import type { Task } from "../lib/types";
 import { useStore } from "../state/store-context";
+import { usePageTitle } from "../state/usePageTitle";
 
 function clock(ms: number): string {
   const total = Math.max(0, Math.ceil(ms / 1000));
@@ -31,6 +32,8 @@ export function Focus() {
   const waiting = queue.filter((t) => !skipped.includes(t.id));
   const task = waiting[0] ?? queue[0];
   const position = task ? queue.indexOf(task) + 1 : 0;
+  // The task screen below names the tab itself (it shows the timer); this covers the empty screen.
+  usePageTitle("Focus");
 
   if (!task) {
     return (
@@ -104,8 +107,10 @@ function FocusTask({ task, position, total, onSkip, onDone }: FocusTaskProps) {
   }, [endsAt]);
 
   useEffect(() => {
-    document.title = endsAt !== null ? `${clock(remaining)} | ${task.title}` : `Focus | Listzero`;
-  }, [endsAt, remaining, task.title]);
+    // Someone who switched tabs while the timer ran sees it in the tab, and sees when it is over.
+    if (endsAt !== null) document.title = `${clock(remaining)} | ${task.title}`;
+    else document.title = finished ? `Time is up | ${task.title}` : "Focus | Listzero";
+  }, [endsAt, remaining, finished, task.title]);
 
   const start = (minutes: number) => {
     setFinished(false);
@@ -166,8 +171,8 @@ function FocusTask({ task, position, total, onSkip, onDone }: FocusTaskProps) {
             </>
           ) : (
             <>
-              <span className="hint" id="timer-label">
-                {finished ? "Time. Keep going, or stop here." : "Starting is the hard part. Give it:"}
+              <span className="hint" id="timer-label" role="status">
+                {finished ? "Time is up. Keep going, or stop here." : "Starting is the hard part. Give it:"}
               </span>
               <span className="seg" role="group" aria-labelledby="timer-label">
                 {lengths.map((m) => (

@@ -28,6 +28,14 @@ export interface Store {
   today: string;
   /** False when the browser will not keep data after this visit. */
   persistent: boolean;
+  /**
+   * Why saving is failing, if it is: "blocked" when the browser refuses storage from the start
+   * (some private modes), "full" when a save that used to work stopped working.
+   */
+  saving: "ok" | "blocked" | "full";
+  /** Saved text that could not be read when the app opened. A copy is kept; the user can download it. */
+  damaged: string | null;
+  forgetDamaged(): void;
   toasts: Toast[];
   dismissToast(id: string): void;
   undoToast(id: string): void;

@@ -1,8 +1,11 @@
 import { useRef, useState } from "react";
+import { Link } from "react-router";
 import { Appearance } from "../components/Appearance";
 import { Icon } from "../components/Icon";
 import { Confirm } from "../components/Sheet";
+import { browserObjects } from "../lib/analytics";
 import { parseBackup, serialize } from "../lib/backup";
+import { downloadText } from "../lib/download";
 import { exampleData } from "../lib/examples";
 import { emptyData } from "../lib/types";
 import { useStore } from "../state/store-context";
@@ -16,15 +19,7 @@ export function Settings() {
   usePageTitle("Settings");
 
   const exportBackup = () => {
-    const blob = new Blob([serialize(store.data)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `listzero-backup-${store.today}.json`;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    downloadText(`listzero-backup-${store.today}.json`, serialize(store.data));
     store.notify("Backup saved to your downloads.");
   };
 
@@ -173,6 +168,41 @@ export function Settings() {
           </button>
         </div>
         <p className="hint">Loading a backup replaces what is here. You can undo it right after.</p>
+      </div>
+
+      <div className="setting">
+        <span className="setting__name" id="count-label">
+          Visit counting
+        </span>
+        <div className="seg" role="radiogroup" aria-labelledby="count-label">
+          <button
+            type="button"
+            role="radio"
+            className="seg__opt"
+            aria-checked={settings.analytics}
+            onClick={() => store.updateSettings({ analytics: true })}
+          >
+            On
+          </button>
+          <button
+            type="button"
+            role="radio"
+            className="seg__opt"
+            aria-checked={!settings.analytics}
+            onClick={() => store.updateSettings({ analytics: false })}
+          >
+            Off
+          </button>
+        </div>
+        <p className="hint">
+          The public site counts which screens are opened, so its maker can see whether it is used. Your tasks,
+          lists and searches are never sent. <Link to="/about#privacy">What is counted</Link>
+        </p>
+        {browserObjects(navigator) && (
+          <p className="hint">
+            Your browser asks sites not to track you, so nothing is counted, whichever is chosen here.
+          </p>
+        )}
       </div>
 
       <div className="setting">

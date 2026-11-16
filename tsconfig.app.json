@@ -28,6 +28,7 @@
     "src"
   ],
   "exclude": [
-    "src/styles/themes.test.ts"
+    "src/styles/themes.test.ts",
+    "src/site.test.ts"
   ]
 }

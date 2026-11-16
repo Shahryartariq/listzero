@@ -14,6 +14,7 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_GB" />
     <meta property="og:site_name" content="Listzero" />
     <meta property="og:title" content="Listzero: a free to-do list for busy minds" />
     <meta
@@ -24,14 +25,62 @@
     <meta property="og:image" content="https://listzero.vercel.app/og.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Listzero. A free to-do list for busy minds. Get today to zero." />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Listzero: a free to-do list for busy minds" />
+    <meta
+      name="twitter:description"
+      content="Type tasks the way you think, see one day at a time, and get today to zero. Free, no sign-up, works offline."
+    />
+    <meta name="twitter:image" content="https://listzero.vercel.app/og.png" />
+    <meta name="author" content="Muhammad Shehryar" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Listzero",
+        "url": "https://listzero.vercel.app/",
+        "description": "A free to-do list for busy minds. Type tasks the way you think, see one day at a time, break big things into steps, and get today to zero. No sign-up; tasks stay in your browser and work offline.",
+        "applicationCategory": "ProductivityApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript. Works in current versions of Chrome, Edge, Firefox and Safari.",
+        "inLanguage": "en",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "image": "https://listzero.vercel.app/og.png",
+        "screenshot": "https://raw.githubusercontent.com/Shahryartariq/listzero/main/docs/today-light.png",
+        "featureList": [
+          "Quick add that reads the day, time, list, priority and length from a sentence",
+          "Today view with a count down to zero",
+          "Inbox, Upcoming, Board, Done and Focus views",
+          "List, cards, board, calendar and table layouts with sorting and filters",
+          "Steps, notes, repeating tasks and task colours",
+          "Six colour palettes with light and dark modes",
+          "Works offline and can be installed",
+          "Backup and restore as a file"
+        ],
+        "author": { "@type": "Person", "name": "Muhammad Shehryar", "url": "https://github.com/Shahryartariq" },
+        "codeRepository": "https://github.com/Shahryartariq/listzero",
+        "license": "https://opensource.org/license/mit"
+      }
+    </script>
     <link rel="preload" href="/src/assets/fonts/atkinson-hyperlegible-next.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/src/assets/fonts/big-shoulders.woff2" as="font" type="font/woff2" crossorigin />
     <script src="/theme.js"></script>
   </head>
   <body>
     <div id="root"></div>
-    <noscript>Listzero needs JavaScript to keep your tasks in this browser.</noscript>
+    <noscript>
+      <h1>Listzero: a free to-do list for busy minds</h1>
+      <p>
+        Type tasks the way you think, see one day at a time, break big things into steps, and get today to zero. No
+        sign-up. Your tasks stay in your browser and work offline.
+      </p>
+      <p>Listzero needs JavaScript to keep your tasks in this browser. Turn it on and reload to start.</p>
+      <p>
+        <a href="https://github.com/Shahryartariq/listzero">Read about Listzero and see the code on GitHub</a>
+      </p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

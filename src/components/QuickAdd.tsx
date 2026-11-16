@@ -24,6 +24,13 @@ const OFF_LABEL: Record<TokenKind, string> = {
 
 const capitalize = (s: string) => s.replace(/^./, (c) => c.toUpperCase());
 
+/** Where a new task can be found, for the "Added to …" message when it is not in the view on screen. */
+export function whereItWent(task: Task, today: string, lists: TaskList[]): string {
+  if (task.due) return describeDay(task.due, today);
+  const list = lists.find((l) => l.id === task.listId);
+  return list ? list.name : "the Inbox";
+}
+
 function chipText(token: Token, parsed: Parsed, today: string, lists: TaskList[]): string {
   switch (token.kind) {
     case "due":
@@ -60,11 +67,6 @@ export function QuickAdd({ defaults, staysHere }: QuickAddProps) {
   const parsed = useMemo(() => parseTask(text, new Date(), off), [text, off]);
   const ready = text.trim().length > 0;
 
-  const whereItWent = (task: Task): string => {
-    if (task.due) return describeDay(task.due, store.today);
-    const list = store.data.lists.find((l) => l.id === task.listId);
-    return list ? list.name : "the Inbox";
-  };
 
   const add = (lines: string[]) => {
     const created = store.addFromText(lines, defaults, off);
@@ -72,7 +74,7 @@ export function QuickAdd({ defaults, staysHere }: QuickAddProps) {
     if (created.length > 1) {
       store.notify(`Added ${created.length} tasks.`);
     } else if (hidden[0]) {
-      store.notify(`Added to ${whereItWent(hidden[0])}.`);
+      store.notify(`Added to ${whereItWent(hidden[0], store.today, store.data.lists)}.`);
     }
     setText("");
     setOff(new Set());
