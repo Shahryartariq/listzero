@@ -17,6 +17,8 @@ export interface SeedTask {
   notes?: string;
   estimate?: number | null;
   completedAt?: number | null;
+  color?: string | null;
+  doing?: boolean;
 }
 
 /** Puts tasks in storage before the app starts. Runs once, so reloads keep what the test changed. */
@@ -34,6 +36,8 @@ export async function seed(page: Page, tasks: SeedTask[], lists: { id: string; n
       estimate: null,
       steps: [],
       repeat: null,
+      color: null,
+      doing: false,
       createdAt: i + 1,
       completedAt: null,
       ...t,

@@ -116,6 +116,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       estimate: null,
       steps: [],
       repeat: null,
+      color: null,
+      doing: false,
       createdAt: Date.now() + offset,
       completedAt: null,
       ...extra,

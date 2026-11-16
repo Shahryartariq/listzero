@@ -90,6 +90,13 @@ export function About() {
           timer, because starting is usually the hard part.
         </li>
         <li>
+          The <strong>Board</strong> shows tasks as cards in three columns: To do, Doing and Done today. Press
+          Start, or drag a card. Keeping only a few in Doing makes them easier to finish.
+        </li>
+        <li>
+          Give a task a <strong>colour</strong> in its sheet to tell kinds of work apart at a glance.
+        </li>
+        <li>
           <strong>Done</strong> keeps what you finished, so a slow day still shows what you did.
         </li>
       </ul>
@@ -140,9 +147,9 @@ export function About() {
             </td>
           </tr>
           <tr>
-            <th scope="row">Go to Inbox, Today, Upcoming, Done, Focus</th>
+            <th scope="row">Go to Inbox, Today, Upcoming, Board, Done, Focus</th>
             <td>
-              <kbd>G</kbd> then <kbd>I</kbd> <kbd>T</kbd> <kbd>U</kbd> <kbd>D</kbd> <kbd>F</kbd>
+              <kbd>G</kbd> then <kbd>I</kbd> <kbd>T</kbd> <kbd>U</kbd> <kbd>B</kbd> <kbd>D</kbd> <kbd>F</kbd>
             </td>
           </tr>
           <tr>

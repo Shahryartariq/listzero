@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { addTask, day, isPhone, row, seed } from "./helpers";
 
 test.describe("capture", () => {
@@ -330,6 +330,151 @@ test.describe("focus", () => {
   });
 });
 
+test.describe("board", () => {
+  const column = (page: Page, name: string) => page.getByRole("region", { name });
+
+  // On a phone the board shows one column at a time.
+  const show = async (page: Page, name: string) => {
+    if (isPhone(page)) await page.getByRole("tab", { name: new RegExp(`^${name}`) }).click();
+  };
+
+  test("a task moves To do → Doing → Done with the card buttons, and Today follows", async ({ page }) => {
+    await seed(page, [{ title: "Write report", due: day() }, { title: "Call Sara", due: day(), priority: 1 }]);
+    await page.goto("/board");
+    await expect(column(page, "To do").locator("[data-task]")).toHaveText([/Call Sara/, /Write report/]);
+
+    await page.getByRole("button", { name: "Start “Write report”" }).click();
+    await show(page, "Doing");
+    await expect(column(page, "Doing").locator("[data-task]")).toHaveText(/Write report/);
+
+    await page.reload();
+    await show(page, "Doing");
+    await expect(column(page, "Doing").locator("[data-task]")).toHaveText(/Write report/);
+
+    await page.getByRole("button", { name: "Done with “Write report”" }).click();
+    await expect(page.locator(".toasts")).toContainText("Done.");
+    await show(page, "Done today");
+    await expect(column(page, "Done today").locator("[data-task]")).toHaveText(/Write report/);
+
+    await page.goto("/today");
+    await expect(page.locator(".zero-head__count")).toHaveText("1");
+    await expect(row(page, "Write report")).toBeHidden();
+  });
+
+  test("“Not yet” and “Reopen” move a task back, and a task in progress is marked in lists", async ({ page }) => {
+    await seed(page, [{ title: "Draft email", due: day(), doing: true }, { title: "Old win", completedAt: Date.now() - 1000 }]);
+    await page.goto("/today");
+    await expect(row(page, "Draft email")).toContainText("Doing");
+
+    await page.goto("/board");
+    await show(page, "Doing");
+    await page.getByRole("button", { name: "Not yet: move “Draft email” back to To do" }).click();
+    await show(page, "To do");
+    await expect(column(page, "To do").locator("[data-task]")).toHaveText(/Draft email/);
+
+    await show(page, "Done today");
+    await page.getByRole("button", { name: "Reopen “Old win”" }).click();
+    await show(page, "To do");
+    await expect(column(page, "To do").locator("[data-task]")).toHaveCount(2);
+    await page.goto("/today");
+    await expect(row(page, "Draft email")).not.toContainText("Doing");
+  });
+
+  test("a card can be dragged to another column", async ({ page }) => {
+    test.skip(isPhone(page), "Phones show one column at a time and use the card buttons.");
+    await seed(page, [{ title: "Drag me", due: day() }, { title: "Stay put", due: day() }]);
+    await page.goto("/board");
+    await page.locator("[data-task]", { hasText: "Drag me" }).dragTo(column(page, "Doing"));
+    await expect(column(page, "Doing").locator("[data-task]")).toHaveText(/Drag me/);
+    await expect(column(page, "To do").locator("[data-task]")).toHaveText(/Stay put/);
+
+    await page.locator("[data-task]", { hasText: "Drag me" }).dragTo(column(page, "Done today"));
+    await expect(column(page, "Done today").locator("[data-task]")).toHaveText(/Drag me/);
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect(column(page, "Doing").locator("[data-task]")).toHaveText(/Drag me/);
+
+    await page.locator("[data-task]", { hasText: "Drag me" }).dragTo(column(page, "To do"));
+    await expect(column(page, "To do").locator("[data-task]")).toHaveCount(2);
+    await expect(page.locator('.column[data-over="true"]')).toHaveCount(0);
+  });
+
+  test("the board can show a list, the Inbox or everything, and adds tasks to what it shows", async ({ page }) => {
+    await seed(
+      page,
+      [{ title: "Today thing", due: day() }, { title: "Work thing", listId: "work" }, { title: "Loose idea" }],
+      [{ id: "work", name: "Work" }],
+    );
+    await page.goto("/board");
+    await expect(column(page, "To do").locator("[data-task]")).toHaveText(/Today thing/);
+
+    await page.getByLabel("Show tasks from").selectOption("Work");
+    await expect(page).toHaveURL(/\/board\?in=work$/);
+    await expect(column(page, "To do").locator("[data-task]")).toHaveText(/Work thing/);
+    await addTask(page, "Added on the Work board");
+    await expect(column(page, "To do").locator("[data-task]")).toHaveCount(2);
+
+    await page.getByLabel("Show tasks from").selectOption("Everything open");
+    await expect(column(page, "To do").locator("[data-task]")).toHaveCount(4);
+    await page.getByLabel("Show tasks from").selectOption("Inbox");
+    await expect(column(page, "To do").locator("[data-task]")).toHaveText([/Today thing/, /Loose idea/]);
+
+    await page.goto("/board?in=deleted-list");
+    await expect(page.getByLabel("Show tasks from")).toHaveValue("today");
+  });
+
+  test("more than three tasks in progress gets a gentle note, not a block", async ({ page }) => {
+    await seed(page, ["A", "B", "C", "D"].map((title) => ({ title, due: day(), doing: true })));
+    await page.goto("/board");
+    await show(page, "Doing");
+    await expect(page.getByText("4 at once is a lot to hold.")).toBeVisible();
+    await page.getByRole("button", { name: "Done with “A”" }).click();
+    await expect(page.getByText("is a lot to hold")).toBeHidden();
+  });
+
+  test("a card opens the task sheet", async ({ page }) => {
+    await seed(page, [{ title: "Open me", due: day() }]);
+    await page.goto("/board");
+    await page.locator("[data-row]", { hasText: "Open me" }).click();
+    await expect(page.getByRole("dialog", { name: "Task" })).toBeVisible();
+    await expect(page).toHaveURL(/\/board\?task=seed-1$/);
+  });
+});
+
+test.describe("task colours", () => {
+  test("a colour set in the sheet tints the task everywhere and is saved", async ({ page }) => {
+    await seed(page, [{ title: "Tax form", due: day() }, { title: "Plain task", due: day() }]);
+    await page.goto("/today");
+    const plain = await row(page, "Plain task").evaluate((el) => getComputedStyle(el).backgroundColor);
+    await row(page, "Tax form").locator("[data-row]").click();
+    const sheet = page.getByRole("dialog", { name: "Task" });
+    await expect(sheet.getByRole("radio", { name: "No colour" })).toBeChecked();
+    await sheet.getByRole("radio", { name: "Blue" }).click();
+    await expect(sheet.getByRole("radio", { name: "Blue" })).toBeChecked();
+    await sheet.getByRole("button", { name: "Close" }).click();
+
+    await expect(row(page, "Tax form")).toHaveAttribute("data-color", "blue");
+    const tinted = await row(page, "Tax form").evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(tinted).not.toBe(plain);
+
+    await page.reload();
+    await expect(row(page, "Tax form")).toHaveAttribute("data-color", "blue");
+    await page.goto("/board");
+    await expect(page.locator(".card", { hasText: "Tax form" })).toHaveAttribute("data-color", "blue");
+    await page.goto("/search?q=blue");
+    await expect(page.locator("[data-task]")).toHaveText(/Tax form/);
+  });
+
+  test("the colour can be removed again", async ({ page }) => {
+    await seed(page, [{ title: "Tax form", due: day(), color: "moss" }]);
+    await page.goto("/today?task=seed-1");
+    const sheet = page.getByRole("dialog", { name: "Task" });
+    await expect(sheet.getByRole("radio", { name: "Moss" })).toBeChecked();
+    await sheet.getByRole("radio", { name: "No colour" }).click();
+    await sheet.getByRole("button", { name: "Close" }).click();
+    await expect(row(page, "Tax form")).not.toHaveAttribute("data-color");
+  });
+});
+
 test.describe("lists", () => {
   test("create, fill, rename and delete a list; its tasks fall back to the Inbox", async ({ page }) => {
     await page.goto(isPhone(page) ? "/menu" : "/today");
@@ -583,6 +728,9 @@ test.describe("navigation", () => {
     await expect(page.getByRole("searchbox")).toBeFocused();
     await page.keyboard.press("Escape");
     await page.locator("h1").click();
+    await page.keyboard.press("g");
+    await page.keyboard.press("b");
+    await expect(page).toHaveURL(/\/board$/);
     await page.keyboard.press("g");
     await page.keyboard.press("s");
     await expect(page).toHaveURL(/\/settings$/);

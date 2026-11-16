@@ -17,8 +17,10 @@ Listzero is built around those three moments.
 | "I need to write this down now" | One input on every view. It reads the day, time, list, priority and length out of the sentence. Paste a list and each line becomes a task. |
 | "This list is too long to look at" | Today shows one number: how many tasks are between you and zero. Past a full day's worth, it offers to move the rest to tomorrow. |
 | "I missed it yesterday" | Late tasks are "carried over", never red. One button moves them all, or drops their dates. |
-| "I can't start" | Break a task into steps and the row shows only the next one. Focus puts a single task on the screen with a "just 2 minutes" timer. |
+| "I can't start" | Break a task into steps and the row shows only the next one. Focus puts a single task on the screen with a "just 2 minutes" timer. The board's Doing column keeps what is in progress small and visible. |
 | "I got nothing done" | Done keeps what you finished, counted by day. |
+
+![The board: To do, Doing and Done today, with coloured task cards](docs/board-light.png)
 
 ![The six colour palettes: Chalk, Sage, Sky, Sand, Lilac and Rose, in light and dark](docs/palettes.png)
 
@@ -45,8 +47,13 @@ Listzero is built around those three moments.
   | `p1` `p2` `p3` | the priority |
   | `15m` `1h` `1h 30m` | how long it takes |
 
-- **Views:** Inbox, Today, Upcoming (grouped by day, with the planned time per day), your own lists, Done, Search.
-- **Tasks:** steps, notes, day and time, repeats, priority, length, list. Changes save as you type.
+- **Views:** Inbox, Today, Upcoming (grouped by day, with the planned time per day), Board, your own lists, Done,
+  Search.
+- **Board:** a Kanban view with To do, Doing and Done today. Move cards with the buttons on each card or by
+  dragging; show today's tasks, the Inbox, one list or everything. More than three in Doing gets a gentle note,
+  never a block. On a phone it shows one column at a time.
+- **Tasks:** steps, notes, day and time, repeats, priority, length, list, and a colour of your choice that tints
+  the task everywhere. Changes save as you type.
 - **Focus:** one task at a time, "Not now" to skip without losing it, a 2-minute start timer.
 - **Undo** on finish, delete and every bulk move. Undo is withdrawn the moment anything else changes, so it can
   never roll back later work.
@@ -57,7 +64,7 @@ Listzero is built around those three moments.
   turn the small animations off.
 - **Today's progress** as a bar that fills as you finish things.
 - **Phone layout** with a bottom tab bar; installable; works offline.
-- **Keyboard:** `Q` add, `/` search, `J` `K` move, `X` finish, `G` then `I` `T` `U` `D` `F` to jump.
+- **Keyboard:** `Q` add, `/` search, `J` `K` move, `X` finish, `G` then `I` `T` `U` `B` `D` `F` to jump.
 - **Backups:** save everything to a JSON file and load it in another browser.
 - **Accessible:** real buttons and dialogs, visible focus, WCAG AA contrast in every palette, reduced-motion support.
   Text is set in Atkinson Hyperlegible Next, a typeface designed to keep similar letters apart.

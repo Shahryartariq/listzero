@@ -71,6 +71,8 @@ function readTask(v: unknown, listIds: Set<string>): Task | null {
       ? v.steps.slice(0, MAX_STEPS).map(readStep).filter((s): s is Step => s !== null)
       : [],
     repeat: due && REPEATS.includes(v.repeat as Repeat) ? (v.repeat as Repeat) : null,
+    color: LIST_COLORS.includes(v.color as ListColor) ? (v.color as ListColor) : null,
+    doing: v.doing === true && timestamp(v.completedAt) === null,
     createdAt: timestamp(v.createdAt) ?? Date.now(),
     completedAt: timestamp(v.completedAt),
   };

@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { Shell } from "./components/Shell";
 import { StoreProvider } from "./state/StoreProvider";
 import { About, Menu, NotFound } from "./views/About";
+import { Board } from "./views/Board";
 import { Done } from "./views/Done";
 import { Focus } from "./views/Focus";
 import { Inbox, ListView, Upcoming } from "./views/Lists";
@@ -19,6 +20,7 @@ export function App() {
             <Route path="today" element={<Today />} />
             <Route path="inbox" element={<Inbox />} />
             <Route path="upcoming" element={<Upcoming />} />
+            <Route path="board" element={<Board />} />
             <Route path="list/:listId" element={<ListView />} />
             <Route path="done" element={<Done />} />
             <Route path="focus" element={<Focus />} />

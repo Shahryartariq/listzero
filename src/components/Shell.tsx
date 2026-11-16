@@ -14,7 +14,15 @@ function isTyping(target: EventTarget | null): boolean {
   return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
 }
 
-const GO: Record<string, string> = { i: "/inbox", t: "/today", u: "/upcoming", d: "/done", f: "/focus", s: "/settings" };
+const GO: Record<string, string> = {
+  i: "/inbox",
+  t: "/today",
+  u: "/upcoming",
+  b: "/board",
+  d: "/done",
+  f: "/focus",
+  s: "/settings",
+};
 
 export function NavItems({ onNewList, onAppearance }: { onNewList(): void; onAppearance(): void }) {
   const store = useStore();
@@ -27,6 +35,7 @@ export function NavItems({ onNewList, onAppearance }: { onNewList(): void; onApp
     { to: "/inbox", label: "Inbox", icon: "inbox" },
     { to: "/today", label: "Today", icon: "today" },
     { to: "/upcoming", label: "Upcoming", icon: "upcoming" },
+    { to: "/board", label: "Board", icon: "board" },
     { to: "/done", label: "Done", icon: "done" },
   ];
   return (

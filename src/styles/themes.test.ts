@@ -89,6 +89,20 @@ describe.each(cases)("$palette, $mode", ({ palette, mode }) => {
     }
   });
 
+  it("keeps text readable on a task's colour wash and in the board's columns", () => {
+    const muted = mix(ink, bg, share("muted"));
+    for (const [name, value] of Object.entries(shared)) {
+      if (!name.startsWith("c-")) continue;
+      // .row[data-color]: 10% of the colour over the tile.
+      const wash = mix(hex(value), surface, 0.1);
+      expect(contrast(ink, wash), `ink on ${name}`).toBeGreaterThanOrEqual(7);
+      expect(contrast(muted, wash), `muted on ${name}`).toBeGreaterThanOrEqual(4.5);
+    }
+    // .column: 5% ink over the page.
+    const well = mix(ink, bg, 0.05);
+    expect(contrast(muted, well)).toBeGreaterThanOrEqual(4.5);
+  });
+
   it("is not harsh: no pure white or pure black, and the page is low in saturation", () => {
     for (const colour of [bg, surface, ink]) {
       expect(Math.max(...colour)).toBeLessThan(255);

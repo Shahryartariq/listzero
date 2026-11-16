@@ -8,6 +8,16 @@ export type ThemeChoice = "system" | "light" | "dark";
 export const LIST_COLORS = ["slate", "brick", "ochre", "moss", "teal", "blue", "plum"] as const;
 export type ListColor = (typeof LIST_COLORS)[number];
 
+export const COLOR_NAME: Record<ListColor, string> = {
+  slate: "Slate",
+  brick: "Brick",
+  ochre: "Ochre",
+  moss: "Moss",
+  teal: "Teal",
+  blue: "Blue",
+  plum: "Plum",
+};
+
 export interface Step {
   id: string;
   title: string;
@@ -29,6 +39,10 @@ export interface Task {
   estimate: number | null;
   steps: Step[];
   repeat: Repeat | null;
+  /** A colour of the user's choosing, to tell tasks apart at a glance. */
+  color: ListColor | null;
+  /** In progress: sits in the "Doing" column of the board. */
+  doing: boolean;
   createdAt: number;
   completedAt: number | null;
 }
