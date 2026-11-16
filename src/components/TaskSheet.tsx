@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
 import { REPEAT_LABEL, addDays, describeDay, nextWeekday } from "../lib/dates";
 import { newId } from "../lib/id";
@@ -50,12 +50,13 @@ function TaskEditor({ task, onClose }: { task: Task; onClose(): void }) {
   const titleBox = useRef<HTMLTextAreaElement>(null);
   const done = task.completedAt !== null;
 
-  // Grow the name field with its text (for browsers without CSS field-sizing).
-  useLayoutEffect(() => {
+  // Grow the name field with its text. This runs after the dialog has opened, when the field has a size.
+  useEffect(() => {
     const el = titleBox.current;
-    if (!el) return;
+    if (!el || el.scrollHeight === 0) return;
     el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
+    // scrollHeight leaves out the border, and the box is sized border-box.
+    el.style.height = `${el.scrollHeight + (el.offsetHeight - el.clientHeight)}px`;
   }, [title]);
   const list = store.data.lists.find((l) => l.id === task.listId);
   const today = store.today;

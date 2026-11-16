@@ -82,7 +82,7 @@ export function Settings() {
               disabled={settings.dailyLimit <= 1}
               onClick={() => store.updateSettings({ dailyLimit: Math.max(1, settings.dailyLimit - 1) })}
             >
-              <span aria-hidden="true">−</span>
+              <Icon name="minus" size={18} />
             </button>
             <output aria-live="polite">
               {settings.dailyLimit} {settings.dailyLimit === 1 ? "task" : "tasks"}

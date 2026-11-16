@@ -230,6 +230,18 @@ test.describe("task details", () => {
     await expect(sheet.getByRole("radio", { name: "High" })).toBeChecked();
   });
 
+  test("a long task name is shown in full in the sheet", async ({ page }) => {
+    const title = "Write the first draft of the conference talk and send it to the organisers before the weekend";
+    await seed(page, [{ title, due: day() }]);
+    await page.goto("/today");
+    await row(page, title).locator("[data-row]").click();
+    const name = page.getByRole("textbox", { name: "Task name" });
+    await expect(name).toHaveValue(title);
+    const box = await name.evaluate((el: HTMLTextAreaElement) => ({ client: el.clientHeight, scroll: el.scrollHeight }));
+    expect(box.client).toBeGreaterThanOrEqual(box.scroll);
+    expect(box.client).toBeGreaterThan(40);
+  });
+
   test("renaming keeps the old name if the field is emptied", async ({ page }) => {
     await seed(page, [{ title: "Old name", due: day() }]);
     await page.goto("/today?task=seed-1");

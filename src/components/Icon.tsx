@@ -10,6 +10,7 @@ const PATHS = {
   settings: "M5 8h9M18 8h1M5 16h1M10 16h9M16 6v4M8 14v4",
   about: "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM12 11v5M12 8v.5",
   plus: "M12 5v14M5 12h14",
+  minus: "M5 12h14",
   close: "M6 6l12 12M18 6 6 18",
   check: "M5.5 12.5l4.2 4.2L18.5 7.5",
   clock: "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM12 8v4.5l3 1.8",
