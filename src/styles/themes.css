@@ -6,7 +6,11 @@
    the paper, so every palette gets the same contrast steps (checked in themes.test.ts).
 
    The selectors match any element, not just <html>, so a swatch can preview a palette
-   by carrying the same two attributes. */
+   by carrying the same two attributes.
+
+   Glass: tiles are a little see-through and the page carries a soft glow of the accent,
+   so surfaces read as frosted panes. The glow is weak on purpose; themes.test.ts checks
+   text contrast at its strongest point. */
 
 :root,
 [data-theme="light"] {
@@ -21,8 +25,12 @@
   --c-teal: #177a78;
   --c-blue: #2c62a5;
   --c-plum: #7c4a8a;
-  --backdrop: rgb(20 28 28 / 0.42);
-  --shadow: 0 1px 2px rgb(20 28 28 / 0.06), 0 12px 32px rgb(20 28 28 / 0.1);
+  --backdrop: rgb(20 28 28 / 0.32);
+  --shadow: 0 1px 2px rgb(20 28 28 / 0.06), 0 18px 48px rgb(20 28 28 / 0.14);
+  --glow: 14%;
+  --glow-far: 8%;
+  --shine: rgb(255 255 255 / 0.6);
+  --lift: 0 1px 1px rgb(20 28 28 / 0.04), 0 12px 28px -18px rgb(20 28 28 / 0.28);
 }
 
 [data-theme="dark"] {
@@ -37,8 +45,12 @@
   --c-teal: #74d3ce;
   --c-blue: #9cc1ee;
   --c-plum: #d7aae3;
-  --backdrop: rgb(6 10 10 / 0.62);
-  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 16px 40px rgb(0 0 0 / 0.35);
+  --backdrop: rgb(6 10 10 / 0.55);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 20px 48px rgb(0 0 0 / 0.4);
+  --glow: 12%;
+  --glow-far: 7%;
+  --shine: rgb(255 255 255 / 0.08);
+  --lift: 0 1px 1px rgb(0 0 0 / 0.2), 0 14px 30px -18px rgb(0 0 0 / 0.6);
 }
 
 /* Chalk: the default. A slate board and a stick of yellow chalk. */
@@ -152,6 +164,25 @@
   --line: color-mix(in srgb, var(--ink) 13%, var(--bg));
   --line-strong: color-mix(in srgb, var(--ink) 56%, var(--bg));
   --hover: color-mix(in srgb, var(--ink) 7%, transparent);
+  /* Glass. A tile is 70% surface, a sheet or bar that sits over other content is thicker. */
+  --glass: color-mix(in srgb, var(--surface) 70%, transparent);
+  --glass-bar: color-mix(in srgb, var(--surface) 80%, transparent);
+  --glass-sheet: color-mix(in srgb, var(--bg) 90%, transparent);
+  --well: color-mix(in srgb, var(--ink) 5%, transparent);
+  --edge: color-mix(in srgb, var(--ink) 9%, transparent);
+  --tile-shadow: inset 0 1px 0 var(--shine), inset 0 0 0 1px var(--edge), var(--lift);
+}
+
+/* People who ask for less transparency or more contrast get solid surfaces and a plain page. */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root,
+  [data-palette] {
+    --glass: var(--surface);
+    --glass-bar: var(--surface);
+    --glass-sheet: var(--bg);
+    --glow: 0%;
+    --glow-far: 0%;
+  }
 }
 
 /* Changing theme cross-fades the whole page instead of snapping. */

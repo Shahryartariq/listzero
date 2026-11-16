@@ -14,10 +14,10 @@ import { useStore, type Store } from "../state/store-context";
 import { useDisplay } from "../state/useDisplay";
 import { usePageTitle } from "../state/usePageTitle";
 
-/** Tasks finished today that pass `belongs`, newest first: the board layout's last column. */
-/** Board, calendar and table need the full width; lists and cards read better in a column. */
-export const wide = (layout: string) => (layout === "list" || layout === "cards" ? "view" : "view view--wide");
+/** A plain list reads best as one narrow column; every other layout uses the width of the screen. */
+export const wide = (layout: string) => (layout === "list" ? "view" : "view view--wide");
 
+/** Tasks finished today that pass `belongs`, newest first: the board layout's last column. */
 function finishedToday(store: Store, belongs: (t: Task) => boolean): Task[] {
   return store.data.tasks
     .filter((t) => t.completedAt !== null && store.dayOf(t.completedAt) === store.today && belongs(t))

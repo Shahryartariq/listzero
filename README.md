@@ -72,6 +72,10 @@ Listzero is built around those three moments.
 - **Six calm colour palettes** (Chalk, Sage, Sky, Sand, Lilac, Rose), each with a light and a dark side. They are
   muted on purpose: no pure white, no pure black, one soft accent each. Switching cross-fades the whole page, and
   the saved look is applied before first paint. A unit test checks every palette for text contrast (AA or better).
+- **Soft glass surfaces:** rounded tiles that let a little of the page show through, a floating sidebar, and
+  sheets that blur what is behind them. The effect is kept weak so text contrast holds (unit-tested at the
+  strongest point), and it turns solid for people who ask their system for more contrast or less transparency.
+  On wide screens the content sits in the middle; cards, board, calendar and table use the full width.
 - **Less to look at when you want it:** a larger text size, rows that show only the task name, and an option to
   turn the small animations off.
 - **Today's progress** as a bar that fills as you finish things.
