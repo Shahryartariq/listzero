@@ -50,6 +50,20 @@ const share = (name: string) => {
   return Number(m[1]) / 100;
 };
 
+/** The share of a colour in `color-mix(in srgb, var(--x) N%, transparent)`, or a bare `N%`. */
+const percent = (value: string | undefined, what: string) => {
+  const m = /(\d+(?:\.\d+)?)%/.exec(value ?? "");
+  if (!m?.[1]) throw new Error(`No percentage for ${what}`);
+  return Number(m[1]) / 100;
+};
+
+/** `rgb(r g b / a)` as a colour and its opacity. */
+function veil(value: string | undefined): { colour: Rgb; alpha: number } {
+  const m = /rgb\((\d+) (\d+) (\d+) \/ ([\d.]+)\)/.exec(value ?? "");
+  if (!m) throw new Error(`Not an rgb() with alpha: ${value}`);
+  return { colour: [Number(m[1]), Number(m[2]), Number(m[3])], alpha: Number(m[4]) };
+}
+
 const cases = PALETTES.flatMap((palette) => (["light", "dark"] as const).map((mode) => ({ palette, mode })));
 
 describe.each(cases)("$palette, $mode", ({ palette, mode }) => {
@@ -58,7 +72,16 @@ describe.each(cases)("$palette, $mode", ({ palette, mode }) => {
   const bg = hex(own.bg ?? "");
   const surface = hex(own.surface ?? "");
   const ink = hex(own.ink ?? "");
-  const papers = [bg, surface];
+  const mark = hex(own.mark ?? "");
+  // Glass. The page glows with the accent (strongest at --glow), and tiles let 30% of it through.
+  const glowing = mix(mark, bg, percent(shared.glow, "--glow"));
+  const pages = [bg, glowing];
+  const tiles = pages.map((page) => mix(surface, page, percent(shares.glass, "--glass")));
+  const bars = pages.map((page) => mix(surface, page, percent(shares["glass-bar"], "--glass-bar")));
+  // A sheet is 90% page colour over the dimmed page behind it.
+  const dim = veil(shared.backdrop);
+  const sheets = pages.map((page) => mix(bg, mix(dim.colour, page, dim.alpha), percent(shares["glass-sheet"], "--glass-sheet")));
+  const papers = [surface, ...pages, ...tiles, ...bars, ...sheets];
 
   it("has strong text contrast (AAA) on the page and on tiles", () => {
     for (const paper of papers) expect(contrast(ink, paper)).toBeGreaterThanOrEqual(7);
@@ -94,13 +117,24 @@ describe.each(cases)("$palette, $mode", ({ palette, mode }) => {
     for (const [name, value] of Object.entries(shared)) {
       if (!name.startsWith("c-")) continue;
       // .row[data-color]: 10% of the colour over the tile.
-      const wash = mix(hex(value), surface, 0.1);
-      expect(contrast(ink, wash), `ink on ${name}`).toBeGreaterThanOrEqual(7);
-      expect(contrast(muted, wash), `muted on ${name}`).toBeGreaterThanOrEqual(4.5);
+      for (const tile of [surface, ...tiles]) {
+        const wash = mix(hex(value), tile, 0.1);
+        expect(contrast(ink, wash), `ink on ${name}`).toBeGreaterThanOrEqual(7);
+        expect(contrast(muted, wash), `muted on ${name}`).toBeGreaterThanOrEqual(4.5);
+      }
     }
-    // .column: 5% ink over the page.
-    const well = mix(ink, bg, 0.05);
-    expect(contrast(muted, well)).toBeGreaterThanOrEqual(4.5);
+    // .column: 5% ink over the page, and a card inside it.
+    for (const page of pages) {
+      const well = mix(ink, page, percent(shares.well, "--well"));
+      expect(contrast(muted, well)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(muted, mix(surface, well, percent(shares.glass, "--glass")))).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it("keeps the glass see-through but the glow weak", () => {
+    expect(percent(shares.glass, "--glass")).toBeGreaterThanOrEqual(0.6);
+    expect(percent(shared.glow, "--glow")).toBeLessThanOrEqual(0.2);
+    expect(percent(shared["glow-far"], "--glow-far")).toBeLessThanOrEqual(percent(shared.glow, "--glow"));
   });
 
   it("is not harsh: no pure white or pure black, and the page is low in saturation", () => {

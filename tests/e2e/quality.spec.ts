@@ -101,6 +101,41 @@ test("no view scrolls sideways on a 360px screen", async ({ page }) => {
   }
 });
 
+test("on a wide screen the page sits in the middle of the space beside the sidebar", async ({ page }) => {
+  await page.setViewportSize({ width: 1700, height: 800 });
+  for (const path of ["/today", "/inbox", "/settings", "/board"]) {
+    await page.goto(path);
+    const main = await page.locator("#main").boundingBox();
+    const view = await page.locator(".view").boundingBox();
+    if (!main || !view) throw new Error("layout not found");
+    const left = view.x - main.x;
+    const right = main.x + main.width - (view.x + view.width);
+    expect(Math.abs(left - right), `${path}: ${left}px left, ${right}px right`).toBeLessThanOrEqual(1);
+  }
+  // Cards spread across the wide page instead of staying in the narrow column.
+  await seed(page, [{ title: "One" }, { title: "Two" }, { title: "Three" }, { title: "Four" }]);
+  await page.goto("/inbox");
+  const narrow = (await page.locator(".view").boundingBox())?.width ?? 0;
+  await page.getByRole("button", { name: /^Display/ }).click();
+  await page.getByRole("radio", { name: "Cards" }).click();
+  await page.keyboard.press("Escape");
+  expect((await page.locator(".view").boundingBox())?.width ?? 0).toBeGreaterThan(narrow + 200);
+  const tops = await page.locator(".rows--cards [data-task]").evaluateAll((els) => els.map((el) => el.getBoundingClientRect().top));
+  expect(new Set(tops).size).toBe(1);
+});
+
+test("tiles are see-through glass, and solid for people who ask for more contrast", async ({ page }) => {
+  await seed(page, [{ title: "A task" }]);
+  await page.goto("/inbox");
+  const tile = () => page.locator("[data-task]").first().evaluate((el) => getComputedStyle(el).backgroundColor);
+  const glow = () => page.evaluate(() => getComputedStyle(document.body, "::before").backgroundImage);
+  expect(await tile()).toMatch(/\/ 0\.7\)|, 0\.7\)/);
+  expect(await glow()).toContain("radial-gradient");
+
+  await page.emulateMedia({ contrast: "more" });
+  expect(await tile()).not.toMatch(/\/ 0\.\d+\)|rgba\(/);
+});
+
 test("pages have one h1, a description and no console errors", async ({ page }) => {
   const errors: string[] = [];
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
