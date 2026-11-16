@@ -1,0 +1,162 @@
+/* Colour themes.
+   Six calm palettes, each with a light and a dark side. They are muted on purpose:
+   no pure white, no pure black, one soft accent per palette.
+
+   A palette only names five colours. Muted text and lines are mixed from the ink and
+   the paper, so every palette gets the same contrast steps (checked in themes.test.ts).
+
+   The selectors match any element, not just <html>, so a swatch can preview a palette
+   by carrying the same two attributes. */
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --p1: #b3352b;
+  --p2: #8a590b;
+  --p3: #2c62a5;
+  --c-slate: #5d6b69;
+  --c-brick: #b3352b;
+  --c-ochre: #a06a0e;
+  --c-moss: #55772f;
+  --c-teal: #177a78;
+  --c-blue: #2c62a5;
+  --c-plum: #7c4a8a;
+  --backdrop: rgb(20 28 28 / 0.42);
+  --shadow: 0 1px 2px rgb(20 28 28 / 0.06), 0 12px 32px rgb(20 28 28 / 0.1);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --p1: #f4a094;
+  --p2: #ebbc68;
+  --p3: #9cc1ee;
+  --c-slate: #a9b5b0;
+  --c-brick: #f4a094;
+  --c-ochre: #ebbc68;
+  --c-moss: #add283;
+  --c-teal: #74d3ce;
+  --c-blue: #9cc1ee;
+  --c-plum: #d7aae3;
+  --backdrop: rgb(6 10 10 / 0.62);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 16px 40px rgb(0 0 0 / 0.35);
+}
+
+/* Chalk: the default. A slate board and a stick of yellow chalk. */
+:root,
+[data-palette="chalk"][data-theme="light"] {
+  --bg: #f1f2ec;
+  --surface: #fbfbf8;
+  --ink: #1c2a29;
+  --mark: #f2cf4a;
+  --mark-ink: #1c2a29;
+}
+
+[data-palette="chalk"][data-theme="dark"] {
+  --bg: #1b2726;
+  --surface: #243331;
+  --ink: #edefe6;
+  --mark: #f2cf4a;
+  --mark-ink: #1b2726;
+}
+
+/* Sage: soft greens. */
+[data-palette="sage"][data-theme="light"] {
+  --bg: #ecf2e8;
+  --surface: #f8fbf5;
+  --ink: #1e2b22;
+  --mark: #a3da8e;
+  --mark-ink: #18261c;
+}
+
+[data-palette="sage"][data-theme="dark"] {
+  --bg: #19251e;
+  --surface: #223128;
+  --ink: #e7efe5;
+  --mark: #a6dc91;
+  --mark-ink: #15211a;
+}
+
+/* Sky: pale blue with a warm morning accent. */
+[data-palette="sky"][data-theme="light"] {
+  --bg: #eaf1f8;
+  --surface: #f7fafd;
+  --ink: #182639;
+  --mark: #ffc48a;
+  --mark-ink: #1d2433;
+}
+
+[data-palette="sky"][data-theme="dark"] {
+  --bg: #162133;
+  --surface: #1e2c43;
+  --ink: #e6edf7;
+  --mark: #ffc48a;
+  --mark-ink: #162133;
+}
+
+/* Sand: warm paper with a sea-glass accent. */
+[data-palette="sand"][data-theme="light"] {
+  --bg: #f4eee3;
+  --surface: #fcf9f3;
+  --ink: #2b2620;
+  --mark: #8ad3c1;
+  --mark-ink: #1f2a27;
+}
+
+[data-palette="sand"][data-theme="dark"] {
+  --bg: #25211b;
+  --surface: #302b23;
+  --ink: #f1ece2;
+  --mark: #8ad3c1;
+  --mark-ink: #1c2522;
+}
+
+/* Lilac: quiet violet. */
+[data-palette="lilac"][data-theme="light"] {
+  --bg: #f0eef8;
+  --surface: #faf9fd;
+  --ink: #241f39;
+  --mark: #c6b5ff;
+  --mark-ink: #231d3a;
+}
+
+[data-palette="lilac"][data-theme="dark"] {
+  --bg: #1e1b30;
+  --surface: #282443;
+  --ink: #ebe8f7;
+  --mark: #c6b5ff;
+  --mark-ink: #1e1b30;
+}
+
+/* Rose: warm blush. */
+[data-palette="rose"][data-theme="light"] {
+  --bg: #f7eeec;
+  --surface: #fdf8f7;
+  --ink: #33211f;
+  --mark: #ffb5a7;
+  --mark-ink: #33211f;
+}
+
+[data-palette="rose"][data-theme="dark"] {
+  --bg: #2a1d1c;
+  --surface: #362726;
+  --ink: #f6e9e7;
+  --mark: #ffb5a7;
+  --mark-ink: #2a1d1c;
+}
+
+/* Steps mixed from ink and paper. Declared on the same elements that set a palette,
+   so a nested preview recomputes them from its own colours. */
+:root,
+[data-palette] {
+  --muted: color-mix(in srgb, var(--ink) 70%, var(--bg));
+  --line: color-mix(in srgb, var(--ink) 13%, var(--bg));
+  --line-strong: color-mix(in srgb, var(--ink) 56%, var(--bg));
+  --hover: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+
+/* Changing theme cross-fades the whole page instead of snapping. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.4s;
+  animation-timing-function: ease;
+}

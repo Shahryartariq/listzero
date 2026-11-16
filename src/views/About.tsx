@@ -94,6 +94,18 @@ export function About() {
         </li>
       </ul>
 
+      <h2>Make it yours</h2>
+      <ul>
+        <li>
+          <strong>Appearance</strong> has six calm colours, each with a light and a dark side, and a larger text
+          size. None use pure white or pure black.
+        </li>
+        <li>
+          In <Link to="/settings">Settings</Link> you can show only task names in lists, and turn the small
+          animations off.
+        </li>
+      </ul>
+
       <h2 id="keys">Keyboard</h2>
       <table className="table">
         <tbody>
@@ -170,7 +182,7 @@ export function About() {
 
 /** The phone's "Menu" tab: everything the sidebar holds on larger screens. */
 export function Menu() {
-  const { openNewList } = useOutletContext<{ openNewList(): void }>();
+  const { openNewList, openAppearance } = useOutletContext<{ openNewList(): void; openAppearance(): void }>();
   usePageTitle("Menu");
   return (
     <div className="view">
@@ -178,7 +190,7 @@ export function Menu() {
         <h1 className="title">Menu</h1>
       </header>
       <div style={{ display: "grid", gap: "1.5rem" }}>
-        <NavItems onNewList={openNewList} />
+        <NavItems onNewList={openNewList} onAppearance={openAppearance} />
       </div>
     </div>
   );

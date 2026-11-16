@@ -1,17 +1,12 @@
 import { useRef, useState } from "react";
+import { Appearance } from "../components/Appearance";
 import { Icon } from "../components/Icon";
 import { Confirm } from "../components/Sheet";
 import { parseBackup, serialize } from "../lib/backup";
 import { exampleData } from "../lib/examples";
-import { emptyData, type ThemeChoice } from "../lib/types";
+import { emptyData } from "../lib/types";
 import { useStore } from "../state/store-context";
 import { usePageTitle } from "../state/usePageTitle";
-
-const THEMES: { value: ThemeChoice; label: string }[] = [
-  { value: "system", label: "Match my device" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
-];
 
 export function Settings() {
   const store = useStore();
@@ -50,23 +45,8 @@ export function Settings() {
       </header>
 
       <div className="setting">
-        <span className="setting__name" id="theme-label">
-          Theme
-        </span>
-        <div className="seg" role="radiogroup" aria-labelledby="theme-label">
-          {THEMES.map((t) => (
-            <button
-              key={t.value}
-              type="button"
-              role="radio"
-              className="seg__opt"
-              aria-checked={settings.theme === t.value}
-              onClick={() => store.updateSettings({ theme: t.value })}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <span className="setting__name">Appearance</span>
+        <Appearance />
       </div>
 
       <div className="setting">
@@ -129,6 +109,35 @@ export function Settings() {
       </div>
 
       <div className="setting">
+        <span className="setting__name" id="quiet-label">
+          Task rows show
+        </span>
+        <div className="seg" role="radiogroup" aria-labelledby="quiet-label">
+          <button
+            type="button"
+            role="radio"
+            className="seg__opt"
+            aria-checked={!settings.quiet}
+            onClick={() => store.updateSettings({ quiet: false })}
+          >
+            Name and details
+          </button>
+          <button
+            type="button"
+            role="radio"
+            className="seg__opt"
+            aria-checked={settings.quiet}
+            onClick={() => store.updateSettings({ quiet: true })}
+          >
+            Name only
+          </button>
+        </div>
+        <p className="hint">
+          “Name only” hides dates, lengths and list names in lists, for less to read. The next step still shows.
+        </p>
+      </div>
+
+      <div className="setting">
         <span className="setting__name">Your data</span>
         <p className="hint">
           {store.data.tasks.length} {store.data.tasks.length === 1 ? "task" : "tasks"} in this browser. Nothing is
@@ -166,7 +175,7 @@ export function Settings() {
         <p className="hint">Loading a backup replaces what is here. You can undo it right after.</p>
       </div>
 
-      <div className="setting" style={{ borderBottom: 0 }}>
+      <div className="setting">
         <span className="setting__name">Start over</span>
         <div className="setting__row">
           <button type="button" className="btn btn--danger" onClick={() => setConfirming(true)}>

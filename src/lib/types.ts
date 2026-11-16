@@ -40,8 +40,18 @@ export interface TaskList {
   createdAt: number;
 }
 
+export const PALETTES = ["chalk", "sage", "sky", "sand", "lilac", "rose"] as const;
+export type Palette = (typeof PALETTES)[number];
+
+export type TextSize = "normal" | "large";
+
 export interface Settings {
   theme: ThemeChoice;
+  /** The colour family. Each has a light and a dark side. */
+  palette: Palette;
+  textSize: TextSize;
+  /** Show only task names in lists, hiding dates, lengths and list names. */
+  quiet: boolean;
   /** Above this many open tasks, Today suggests moving some to tomorrow. */
   dailyLimit: number;
   /** Turn off the small completion animations. */
@@ -55,7 +65,14 @@ export interface AppData {
   settings: Settings;
 }
 
-export const DEFAULT_SETTINGS: Settings = { theme: "system", dailyLimit: 5, calm: false };
+export const DEFAULT_SETTINGS: Settings = {
+  theme: "system",
+  palette: "chalk",
+  textSize: "normal",
+  quiet: false,
+  dailyLimit: 5,
+  calm: false,
+};
 
 export function emptyData(): AppData {
   return { version: 1, tasks: [], lists: [], settings: { ...DEFAULT_SETTINGS } };

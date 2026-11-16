@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { inboxView, todayView } from "../lib/store";
 import { useStore } from "../state/store-context";
 import { useTheme } from "../state/useTheme";
+import { AppearanceSheet } from "./Appearance";
 import { Icon, type IconName } from "./Icon";
 import { ListSheet } from "./ListSheet";
 import { TaskSheet } from "./TaskSheet";
@@ -15,7 +16,7 @@ function isTyping(target: EventTarget | null): boolean {
 
 const GO: Record<string, string> = { i: "/inbox", t: "/today", u: "/upcoming", d: "/done", f: "/focus", s: "/settings" };
 
-export function NavItems({ onNewList }: { onNewList(): void }) {
+export function NavItems({ onNewList, onAppearance }: { onNewList(): void; onAppearance(): void }) {
   const store = useStore();
   const today = todayView(store.data, store.today);
   const counts: Record<string, number> = {
@@ -79,6 +80,10 @@ export function NavItems({ onNewList }: { onNewList(): void }) {
       </div>
 
       <nav className="nav side__foot" aria-label="More">
+        <button type="button" className="nav__link nav__button" onClick={onAppearance}>
+          <Icon name="palette" />
+          Appearance
+        </button>
         <NavLink to="/settings" className="nav__link">
           <Icon name="settings" />
           Settings
@@ -97,8 +102,9 @@ export function Shell() {
   const navigate = useNavigate();
   const location = useLocation();
   const [newList, setNewList] = useState(false);
+  const [appearance, setAppearance] = useState(false);
   const pendingG = useRef(0);
-  useTheme(store.data.settings.theme, store.data.settings.calm);
+  useTheme(store.data.settings);
 
   const focusAdd = () => {
     const input = document.getElementById("quick-add");
@@ -162,7 +168,7 @@ export function Shell() {
           <span className="brand__zero" aria-hidden="true" />
           Listzero
         </Link>
-        <NavItems onNewList={() => setNewList(true)} />
+        <NavItems onNewList={() => setNewList(true)} onAppearance={() => setAppearance(true)} />
       </aside>
 
       <main className="main" id="main" tabIndex={-1}>
@@ -174,7 +180,7 @@ export function Shell() {
             </p>
           </div>
         )}
-        <Outlet context={{ openNewList: () => setNewList(true) }} />
+        <Outlet context={{ openNewList: () => setNewList(true), openAppearance: () => setAppearance(true) }} />
       </main>
 
       <nav className="tabs" aria-label="Main">
@@ -210,6 +216,7 @@ export function Shell() {
           }}
         />
       )}
+      {appearance && <AppearanceSheet onClose={() => setAppearance(false)} />}
       <Toasts />
     </div>
   );
