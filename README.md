@@ -22,6 +22,13 @@ Listzero is built around those three moments.
 
 ![The board: To do, Doing and Done today, with coloured task cards](docs/board-light.png)
 
+![The Display sheet: five layouts, sort order, filters and Reset](docs/display-light.png)
+
+<p>
+  <img src="docs/calendar-light.png" width="49%" alt="Calendar layout: a month with tasks on their days" />
+  <img src="docs/table-dark.png" width="49%" alt="Table layout in the Sky palette, dark mode: sortable columns" />
+</p>
+
 ![The six colour palettes: Chalk, Sage, Sky, Sand, Lilac and Rose, in light and dark](docs/palettes.png)
 
 <p>
@@ -52,6 +59,11 @@ Listzero is built around those three moments.
 - **Board:** a Kanban view with To do, Doing and Done today. Move cards with the buttons on each card or by
   dragging; show today's tasks, the Inbox, one list or everything. More than three in Doing gets a gentle note,
   never a block. On a phone it shows one column at a time.
+- **Display:** a button on Inbox, Today, Upcoming and every list. It changes the layout (List, Cards, Board,
+  Calendar or Table), the sort order (suggested, priority, day, name, newest, shortest) and which tasks show
+  (by priority, colour, list, in progress, or 15 minutes or less). Each view remembers its own choice. A note says
+  how many tasks a filter hides, and Reset puts the view back. In the calendar, drag a task to another day; in the
+  table, click a heading to sort.
 - **Tasks:** steps, notes, day and time, repeats, priority, length, list, and a colour of your choice that tints
   the task everywhere. Changes save as you type.
 - **Focus:** one task at a time, "Not now" to skip without losing it, a 2-minute start timer.
@@ -123,9 +135,9 @@ npm run test:e2e   # browser tests (Playwright); run `npx playwright install chr
 ## Tests
 
 - **Unit (Vitest):** the parser, date maths (month ends, leap days, repeats), the reducer and views, backup
-  validation, and the contrast of every palette in both modes.
+  validation, display filters and sorting, and the contrast of every palette in both modes.
 - **Browser (Playwright), on a desktop and a phone profile:** every flow above, plus axe accessibility checks on
-  every view and every palette, a no-sideways-scroll check at 360px, the Content-Security-Policy, the offline path,
+  every view, layout and palette, a no-sideways-scroll check at 360px, the Content-Security-Policy, the offline path,
   and two-tab sync.
 
 CI runs all of it on every pull request.

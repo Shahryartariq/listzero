@@ -1,11 +1,16 @@
 import { Link } from "react-router";
+import { DisplayMenu, FilterNote } from "../components/DisplayMenu";
+import { TaskLayout } from "../components/layouts/TaskLayout";
 import { QuickAdd } from "../components/QuickAdd";
 import { TaskRows } from "../components/TaskRow";
 import { addDays, describeMinutes, fromDay } from "../lib/dates";
+import { activeFilters, applyDisplay } from "../lib/display";
 import { exampleData } from "../lib/examples";
 import { doneCounts, todayView, totalEstimate } from "../lib/store";
 import { useStore } from "../state/store-context";
+import { useDisplay } from "../state/useDisplay";
 import { usePageTitle } from "../state/usePageTitle";
+import { wide } from "./Lists";
 
 const longDay = new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long" });
 
@@ -17,7 +22,12 @@ export function Today() {
   const planned = totalEstimate([...view.due, ...view.carried]);
   const done = doneCounts(data, today, store.dayOf).today;
   const limit = data.settings.dailyLimit;
-  const overflow = view.due.slice(limit);
+  const { display, set } = useDisplay("today");
+  const filtering = activeFilters(display.filters) > 0;
+  const due = applyDisplay(view.due, display);
+  const carried = applyDisplay(view.carried, display);
+  // The offer to lighten the day counts every task, so it steps aside while a filter hides some.
+  const overflow = filtering ? [] : view.due.slice(limit);
   const tomorrow = addDays(today, 1);
   const firstVisit = data.tasks.length === 0;
   usePageTitle(left > 0 ? `${left} to zero` : "Today");
@@ -34,7 +44,7 @@ export function Today() {
   }
 
   return (
-    <div className="view">
+    <div className={wide(display.layout)}>
       <header className="zero-head">
         <p className="zero-head__count" data-zero={left === 0} aria-hidden="true">
           {left}
@@ -44,6 +54,7 @@ export function Today() {
           <p className="subtitle">{longDay.format(fromDay(today))}</p>
           <p style={{ marginTop: "0.15rem", fontWeight: 600 }}>{summary}</p>
         </div>
+        <DisplayMenu view="today" byList />
       </header>
 
       {done + left > 0 && (
@@ -101,7 +112,27 @@ export function Today() {
         </div>
       )}
 
-      <TaskRows tasks={view.due} showDay={false} quick="tomorrow" />
+      <FilterNote view="today" shown={due.length + carried.length} total={left} />
+
+      {display.layout === "list" ? (
+        <TaskRows tasks={due} showDay={false} quick="tomorrow" />
+      ) : (
+        <TaskLayout
+          layout={display.layout}
+          tasks={applyDisplay([...view.due, ...view.carried], display)}
+          done={applyDisplay(
+            data.tasks
+              .filter((t) => t.completedAt !== null && store.dayOf(t.completedAt) === today)
+              .sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0)),
+            { ...display, sort: "smart" },
+          )}
+          showDay={view.carried.length > 0}
+          showList
+          aboutToday
+          sort={display.sort}
+          onSort={(sort) => set({ ...display, sort })}
+        />
+      )}
 
       {overflow.length > 0 && (
         <div className="note">
@@ -125,24 +156,24 @@ export function Today() {
         </div>
       )}
 
-      {view.carried.length > 0 && (
+      {display.layout === "list" && carried.length > 0 && (
         <section className="section" aria-labelledby="carried-title">
           <div className="section__head">
             <h2 className="section__title" id="carried-title">
               Carried over
             </h2>
             <p className="section__note">
-              {view.carried.length} from earlier days. It happens.
+              {carried.length} from earlier days. It happens.
             </p>
           </div>
-          <TaskRows tasks={view.carried} quick="today" />
+          <TaskRows tasks={carried} quick="today" />
           <div className="section__actions">
             <button
               type="button"
               className="btn btn--quiet btn--small"
               onClick={() =>
                 store.setDue(
-                  view.carried.map((t) => t.id),
+                  carried.map((t) => t.id),
                   today,
                   "Moved to today.",
                 )
@@ -155,7 +186,7 @@ export function Today() {
               className="btn btn--quiet btn--small"
               onClick={() =>
                 store.setDue(
-                  view.carried.map((t) => t.id),
+                  carried.map((t) => t.id),
                   tomorrow,
                   "Moved to tomorrow.",
                 )
@@ -168,7 +199,7 @@ export function Today() {
               className="btn btn--quiet btn--small"
               onClick={() =>
                 store.setDue(
-                  view.carried.map((t) => t.id),
+                  carried.map((t) => t.id),
                   null,
                   "Dates removed. They are still in their lists.",
                 )

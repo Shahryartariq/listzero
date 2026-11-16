@@ -1,6 +1,7 @@
 /** The app's state transitions. Pure: ids and timestamps come in with the action. */
 
 import { addDays, nextOccurrence } from "./dates";
+import type { Display } from "./display";
 import { COLOR_NAME, type AppData, type ListColor, type Settings, type Task, type TaskList } from "./types";
 
 export type TaskPatch = Partial<Omit<Task, "id" | "createdAt" | "completedAt">>;
@@ -17,7 +18,8 @@ export type Action =
   | { type: "addList"; list: TaskList }
   | { type: "updateList"; id: string; name?: string; color?: ListColor }
   | { type: "deleteList"; id: string }
-  | { type: "updateSettings"; patch: Partial<Settings> };
+  | { type: "updateSettings"; patch: Partial<Settings> }
+  | { type: "setDisplay"; view: string; display: Display | null };
 
 export function reducer(state: AppData, action: Action): AppData {
   switch (action.type) {
@@ -110,10 +112,29 @@ export function reducer(state: AppData, action: Action): AppData {
         ...state,
         lists: state.lists.filter((l) => l.id !== action.id),
         tasks: state.tasks.map((t) => (t.listId === action.id ? { ...t, listId: null } : t)),
+        settings: {
+          ...state.settings,
+          // Forget how the deleted list was displayed, and stop filtering other views by it.
+          display: Object.fromEntries(
+            Object.entries(state.settings.display)
+              .filter(([key]) => key !== `list:${action.id}`)
+              .map(([key, d]) => [
+                key,
+                { ...d, filters: { ...d.filters, lists: d.filters.lists.filter((id) => id !== action.id) } },
+              ]),
+          ),
+        },
       };
 
     case "updateSettings":
       return { ...state, settings: { ...state.settings, ...action.patch } };
+
+    case "setDisplay": {
+      const display = { ...state.settings.display };
+      if (action.display) display[action.view] = action.display;
+      else delete display[action.view];
+      return { ...state, settings: { ...state.settings, display } };
+    }
   }
 }
 

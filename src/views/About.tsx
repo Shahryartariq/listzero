@@ -97,6 +97,12 @@ export function About() {
           Give a task a <strong>colour</strong> in its sheet to tell kinds of work apart at a glance.
         </li>
         <li>
+          <strong>Display</strong>, at the top of Inbox, Today, Upcoming and every list, changes how that view
+          looks: a list, cards, a board, a calendar or a table. It also sorts the tasks and can show only some of
+          them, for example only high priority or only quick ones. Filters hide tasks, they never delete them, and
+          Reset puts everything back.
+        </li>
+        <li>
           <strong>Done</strong> keeps what you finished, so a slow day still shows what you did.
         </li>
       </ul>
