@@ -1,0 +1,57 @@
+import type { Page } from "@playwright/test";
+
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/** A local day relative to today, as the app stores it. */
+export function day(offset = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+export interface SeedTask {
+  title: string;
+  due?: string | null;
+  priority?: number;
+  listId?: string | null;
+  notes?: string;
+  estimate?: number | null;
+  completedAt?: number | null;
+}
+
+/** Puts tasks in storage before the app starts. Runs once, so reloads keep what the test changed. */
+export async function seed(page: Page, tasks: SeedTask[], lists: { id: string; name: string }[] = []) {
+  const data = {
+    version: 1,
+    lists: lists.map((l, i) => ({ ...l, color: "moss", createdAt: i + 1 })),
+    tasks: tasks.map((t, i) => ({
+      id: `seed-${i + 1}`,
+      notes: "",
+      listId: null,
+      due: null,
+      time: null,
+      priority: 0,
+      estimate: null,
+      steps: [],
+      repeat: null,
+      createdAt: i + 1,
+      completedAt: null,
+      ...t,
+    })),
+    settings: { theme: "system", dailyLimit: 5, calm: false },
+  };
+  await page.addInitScript((json) => {
+    if (sessionStorage.getItem("seeded")) return;
+    sessionStorage.setItem("seeded", "1");
+    localStorage.setItem("listzero:v1", json);
+  }, JSON.stringify(data));
+}
+
+export async function addTask(page: Page, text: string) {
+  await page.getByRole("textbox", { name: "Add a task" }).fill(text);
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+}
+
+export const row = (page: Page, title: string) => page.locator("[data-task]", { hasText: title });
+
+export const isPhone = (page: Page) => (page.viewportSize()?.width ?? 1280) < 768;

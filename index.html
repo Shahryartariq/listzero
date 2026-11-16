@@ -2,13 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- <link rel="icon" type="image/svg+xml" href="/vite.svg" /> -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ZapList | Make It Done</title>
-    <link rel="icon" type="image/png" href="/src/assets/zaplist-favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Listzero: a free to-do list for busy minds</title>
+    <meta
+      name="description"
+      content="Listzero is a free to-do list built for minds that get overwhelmed. Type tasks the way you think, see one day at a time, break big things into steps, and get today to zero. No sign-up; your tasks stay in your browser."
+    />
+    <link rel="canonical" href="https://listzero.vercel.app/" />
+    <meta name="theme-color" content="#f1f2ec" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Listzero" />
+    <meta property="og:title" content="Listzero: a free to-do list for busy minds" />
+    <meta
+      property="og:description"
+      content="Type tasks the way you think, see one day at a time, and get today to zero. Free, no sign-up, works offline."
+    />
+    <meta property="og:url" content="https://listzero.vercel.app/" />
+    <meta property="og:image" content="https://listzero.vercel.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preload" href="/src/assets/fonts/atkinson-hyperlegible-next.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/src/assets/fonts/big-shoulders.woff2" as="font" type="font/woff2" crossorigin />
+    <script src="/theme.js"></script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <noscript>Listzero needs JavaScript to keep your tasks in this browser.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
