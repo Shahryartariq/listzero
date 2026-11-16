@@ -41,6 +41,33 @@ for (const scheme of ["light", "dark"] as const) {
   });
 }
 
+const PALETTES = ["chalk", "sage", "sky", "sand", "lilac", "rose"] as const;
+
+for (const palette of PALETTES) {
+  for (const scheme of ["light", "dark"] as const) {
+    test(`colour ${palette}, ${scheme}: Today, the task sheet and Settings pass WCAG checks`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await loadExamples(page);
+      await page.evaluate((name) => {
+        const data = JSON.parse(localStorage.getItem("listzero:v1") ?? "{}");
+        data.settings.palette = name;
+        localStorage.setItem("listzero:v1", JSON.stringify(data));
+      }, palette);
+      await page.reload();
+      await expect(page.locator("html")).toHaveAttribute("data-palette", palette);
+      await page.getByRole("textbox", { name: "Add a task" }).fill("Call the dentist tomorrow p1 #health 15m");
+      await expectNoViolations(page);
+      await page.locator("[data-row]", { hasText: "Write the first draft" }).click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await expectNoViolations(page);
+      await page.goto("/settings");
+      await expectNoViolations(page);
+      await page.goto("/focus");
+      await expectNoViolations(page);
+    });
+  }
+}
+
 test("no view scrolls sideways on a 360px screen", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 });
   await seed(page, [

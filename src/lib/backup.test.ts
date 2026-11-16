@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { STORAGE_KEY, load, parseBackup, readData, save, serialize } from "./backup";
 import { exampleData } from "./examples";
-import { emptyData } from "./types";
+import { DEFAULT_SETTINGS, emptyData } from "./types";
 
 describe("readData", () => {
   it("round-trips real data unchanged", () => {
@@ -39,7 +39,29 @@ describe("readData", () => {
     expect(data?.tasks[0]).toMatchObject({ title: "Keeps", listId: "work", due: null, time: null, priority: 0, estimate: null });
     expect(data?.tasks[1]).toMatchObject({ listId: null, due: "2026-11-16", time: null, repeat: null });
     expect(data?.tasks[2]?.steps).toEqual([{ id: "s1", title: "ok", done: true }]);
-    expect(data?.settings).toEqual({ theme: "system", dailyLimit: 5, calm: false });
+    expect(data?.settings).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it("keeps a saved look and gives older saves the defaults", () => {
+    const saved = readData({
+      version: 1,
+      tasks: [],
+      settings: { theme: "dark", palette: "sage", textSize: "large", quiet: true, dailyLimit: 3, calm: true },
+    });
+    expect(saved?.settings).toEqual({
+      theme: "dark",
+      palette: "sage",
+      textSize: "large",
+      quiet: true,
+      dailyLimit: 3,
+      calm: true,
+    });
+    // A file saved before palettes existed.
+    const older = readData({ version: 1, tasks: [], settings: { theme: "dark", dailyLimit: 4, calm: false } });
+    expect(older?.settings).toEqual({ ...DEFAULT_SETTINGS, theme: "dark", dailyLimit: 4 });
+    expect(readData({ version: 1, tasks: [], settings: { palette: "neon", textSize: "huge" } })?.settings).toEqual(
+      DEFAULT_SETTINGS,
+    );
   });
 
   it("caps very long text", () => {

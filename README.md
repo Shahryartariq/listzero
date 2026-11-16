@@ -20,14 +20,16 @@ Listzero is built around those three moments.
 | "I can't start" | Break a task into steps and the row shows only the next one. Focus puts a single task on the screen with a "just 2 minutes" timer. |
 | "I got nothing done" | Done keeps what you finished, counted by day. |
 
+![The six colour palettes: Chalk, Sage, Sky, Sand, Lilac and Rose, in light and dark](docs/palettes.png)
+
 <p>
-  <img src="docs/phone-zero-light.png" width="270" alt="Phone, light theme: Today at zero" />
-  <img src="docs/phone-dark.png" width="270" alt="Phone, dark theme: Today with five tasks" />
+  <img src="docs/phone-zero-light.png" width="270" alt="Phone, Sand palette: Today at zero" />
+  <img src="docs/phone-dark.png" width="270" alt="Phone, Lilac palette in dark mode: Today with five tasks" />
 </p>
 
-![Focus view in the dark theme: one task, its next step, and a short timer](docs/focus-dark.png)
+![Focus view in the Sky palette, dark mode: one task, its next step, and a short timer](docs/focus-dark.png)
 
-![The task sheet: steps, day, repeat, priority, length, list and notes](docs/task-light.png)
+![The task sheet in the Sage palette: steps, day, repeat, priority, length, list and notes](docs/task-light.png)
 
 ## Features
 
@@ -48,11 +50,16 @@ Listzero is built around those three moments.
 - **Focus:** one task at a time, "Not now" to skip without losing it, a 2-minute start timer.
 - **Undo** on finish, delete and every bulk move. Undo is withdrawn the moment anything else changes, so it can
   never roll back later work.
-- **Light and dark themes**, applied before first paint. Follows the device by default.
+- **Six calm colour palettes** (Chalk, Sage, Sky, Sand, Lilac, Rose), each with a light and a dark side. They are
+  muted on purpose: no pure white, no pure black, one soft accent each. Switching cross-fades the whole page, and
+  the saved look is applied before first paint. A unit test checks every palette for text contrast (AA or better).
+- **Less to look at when you want it:** a larger text size, rows that show only the task name, and an option to
+  turn the small animations off.
+- **Today's progress** as a bar that fills as you finish things.
 - **Phone layout** with a bottom tab bar; installable; works offline.
 - **Keyboard:** `Q` add, `/` search, `J` `K` move, `X` finish, `G` then `I` `T` `U` `D` `F` to jump.
 - **Backups:** save everything to a JSON file and load it in another browser.
-- **Accessible:** real buttons and dialogs, visible focus, WCAG AA contrast in both themes, reduced-motion support.
+- **Accessible:** real buttons and dialogs, visible focus, WCAG AA contrast in every palette, reduced-motion support.
   Text is set in Atkinson Hyperlegible Next, a typeface designed to keep similar letters apart.
 
 ### What it does not do
@@ -61,8 +68,11 @@ No accounts, so no sync between devices. No reminders or notifications. No shari
 
 ## How it is built
 
-- **React 19 + TypeScript (strict) + Vite 8**, React Router for views. No UI library, no CSS framework: one
-  hand-written stylesheet and a small set of inline SVG icons.
+- **React 19 + TypeScript (strict) + Vite 8**, React Router for views. No UI library, no CSS framework:
+  hand-written CSS and a small set of inline SVG icons.
+- **Themes are five colours each.** A palette names its paper, surface, ink, accent and accent text
+  (`src/styles/themes.css`); muted text and outlines are mixed from ink and paper with `color-mix()`, so every
+  palette gets the same contrast steps. Theme changes use the View Transitions API.
 - **Local-first.** State is a single reducer (`src/lib/store.ts`); every change is written to `localStorage` and
   mirrored to other open tabs. There is no server and no database, so there is nothing to pay for and nothing to
   leak.
@@ -82,7 +92,7 @@ src/
   state/       the store provider, theme and URL helpers
   components/  quick add, task row, task sheet, dialogs, shell
   views/       Today, Inbox, Upcoming, lists, Done, Focus, Search, Settings, About
-  styles/      app.css
+  styles/      themes.css (palettes), app.css (layout and components)
 tests/e2e/     Playwright tests
 ```
 
@@ -105,10 +115,10 @@ npm run test:e2e   # browser tests (Playwright); run `npx playwright install chr
 
 ## Tests
 
-- **Unit (Vitest):** the parser, date maths (month ends, leap days, repeats), the reducer and views, and backup
-  validation.
+- **Unit (Vitest):** the parser, date maths (month ends, leap days, repeats), the reducer and views, backup
+  validation, and the contrast of every palette in both modes.
 - **Browser (Playwright), on a desktop and a phone profile:** every flow above, plus axe accessibility checks on
-  every view in both themes, a no-sideways-scroll check at 360px, the Content-Security-Policy, the offline path,
+  every view and every palette, a no-sideways-scroll check at 360px, the Content-Security-Policy, the offline path,
   and two-tab sync.
 
 CI runs all of it on every pull request.

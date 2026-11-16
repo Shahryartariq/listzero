@@ -74,6 +74,7 @@ export function TaskRow({ task, showDay = true, showList = true, quick, leaving 
   };
 
   const late = !done && task.due !== null && task.due < store.today;
+  const details = !store.data.settings.quiet;
 
   return (
     <li className="row" data-done={done} data-leaving={leaving} data-task={leaving ? undefined : task.id} inert={leaving}>
@@ -98,32 +99,32 @@ export function TaskRow({ task, showDay = true, showList = true, quick, leaving 
               <span className="sr-only">,</span> ({stepsDone}/{task.steps.length})
             </span>
           )}
-          {showDay && task.due && (
+          {details && showDay && task.due && (
             <span className={late ? "meta meta--late" : "meta"}>
               <Icon name="calendar" size={15} />
               {describeDay(task.due, store.today)}
             </span>
           )}
-          {task.time && <span className="meta">{describeTime(task.time)}</span>}
-          {task.estimate !== null && (
+          {details && task.time && <span className="meta">{describeTime(task.time)}</span>}
+          {details && task.estimate !== null && (
             <span className="meta">
               <Icon name="clock" size={15} />
               {describeMinutes(task.estimate)}
             </span>
           )}
-          {task.repeat && (
+          {details && task.repeat && (
             <span className="meta">
               <Icon name="repeat" size={15} />
               {REPEAT_LABEL[task.repeat]}
             </span>
           )}
-          {list && (
+          {details && list && (
             <span className="meta">
               <span className="dot" style={{ "--dot": `var(--c-${list.color})` } as React.CSSProperties} />
               {list.name}
             </span>
           )}
-          {task.notes && (
+          {details && task.notes && (
             <span className="meta" title="Has notes">
               <Icon name="note" size={15} />
               <span className="sr-only">Has notes</span>

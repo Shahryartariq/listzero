@@ -4,9 +4,11 @@ import { isDay, isTime } from "./dates";
 import {
   DEFAULT_SETTINGS,
   LIST_COLORS,
+  PALETTES,
   emptyData,
   type AppData,
   type ListColor,
+  type Palette,
   type Priority,
   type Repeat,
   type Settings,
@@ -92,6 +94,9 @@ function readSettings(v: unknown): Settings {
   const limit = typeof v.dailyLimit === "number" && Number.isFinite(v.dailyLimit) ? Math.round(v.dailyLimit) : NaN;
   return {
     theme: v.theme === "light" || v.theme === "dark" ? v.theme : "system",
+    palette: PALETTES.includes(v.palette as Palette) ? (v.palette as Palette) : DEFAULT_SETTINGS.palette,
+    textSize: v.textSize === "large" ? "large" : "normal",
+    quiet: v.quiet === true,
     dailyLimit: limit >= 1 && limit <= 20 ? limit : DEFAULT_SETTINGS.dailyLimit,
     calm: v.calm === true,
   };

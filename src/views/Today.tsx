@@ -25,7 +25,8 @@ export function Today() {
   let summary: string;
   if (left > 0) {
     summary = `${left} to zero.`;
-    if (planned > 0) summary += ` About ${describeMinutes(planned)} planned.`;
+    if (done > 0) summary += ` ${done} done.`;
+    if (planned > 0) summary += ` About ${describeMinutes(planned)} left.`;
   } else if (done > 0) {
     summary = `Zero. ${done} done today.`;
   } else {
@@ -44,6 +45,22 @@ export function Today() {
           <p style={{ marginTop: "0.15rem", fontWeight: 600 }}>{summary}</p>
         </div>
       </header>
+
+      {done + left > 0 && (
+        <div
+          className="progress"
+          role="progressbar"
+          aria-label="Today’s progress"
+          aria-valuemin={0}
+          aria-valuemax={done + left}
+          aria-valuenow={done}
+          aria-valuetext={`${done} of ${done + left} done`}
+        >
+          {done > 0 && (
+            <span className="progress__fill" style={{ width: `${Math.round((done / (done + left)) * 100)}%` }} />
+          )}
+        </div>
+      )}
 
       <QuickAdd defaults={{ due: today }} staysHere={(t) => t.due === today} />
 

@@ -1,6 +1,6 @@
-/* Listzero. One stylesheet, written by hand.
-   The idea: a clean slate. Chalk-white paper by day, a slate board by night,
-   and one chalk-yellow mark reserved for the thing that matters right now. */
+/* Listzero. Written by hand.
+   Layout and components live here; colours live in themes.css.
+   The idea: a clean slate, soft shapes, and one accent reserved for what matters now. */
 
 @font-face {
   font-family: "Atkinson Next";
@@ -19,54 +19,18 @@
 }
 
 :root {
-  color-scheme: light;
-  --bg: #f1f2ec;
-  --surface: #fbfbf8;
-  --ink: #1c2a29;
-  --muted: #566462;
-  --line: #d3d8cf;
-  --line-strong: #8f9b94;
-  --mark: #f2cf4a;
-  --mark-ink: #1c2a29;
-  --p1: #b3352b;
-  --p2: #8f5d0c;
-  --p3: #2c62a5;
-  --c-slate: #5d6b69;
-  --c-brick: #b3352b;
-  --c-ochre: #a8700f;
-  --c-moss: #55772f;
-  --c-teal: #177a78;
-  --c-blue: #2c62a5;
-  --c-plum: #7c4a8a;
-  --backdrop: rgb(28 42 41 / 0.42);
-
   --text: "Atkinson Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
   --display: "Big Shoulders", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
-  --radius: 0.5rem;
+  --r-s: 0.5rem;
+  --r-m: 0.875rem;
+  --r-l: 1.25rem;
+  --radius: var(--r-m);
   --tap: 2.75rem;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --bg: #1b2726;
-  --surface: #233230;
-  --ink: #edefe6;
-  --muted: #a6b3ad;
-  --line: #34453f;
-  --line-strong: #6f837b;
-  --mark: #f2cf4a;
-  --mark-ink: #1b2726;
-  --p1: #f2978a;
-  --p2: #e9b860;
-  --p3: #93bbec;
-  --c-slate: #a6b3ad;
-  --c-brick: #f2978a;
-  --c-ochre: #e9b860;
-  --c-moss: #a9cf7c;
-  --c-teal: #6fd0cb;
-  --c-blue: #93bbec;
-  --c-plum: #d3a3e0;
-  --backdrop: rgb(8 14 13 / 0.62);
+:root[data-text="large"] {
+  font-size: 112.5%;
 }
 
 *,
@@ -128,7 +92,7 @@ a {
 :focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
-  border-radius: 0.25rem;
+  border-radius: var(--r-s);
 }
 
 ::selection {
@@ -154,7 +118,7 @@ a {
   padding: 0.6rem 0.9rem;
   background: var(--ink);
   color: var(--bg);
-  border-radius: var(--radius);
+  border-radius: 999px;
 }
 
 .skip:focus {
@@ -177,7 +141,7 @@ a {
   flex-direction: column;
   gap: 1.5rem;
   height: 100dvh;
-  padding: 1.5rem 1rem 1.25rem 1.25rem;
+  padding: 1.5rem 0.875rem 1.25rem 1rem;
   border-right: 1px solid var(--line);
   overflow-y: auto;
 }
@@ -215,19 +179,28 @@ a {
   align-items: center;
   gap: 0.7rem;
   min-height: 2.5rem;
-  padding: 0.35rem 0.6rem;
-  border-radius: var(--radius);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
   text-decoration: none;
   color: var(--ink);
+  transition: background-color 0.15s;
+}
+
+.nav__button {
+  width: 100%;
+  border: 0;
+  background: none;
+  text-align: left;
 }
 
 .nav__link:hover {
-  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  background: var(--hover);
 }
 
 .nav__link[aria-current="page"] {
-  background: var(--ink);
-  color: var(--bg);
+  background: var(--mark);
+  color: var(--mark-ink);
+  font-weight: 600;
 }
 
 .nav__link svg {
@@ -249,7 +222,7 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 0.6rem;
+  padding: 0 0.5rem 0 0.75rem;
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--muted);
@@ -321,7 +294,7 @@ a {
   grid-template-columns: auto minmax(0, 1fr);
   align-items: end;
   gap: 1.25rem;
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.25rem;
 }
 
 .zero-head__count {
@@ -339,12 +312,31 @@ a {
 .zero-head__count[data-zero="true"] {
   background: var(--mark);
   color: var(--mark-ink);
-  border-radius: 0.06em;
+  border-radius: 0.09em;
   padding: 0.07em 0.12em 0.02em;
+  animation: settle 0.5s var(--ease);
 }
 
 .zero-head__text {
   padding-bottom: 0.2rem;
+}
+
+/* How much of today is behind you. */
+.progress {
+  height: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.progress__fill {
+  display: block;
+  height: 100%;
+  min-width: 0.5rem;
+  border-radius: 999px;
+  background: var(--ink);
+  transition: width 0.5s var(--ease);
 }
 
 .section {
@@ -356,12 +348,11 @@ a {
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid var(--ink);
+  padding: 0 0.25rem 0.6rem;
 }
 
 .section__title {
-  font-size: 1.0625rem;
+  font-size: 1.125rem;
   font-weight: 700;
 }
 
@@ -385,17 +376,25 @@ a {
   justify-content: center;
   gap: 0.5rem;
   min-height: var(--tap);
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 1.15rem;
   border: 2px solid var(--ink);
-  border-radius: var(--radius);
+  border-radius: 999px;
   background: var(--ink);
   color: var(--bg);
   font-weight: 600;
   text-decoration: none;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    transform 0.1s;
 }
 
 .btn:hover {
   background: color-mix(in srgb, var(--ink) 86%, var(--bg));
+}
+
+.btn:active {
+  transform: scale(0.97);
 }
 
 .btn--quiet {
@@ -406,7 +405,7 @@ a {
 }
 
 .btn--quiet:hover {
-  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  background: var(--hover);
   border-color: var(--ink);
 }
 
@@ -447,13 +446,14 @@ a {
   width: var(--tap);
   height: var(--tap);
   border: 0;
-  border-radius: var(--radius);
+  border-radius: 50%;
   background: transparent;
   color: var(--muted);
+  transition: background-color 0.15s;
 }
 
 .icon-btn:hover {
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  background: var(--hover);
   color: var(--ink);
 }
 
@@ -473,10 +473,11 @@ a {
 .field {
   width: 100%;
   min-height: var(--tap);
-  padding: 0.55rem 0.75rem;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
+  padding: 0.55rem 0.85rem;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--r-m);
   background: var(--surface);
+  transition: border-color 0.15s;
 }
 
 .field:focus-visible {
@@ -510,15 +511,19 @@ textarea.field {
 
 .seg__opt {
   min-height: 2.5rem;
-  padding: 0.3rem 0.85rem;
-  border: 1px solid var(--line-strong);
+  padding: 0.3rem 0.95rem;
+  border: 1.5px solid var(--line-strong);
   border-radius: 999px;
   background: transparent;
   font-size: 0.9375rem;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
 }
 
 .seg__opt:hover {
   border-color: var(--ink);
+  background: var(--hover);
 }
 
 .seg__opt[aria-pressed="true"],
@@ -538,14 +543,18 @@ textarea.field {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.25rem 0.375rem 0.25rem 0.9rem;
-  border: 2px solid var(--ink);
-  border-radius: 0.75rem;
+  padding: 0.3rem 0.4rem 0.3rem 1.1rem;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 999px;
   background: var(--surface);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .add__box:focus-within {
-  box-shadow: 0 0 0 3px var(--mark);
+  border-color: var(--ink);
+  box-shadow: 0 0 0 4px var(--mark);
 }
 
 .add__input {
@@ -565,9 +574,9 @@ textarea.field {
 .add__send {
   flex: none;
   min-height: 2.5rem;
-  padding: 0.3rem 0.95rem;
+  padding: 0.3rem 1.1rem;
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: 999px;
   background: var(--ink);
   color: var(--bg);
   font-weight: 600;
@@ -584,7 +593,7 @@ textarea.field {
   align-items: center;
   gap: 0.375rem;
   min-height: 2.25rem;
-  padding: 0.4rem 0.15rem 0;
+  padding: 0.5rem 0.6rem 0;
   font-size: 0.9375rem;
   color: var(--muted);
 }
@@ -614,17 +623,14 @@ textarea.field {
 }
 
 .chip__off:hover {
-  background: rgb(28 42 41 / 0.16);
+  background: color-mix(in srgb, var(--mark-ink) 16%, transparent);
 }
 
 /* ---------- Task rows ---------- */
 
 .rows {
-  border-top: 1px solid var(--line);
-}
-
-.section .rows {
-  border-top: 0;
+  display: grid;
+  gap: 0.375rem;
 }
 
 .row {
@@ -632,8 +638,18 @@ textarea.field {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
-  gap: 0.25rem;
-  border-bottom: 1px solid var(--line);
+  gap: 0.125rem;
+  padding: 0 0.5rem 0 0.75rem;
+  border-radius: var(--r-m);
+  background: var(--surface);
+  transition:
+    box-shadow 0.15s,
+    opacity 0.3s;
+}
+
+.row:hover,
+.row:focus-within {
+  box-shadow: inset 0 0 0 1.5px var(--line-strong);
 }
 
 .zero {
@@ -657,7 +673,8 @@ textarea.field {
   color: inherit;
   transition:
     background-color 0.15s,
-    border-color 0.15s;
+    border-color 0.15s,
+    transform 0.15s var(--ease);
 }
 
 .zero[data-priority="1"] {
@@ -680,7 +697,8 @@ textarea.field {
 
 .zero:hover .zero__ring {
   border-color: var(--ink);
-  background: color-mix(in srgb, var(--ink) 10%, transparent);
+  background: var(--hover);
+  transform: scale(1.08);
 }
 
 .zero__check {
@@ -695,17 +713,18 @@ textarea.field {
 
 .zero[aria-checked="true"] .zero__check {
   opacity: 1;
+  animation: pop 0.3s var(--ease);
 }
 
 .row__body {
   display: block;
   width: 100%;
   min-height: 3.1rem;
-  padding: 0.7rem 0.25rem 0.7rem 0;
+  padding: 0.75rem 0.25rem 0.75rem 0;
   border: 0;
   background: none;
   text-align: left;
-  border-radius: 0.25rem;
+  border-radius: var(--r-s);
 }
 
 .row__title {
@@ -752,12 +771,12 @@ textarea.field {
 .row__side {
   position: absolute;
   top: 0;
-  right: 0;
+  right: 0.5rem;
   display: flex;
   align-items: center;
   height: 3.1rem;
   padding-left: 2rem;
-  background: linear-gradient(to right, transparent, var(--bg) 1.5rem);
+  background: linear-gradient(to right, transparent, var(--surface) 1.5rem);
   opacity: 0;
   pointer-events: none;
 }
@@ -781,7 +800,6 @@ textarea.field {
 
 .row[data-leaving="true"] {
   opacity: 0.45;
-  transition: opacity 0.3s;
 }
 
 .row[data-leaving="true"] .row__title {
@@ -821,10 +839,9 @@ textarea.field {
   justify-content: space-between;
   gap: 0.75rem;
   margin: 1.25rem 0 0;
-  padding: 0.85rem 1rem;
-  border: 1px solid var(--line-strong);
+  padding: 0.9rem 1rem 0.9rem 1.15rem;
   border-left: 0.4rem solid var(--mark);
-  border-radius: var(--radius);
+  border-radius: var(--r-m);
   background: var(--surface);
 }
 
@@ -838,24 +855,27 @@ dialog.sheet {
   width: min(37rem, calc(100vw - 2rem));
   max-height: min(46rem, calc(100dvh - 2rem));
   padding: 0;
-  border: 2px solid var(--ink);
-  border-radius: 0.875rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-l);
   background: var(--bg);
   color: var(--ink);
+  box-shadow: var(--shadow);
   overflow: hidden;
 }
 
 dialog.sheet[open] {
   display: flex;
   flex-direction: column;
+  animation: rise 0.22s var(--ease);
 }
 
 dialog.sheet::backdrop {
   background: var(--backdrop);
+  animation: fade 0.22s ease;
 }
 
 dialog.sheet--small {
-  width: min(26rem, calc(100vw - 2rem));
+  width: min(27rem, calc(100vw - 2rem));
 }
 
 .sheet__head {
@@ -863,8 +883,7 @@ dialog.sheet--small {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.5rem 0.5rem 0.5rem 1.25rem;
-  border-bottom: 1px solid var(--line);
+  padding: 0.5rem 0.5rem 0.25rem 1.25rem;
 }
 
 .sheet__head h2 {
@@ -881,7 +900,7 @@ dialog.sheet--small {
 }
 
 .sheet__body {
-  padding: 1.25rem;
+  padding: 0.75rem 1.25rem 1.25rem;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -996,10 +1015,12 @@ dialog.sheet--small {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.5rem 0.5rem 0.5rem 1rem;
-  border-radius: 0.75rem;
+  padding: 0.4rem 0.4rem 0.4rem 1.15rem;
+  border-radius: 999px;
   background: var(--ink);
   color: var(--bg);
+  box-shadow: var(--shadow);
+  animation: rise 0.25s var(--ease);
 }
 
 .toast__actions {
@@ -1010,9 +1031,9 @@ dialog.sheet--small {
 
 .toast__undo {
   min-height: 2.5rem;
-  padding: 0.3rem 0.85rem;
+  padding: 0.3rem 1rem;
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: 999px;
   background: var(--mark);
   color: var(--mark-ink);
   font-weight: 700;
@@ -1064,10 +1085,10 @@ dialog.sheet--small {
 .focus__next {
   display: inline-block;
   margin-top: 1.25rem;
-  padding: 0.35rem 0.7rem;
+  padding: 0.4rem 0.9rem;
   background: var(--mark);
   color: var(--mark-ink);
-  border-radius: 0.35rem;
+  border-radius: 999px;
   font-weight: 600;
 }
 
@@ -1118,7 +1139,7 @@ dialog.sheet--small {
 .prose h2 {
   margin-top: 2.25rem;
   padding-bottom: 0.4rem;
-  border-bottom: 2px solid var(--ink);
+  border-bottom: 1px solid var(--line-strong);
   font-size: 1.1875rem;
 }
 
@@ -1167,9 +1188,9 @@ dialog.sheet--small {
 
 kbd,
 .code {
-  padding: 0.08rem 0.4rem;
+  padding: 0.08rem 0.45rem;
   border: 1px solid var(--line-strong);
-  border-radius: 0.3rem;
+  border-radius: 0.4rem;
   background: var(--surface);
   font-family: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
   font-size: 0.875em;
@@ -1178,9 +1199,11 @@ kbd,
 
 .setting {
   display: grid;
-  gap: 0.6rem;
-  padding: 1.1rem 0;
-  border-bottom: 1px solid var(--line);
+  gap: 0.7rem;
+  margin-bottom: 0.5rem;
+  padding: 1.1rem 1.15rem;
+  border-radius: var(--r-m);
+  background: var(--surface);
 }
 
 .setting__name {
@@ -1237,6 +1260,115 @@ kbd,
   border-color: var(--ink);
 }
 
+.appearance {
+  display: grid;
+  gap: 1.4rem;
+}
+
+/* Palette picker: each preview carries its own palette attributes, so it shows its real colours. */
+.palettes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.25rem, 1fr));
+  gap: 0.5rem;
+}
+
+.palette {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.4rem 0.4rem 0.5rem;
+  border: 2px solid transparent;
+  border-radius: var(--r-m);
+  background: none;
+  font-size: 0.9375rem;
+  text-align: left;
+  transition: border-color 0.15s;
+}
+
+.palette:hover {
+  border-color: var(--line-strong);
+}
+
+.palette[aria-checked="true"] {
+  border-color: var(--ink);
+  font-weight: 700;
+}
+
+.palette__preview {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 3.25rem;
+  padding: 0 0.65rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.6rem;
+  background: var(--bg);
+}
+
+.palette__dot {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--mark);
+}
+
+.palette__lines {
+  display: grid;
+  flex: 1;
+  gap: 0.3rem;
+}
+
+.palette__lines::before,
+.palette__lines::after {
+  content: "";
+  height: 0.3rem;
+  border-radius: 999px;
+  background: var(--ink);
+}
+
+.palette__lines::after {
+  width: 60%;
+  background: var(--muted);
+}
+
+.palette__name {
+  padding-left: 0.25rem;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.6rem) scale(0.98);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.4);
+  }
+
+  60% {
+    transform: scale(1.25);
+  }
+}
+
+@keyframes settle {
+  from {
+    transform: scale(0.9);
+  }
+
+  60% {
+    transform: scale(1.04);
+  }
+}
+
 .search {
   position: relative;
   margin-bottom: 1rem;
@@ -1264,7 +1396,7 @@ kbd,
   }
 
   .main {
-    padding: 1.5rem 1rem calc(6.5rem + env(safe-area-inset-bottom));
+    padding: 1.5rem 0.875rem calc(7rem + env(safe-area-inset-bottom));
   }
 
   .title {
@@ -1275,25 +1407,29 @@ kbd,
     gap: 0.9rem;
   }
 
+  /* A floating bar, so the page colour runs to the bottom edge. */
   .tabs {
     position: fixed;
-    inset: auto 0 0 0;
+    inset: auto 0.6rem calc(0.6rem + env(safe-area-inset-bottom)) 0.6rem;
     z-index: 30;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    padding: 0.25rem 0.25rem calc(0.25rem + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--line-strong);
-    background: var(--bg);
+    align-items: center;
+    padding: 0.3rem;
+    border: 1px solid var(--line);
+    border-radius: 1.5rem;
+    background: var(--surface);
+    box-shadow: var(--shadow);
   }
 
   .tabs__link {
     display: grid;
     justify-items: center;
     gap: 0.1rem;
-    min-height: 3.25rem;
-    padding: 0.4rem 0.1rem 0.25rem;
+    min-height: 3.1rem;
+    padding: 0.4rem 0.1rem 0.3rem;
     border: 0;
-    border-radius: var(--radius);
+    border-radius: 1.2rem;
     background: none;
     color: var(--muted);
     font-size: 0.75rem;
@@ -1301,14 +1437,14 @@ kbd,
   }
 
   .tabs__link[aria-current="page"] {
-    color: var(--ink);
+    background: var(--mark);
+    color: var(--mark-ink);
     font-weight: 700;
   }
 
   .tabs__add {
     display: grid;
     place-items: center;
-    align-self: center;
     justify-self: center;
     width: 3rem;
     height: 3rem;
@@ -1319,7 +1455,7 @@ kbd,
   }
 
   .toasts {
-    bottom: calc(4.75rem + env(safe-area-inset-bottom));
+    bottom: calc(5.25rem + env(safe-area-inset-bottom));
   }
 
   dialog.sheet {
@@ -1327,8 +1463,8 @@ kbd,
     max-width: 100vw;
     max-height: 92dvh;
     margin: auto 0 0;
-    border-width: 2px 0 0;
-    border-radius: 1rem 1rem 0 0;
+    border-width: 1px 0 0;
+    border-radius: var(--r-l) var(--r-l) 0 0;
   }
 
   .focus {

@@ -105,6 +105,16 @@ test.describe("finishing", () => {
     await expect(row(page, "First")).toBeHidden();
   });
 
+  test("the Today bar shows how much of the day is done", async ({ page }) => {
+    await seed(page, [{ title: "One", due: day() }, { title: "Two", due: day() }, { title: "Three", due: day() }]);
+    await page.goto("/today");
+    const bar = page.getByRole("progressbar", { name: "Today’s progress" });
+    await expect(bar).toHaveAttribute("aria-valuetext", "0 of 3 done");
+    await page.getByRole("checkbox", { name: "Mark “One” as done" }).click();
+    await expect(bar).toHaveAttribute("aria-valuetext", "1 of 3 done");
+    await expect(page.getByText("2 to zero. 1 done.")).toBeVisible();
+  });
+
   test("finished tasks are kept in Done and can be reopened", async ({ page }) => {
     await seed(page, [{ title: "Send invoice", due: day() }]);
     await page.goto("/today");
@@ -408,6 +418,58 @@ test.describe("settings and data", () => {
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute("content", "#1b2726");
+  });
+
+  test("choosing a colour changes the whole look, and it is there before the app starts after a reload", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto("/settings");
+    await expect(page.locator("html")).toHaveAttribute("data-palette", "chalk");
+    await page.getByRole("radio", { name: "Sage" }).click();
+    await expect(page.getByRole("radio", { name: "Sage" })).toBeChecked();
+    await expect(page.locator("html")).toHaveAttribute("data-palette", "sage");
+    await expect(page.locator("body")).toHaveCSS("background-color", "rgb(236, 242, 232)");
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute("content", "#ecf2e8");
+
+    await page.getByRole("radio", { name: "Dark" }).click();
+    await expect(page.locator("body")).toHaveCSS("background-color", "rgb(25, 37, 30)");
+
+    await page.route("**/assets/*.js", (route) => route.abort());
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("data-palette", "sage");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute("content", "#19251e");
+  });
+
+  test("Appearance opens from the menu, and each swatch previews its own colours", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto(isPhone(page) ? "/menu" : "/today");
+    await page.getByRole("button", { name: "Appearance" }).click();
+    const sheet = page.getByRole("dialog", { name: "Appearance" });
+    await expect(sheet.getByRole("radio", { name: "Chalk" })).toBeChecked();
+    const preview = sheet.getByRole("radio", { name: "Lilac" }).locator(".palette__preview");
+    await expect(preview).toHaveCSS("background-color", "rgb(240, 238, 248)");
+    await sheet.getByRole("radio", { name: "Lilac" }).click();
+    await expect(page.locator("body")).toHaveCSS("background-color", "rgb(240, 238, 248)");
+    await sheet.getByRole("radio", { name: "Large" }).click();
+    await expect(page.locator("html")).toHaveAttribute("data-text", "large");
+    await expect(page.locator("html")).toHaveCSS("font-size", "18px");
+    await sheet.getByRole("button", { name: "Close" }).click();
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("data-palette", "lilac");
+    await expect(page.locator("html")).toHaveAttribute("data-text", "large");
+  });
+
+  test("“Name only” rows hide the details but keep the next step", async ({ page }) => {
+    await page.goto("/today");
+    await page.getByRole("button", { name: "Load example tasks" }).click();
+    const draft = row(page, "Write the first draft of the talk");
+    await expect(draft).toContainText("45m");
+    await page.goto("/settings");
+    await page.getByRole("radio", { name: "Name only" }).click();
+    await page.goto("/today");
+    await expect(draft).toContainText("Next: Write the opening story");
+    await expect(draft).not.toContainText("45m");
+    await expect(draft).not.toContainText("Work");
   });
 
   test("“Match my device” follows the system setting live", async ({ page }) => {
