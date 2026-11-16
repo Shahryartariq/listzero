@@ -9,6 +9,10 @@ updates:
         dependency-type: development
       app:
         dependency-type: production
+    ignore:
+      # typescript-eslint does not support TypeScript 7 yet; the bump broke installs.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
