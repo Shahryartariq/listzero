@@ -22,6 +22,8 @@ export function exampleData(today: string, now: number, base: AppData): AppData 
     estimate: null,
     steps: [],
     repeat: null,
+    color: null,
+    doing: false,
     createdAt: now + n++,
     completedAt: null,
     ...extra,
@@ -29,7 +31,13 @@ export function exampleData(today: string, now: number, base: AppData): AppData 
   const steps = (...titles: string[]) => titles.map((title, i) => ({ id: newId(), title, done: i === 0 }));
 
   const tasks: Task[] = [
-    task("Send the invoice for the October project", { listId: work.id, due: today, priority: 1, estimate: 15 }),
+    task("Send the invoice for the October project", {
+      listId: work.id,
+      due: today,
+      priority: 1,
+      estimate: 15,
+      color: "brick",
+    }),
     task("Book a dentist appointment", {
       listId: home.id,
       due: today,
@@ -42,9 +50,11 @@ export function exampleData(today: string, now: number, base: AppData): AppData 
       due: today,
       priority: 2,
       estimate: 45,
+      doing: true,
+      color: "blue",
       steps: steps("Open the outline", "Write the opening story", "Three main points", "Closing slide"),
     }),
-    task("Water the plants", { listId: home.id, due: today, repeat: "weekly", estimate: 5 }),
+    task("Water the plants", { listId: home.id, due: today, repeat: "weekly", estimate: 5, color: "moss" }),
     task("Reply to Hamza about the weekend", { due: addDays(today, -2), estimate: 5 }),
     task("Pay the electricity bill", { listId: money.id, due: addDays(today, 1), priority: 1, estimate: 5 }),
     task("Review pull requests", { listId: work.id, due: addDays(today, 1), time: "10:00", repeat: "weekdays", estimate: 30 }),

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { toDay } from "./dates";
 import {
+  boardView,
   compareTasks,
   doneCounts,
   doneView,
@@ -32,6 +33,8 @@ function task(title: string, extra: Partial<Task> = {}): Task {
     estimate: null,
     steps: [],
     repeat: null,
+    color: null,
+    doing: false,
     createdAt: seq,
     completedAt: null,
     ...extra,
@@ -95,6 +98,16 @@ describe("reducer", () => {
     expect(state.tasks[0]?.listId).toBeNull();
   });
 
+  it("a finished task is no longer in progress, including a repeating one", () => {
+    const a = task("A", { doing: true });
+    const done = reducer(data([a]), { type: "completeTask", id: a.id, at: 9, today: TODAY, logId: "x" });
+    expect(done.tasks[0]).toMatchObject({ doing: false, completedAt: 9 });
+
+    const b = task("B", { doing: true, due: TODAY, repeat: "daily" });
+    const next = reducer(data([b]), { type: "completeTask", id: b.id, at: 9, today: TODAY, logId: "log" });
+    expect(next.tasks.map((t) => t.doing)).toEqual([false, false]);
+  });
+
   it("clears only finished tasks", () => {
     const state = reducer(data([task("A"), task("B", { completedAt: 3 })]), { type: "clearDone" });
     expect(state.tasks.map((t) => t.title)).toEqual(["A"]);
@@ -111,6 +124,46 @@ describe("views", () => {
       task("p2", { priority: 2 }),
     ];
     expect([...tasks].sort(compareTasks).map((t) => t.title)).toEqual(["p1 early", "p1 late", "p2", "p3", "none"]);
+  });
+
+  it("puts tasks in progress first", () => {
+    const tasks = [task("p1", { priority: 1 }), task("doing", { doing: true }), task("plain")];
+    expect([...tasks].sort(compareTasks).map((t) => t.title)).toEqual(["doing", "p1", "plain"]);
+  });
+
+  it("sorts the board into three columns for the chosen scope", () => {
+    const now = new Date(2026, 10, 16, 12).getTime();
+    const yesterday = new Date(2026, 10, 15, 12).getTime();
+    const all = data(
+      [
+        task("due today", { due: TODAY }),
+        task("urgent today", { due: TODAY, priority: 1 }),
+        task("carried", { due: "2026-11-10", doing: true }),
+        task("tomorrow", { due: "2026-11-17" }),
+        task("inbox idea"),
+        task("work thing", { listId: "work", doing: true }),
+        task("done now", { completedAt: now, listId: "work" }),
+        task("done earlier today", { completedAt: now - 1000 }),
+        task("done yesterday", { completedAt: yesterday, listId: "work" }),
+      ],
+      [list("work", "Work")],
+    );
+    const titles = (scope: string) => {
+      const v = boardView(all, scope, TODAY, dayOf);
+      return [v.todo, v.doing, v.done].map((col) => col.map((t) => t.title));
+    };
+    expect(titles("today")).toEqual([["urgent today", "due today"], ["carried"], ["done now", "done earlier today"]]);
+    expect(titles("inbox")).toEqual([
+      ["urgent today", "due today", "tomorrow", "inbox idea"],
+      ["carried"],
+      ["done earlier today"],
+    ]);
+    expect(titles("work")).toEqual([[], ["work thing"], ["done now"]]);
+    expect(titles("all")).toEqual([
+      ["urgent today", "due today", "tomorrow", "inbox idea"],
+      ["carried", "work thing"],
+      ["done now", "done earlier today"],
+    ]);
   });
 
   it("splits Today into due and carried over, and leaves out finished tasks", () => {
@@ -200,6 +253,8 @@ describe("search and lists", () => {
     expect(searchTasks(data(tasks, lists), "october INVOICE").map((t) => t.title)).toEqual(["Send invoice"]);
     expect(searchTasks(data(tasks, lists), "side").map((t) => t.title)).toEqual(["Plan launch"]);
     expect(searchTasks(data(tasks, lists), "   ")).toEqual([]);
+    const coloured = [task("Tax form", { color: "blue" }), task("Blue pen"), task("Other", { color: "moss" })];
+    expect(searchTasks(data(coloured), "blue").map((t) => t.title)).toEqual(["Tax form", "Blue pen"]);
   });
 
   it("matches a typed list name loosely", () => {

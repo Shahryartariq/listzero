@@ -77,7 +77,14 @@ export function TaskRow({ task, showDay = true, showList = true, quick, leaving 
   const details = !store.data.settings.quiet;
 
   return (
-    <li className="row" data-done={done} data-leaving={leaving} data-task={leaving ? undefined : task.id} inert={leaving}>
+    <li
+      className="row"
+      data-done={done}
+      data-leaving={leaving}
+      data-color={task.color ?? undefined}
+      data-task={leaving ? undefined : task.id}
+      inert={leaving}
+    >
       <Zero
         checked={done || leaving}
         priority={done || leaving ? 0 : task.priority}
@@ -93,6 +100,7 @@ export function TaskRow({ task, showDay = true, showList = true, quick, leaving 
       >
         <span className="row__title">{task.title}</span>
         <span className="row__meta">
+          {task.doing && !done && <span className="meta meta--doing">Doing</span>}
           {next && (
             <span className="meta meta--next">
               Next: {next}

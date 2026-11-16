@@ -64,6 +64,24 @@ describe("readData", () => {
     );
   });
 
+  it("keeps a task's colour and progress, and drops values it does not know", () => {
+    const data = readData({
+      version: 1,
+      tasks: [
+        { id: "a", title: "Blue and doing", color: "blue", doing: true },
+        { id: "b", title: "Bad colour", color: "neon", doing: "yes" },
+        { id: "c", title: "Finished cannot be doing", doing: true, completedAt: 1000 },
+        { id: "d", title: "Saved before colours existed" },
+      ],
+    });
+    expect(data?.tasks.map((t) => [t.color, t.doing])).toEqual([
+      ["blue", true],
+      [null, false],
+      [null, false],
+      [null, false],
+    ]);
+  });
+
   it("caps very long text", () => {
     const data = readData({ version: 1, tasks: [{ id: "a", title: "x".repeat(1000), notes: "n".repeat(9000) }] });
     expect(data?.tasks[0]?.title).toHaveLength(300);

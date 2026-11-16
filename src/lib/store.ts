@@ -1,7 +1,7 @@
 /** The app's state transitions. Pure: ids and timestamps come in with the action. */
 
 import { addDays, nextOccurrence } from "./dates";
-import type { AppData, ListColor, Settings, Task, TaskList } from "./types";
+import { COLOR_NAME, type AppData, type ListColor, type Settings, type Task, type TaskList } from "./types";
 
 export type TaskPatch = Partial<Omit<Task, "id" | "createdAt" | "completedAt">>;
 
@@ -51,11 +51,13 @@ export function reducer(state: AppData, action: Action): AppData {
           ...task,
           id: action.logId,
           repeat: null,
+          doing: false,
           completedAt: action.at,
           steps: task.steps.map((s) => ({ ...s })),
         };
         const moved: Task = {
           ...task,
+          doing: false,
           due: nextOccurrence(task.due, task.repeat, action.today),
           steps: task.steps.map((s) => ({ ...s, done: false })),
         };
@@ -63,7 +65,7 @@ export function reducer(state: AppData, action: Action): AppData {
       }
       return {
         ...state,
-        tasks: state.tasks.map((t) => (t.id === action.id ? { ...t, completedAt: action.at } : t)),
+        tasks: state.tasks.map((t) => (t.id === action.id ? { ...t, doing: false, completedAt: action.at } : t)),
       };
     }
 
@@ -115,8 +117,9 @@ export function reducer(state: AppData, action: Action): AppData {
   }
 }
 
-/** Open tasks first by priority (1 is highest, 0 means none), then by time of day, then oldest first. */
+/** Tasks in progress first, then by priority (1 is highest, 0 means none), then time of day, then oldest first. */
 export function compareTasks(a: Task, b: Task): number {
+  if (a.doing !== b.doing) return a.doing ? -1 : 1;
   const pa = a.priority === 0 ? 4 : a.priority;
   const pb = b.priority === 0 ? 4 : b.priority;
   if (pa !== pb) return pa - pb;
@@ -219,7 +222,13 @@ export function searchTasks(data: AppData, query: string): Task[] {
   const listNames = new Map(data.lists.map((l) => [l.id, l.name.toLowerCase()]));
   return data.tasks
     .filter((t) => {
-      const haystack = [t.title, t.notes, ...t.steps.map((s) => s.title), listNames.get(t.listId ?? "") ?? ""]
+      const haystack = [
+        t.title,
+        t.notes,
+        ...t.steps.map((s) => s.title),
+        listNames.get(t.listId ?? "") ?? "",
+        t.color ? COLOR_NAME[t.color] : "",
+      ]
         .join("\n")
         .toLowerCase();
       return words.every((w) => haystack.includes(w));
@@ -245,4 +254,44 @@ export function findList(lists: TaskList[], name: string): TaskList | null {
     lists.find((l) => l.name.toLowerCase().startsWith(wanted)) ??
     null
   );
+}
+
+export type BoardColumn = "todo" | "doing" | "done";
+
+/** Where the board looks: today's tasks, the Inbox, everything open, or one list (its id). */
+export type BoardScope = "today" | "inbox" | "all" | (string & {});
+
+export interface BoardView {
+  todo: Task[];
+  doing: Task[];
+  /** Finished today, newest first. Older finished tasks live in Done. */
+  done: Task[];
+}
+
+export function boardView(
+  data: AppData,
+  scope: BoardScope,
+  today: string,
+  dayOf: (timestamp: number) => string,
+): BoardView {
+  const inScope = (t: Task): boolean => {
+    if (scope === "all") return true;
+    if (scope === "inbox") return t.listId === null;
+    if (scope === "today") return t.completedAt !== null || (t.due !== null && t.due <= today);
+    return t.listId === scope;
+  };
+  const view: BoardView = { todo: [], doing: [], done: [] };
+  for (const t of data.tasks) {
+    if (!inScope(t)) continue;
+    if (t.completedAt !== null) {
+      if (dayOf(t.completedAt) === today) view.done.push(t);
+    } else if (t.doing) view.doing.push(t);
+    else view.todo.push(t);
+  }
+  // Today is one day, so rank alone decides; wider scopes read soonest first.
+  const order = scope === "today" ? compareTasks : compareByDayThenRank;
+  view.todo.sort(order);
+  view.doing.sort(order);
+  view.done.sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0));
+  return view;
 }

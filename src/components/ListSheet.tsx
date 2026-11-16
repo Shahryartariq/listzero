@@ -1,16 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { LIST_COLORS, type ListColor, type TaskList } from "../lib/types";
+import { COLOR_NAME, LIST_COLORS, type ListColor, type TaskList } from "../lib/types";
 import { Sheet } from "./Sheet";
-
-const COLOR_NAME: Record<ListColor, string> = {
-  slate: "Slate",
-  brick: "Brick",
-  ochre: "Ochre",
-  moss: "Moss",
-  teal: "Teal",
-  blue: "Blue",
-  plum: "Plum",
-};
 
 interface ListSheetProps {
   list?: TaskList;
