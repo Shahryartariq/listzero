@@ -70,6 +70,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
+        // A new version takes over as soon as it is installed, instead of waiting for every tab to close.
+        // (The plugin only turns these on by itself when it also injects the registration script.)
+        skipWaiting: true,
+        clientsClaim: true,
         globIgnores: ["**/og.png", "**/*-latin-ext-*.woff2", "**/theme.js", "**/google*.html"],
         navigateFallback: "/index.html",
         // Real files (robots.txt, sitemap.xml, llms.txt, .well-known/…) are not app screens.

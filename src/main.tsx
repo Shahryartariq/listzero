@@ -13,15 +13,19 @@ createRoot(document.getElementById("root")!).render(
 // Once the first screen is up and the browser is idle, fetch the parts that load on demand,
 // so opening them later is instant and works offline even before the service worker has cached them.
 const warm = () => {
-  void import("./components/TaskSheet");
-  void import("./components/layouts/BoardColumns");
-  void import("./components/layouts/CalendarLayout");
-  void import("./components/layouts/TableLayout");
-  void import("./views/Board");
-  void import("./views/Done");
-  void import("./views/Focus");
-  void import("./views/Search");
-  void import("./views/Settings");
+  const parts = [
+    () => import("./components/TaskSheet"),
+    () => import("./components/layouts/BoardColumns"),
+    () => import("./components/layouts/CalendarLayout"),
+    () => import("./components/layouts/TableLayout"),
+    () => import("./views/Board"),
+    () => import("./views/Done"),
+    () => import("./views/Focus"),
+    () => import("./views/Search"),
+    () => import("./views/Settings"),
+  ];
+  // Best effort: a part that cannot be fetched now is fetched when it is opened.
+  for (const part of parts) part().catch(() => undefined);
 };
 if ("requestIdleCallback" in window) window.requestIdleCallback(warm, { timeout: 5000 });
 else setTimeout(warm, 2500);

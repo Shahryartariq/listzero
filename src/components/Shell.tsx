@@ -1,7 +1,8 @@
-import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { countScreen } from "../lib/analytics";
 import { downloadText } from "../lib/download";
+import { lazyView } from "../lib/lazyView";
 import { inboxView, todayView } from "../lib/store";
 import { useStore } from "../state/store-context";
 import { useSeo } from "../state/useSeo";
@@ -9,10 +10,11 @@ import { useTheme } from "../state/useTheme";
 import { AppearanceSheet } from "./Appearance";
 import { Icon, type IconName } from "./Icon";
 import { ListSheet } from "./ListSheet";
+import { ScreenBoundary } from "./ScreenBoundary";
 import { Toasts } from "./Toasts";
 
 // The task sheet is the largest single component and is only needed once a task is opened.
-const TaskSheet = lazy(() => import("./TaskSheet").then((m) => ({ default: m.TaskSheet })));
+const TaskSheet = lazyView(() => import("./TaskSheet").then((m) => m.TaskSheet));
 
 function isTyping(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -232,9 +234,11 @@ export function Shell() {
             </div>
           </div>
         )}
-        <Suspense fallback={null}>
-          <Outlet context={{ openNewList: () => setNewList(true), openAppearance: () => setAppearance(true) }} />
-        </Suspense>
+        <ScreenBoundary key={location.pathname}>
+          <Suspense fallback={null}>
+            <Outlet context={{ openNewList: () => setNewList(true), openAppearance: () => setAppearance(true) }} />
+          </Suspense>
+        </ScreenBoundary>
       </main>
 
       <nav className="tabs" aria-label="Main">

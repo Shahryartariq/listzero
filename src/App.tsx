@@ -1,6 +1,6 @@
-import { lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { Shell } from "./components/Shell";
+import { lazyView } from "./lib/lazyView";
 import { StoreProvider } from "./state/StoreProvider";
 import { About } from "./views/About";
 import { Inbox, ListView, Upcoming } from "./views/Lists";
@@ -10,11 +10,11 @@ import { Today } from "./views/Today";
 // The views most visits never open are loaded when asked for (and fetched ahead in idle time,
 // see main.tsx), so the first screen downloads and parses less. "How it works" stays in the main
 // download: it is a page people and search engines land on directly, and its text is the first paint.
-const Board = lazy(() => import("./views/Board").then((m) => ({ default: m.Board })));
-const Done = lazy(() => import("./views/Done").then((m) => ({ default: m.Done })));
-const Focus = lazy(() => import("./views/Focus").then((m) => ({ default: m.Focus })));
-const Search = lazy(() => import("./views/Search").then((m) => ({ default: m.Search })));
-const Settings = lazy(() => import("./views/Settings").then((m) => ({ default: m.Settings })));
+const Board = lazyView(() => import("./views/Board").then((m) => m.Board));
+const Done = lazyView(() => import("./views/Done").then((m) => m.Done));
+const Focus = lazyView(() => import("./views/Focus").then((m) => m.Focus));
+const Search = lazyView(() => import("./views/Search").then((m) => m.Search));
+const Settings = lazyView(() => import("./views/Settings").then((m) => m.Settings));
 
 export function App() {
   return (
