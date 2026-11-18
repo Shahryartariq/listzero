@@ -1,4 +1,4 @@
-import { createHmac } from "node:crypto";
+import { createHmac, randomUUID } from "node:crypto";
 import { expect, test, type APIRequestContext, type Browser, type Page } from "@playwright/test";
 import { addTask, day, row, seed } from "./helpers";
 
@@ -18,7 +18,7 @@ interface Person {
 }
 
 const person = (label = "sam"): Person => {
-  const tag = `${Date.now().toString(36)}${(counter++).toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  const tag = `${Date.now().toString(36)}${(counter++).toString(36)}${randomUUID().slice(0, 4)}`;
   return { email: `${label}-${tag}@listzero.test`, username: `${label}_${tag}`, password: PASSWORD };
 };
 
@@ -404,7 +404,7 @@ test.describe("admins", () => {
     await expect(page.getByRole("heading", { name: "People" })).toBeVisible();
     await page.getByRole("searchbox", { name: "Search by email" }).fill(target.email);
     await page.getByRole("button", { name: "Search" }).click();
-    const line = page.getByRole("row", { name: new RegExp(target.email.replace(/[.+]/g, "\\$&")) });
+    const line = page.getByRole("row", { name: target.email });
     await expect(line).toContainText("Active");
 
     await line.getByRole("button", { name: "Suspend" }).click();

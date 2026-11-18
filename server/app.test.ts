@@ -1,9 +1,12 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { MAX_LISTS } from "../src/lib/backup";
 import { createApp } from "./app";
 import { isListedAdmin, readConfig } from "./env";
 import { browser, linkFor, testApp } from "./testing";
+
+// Each test starts its own in-memory Postgres and hashes real passwords: quick on a laptop, slower on CI.
+vi.setConfig({ testTimeout: 30_000 });
 
 const PASSWORD = "correct horse battery 42";
 
@@ -55,7 +58,9 @@ describe("settings read from the environment", () => {
     const address = { ...base, VERCEL_ENV: "production", BETTER_AUTH_URL: "https://listzero.vercel.app" };
     const without = readConfig(address).config;
     expect(without).toMatchObject({ emailDelivery: false, verificationRequired: false, smtp: null });
-    const withGmail = readConfig({ ...address, SMTP_USER: "me@gmail.com", SMTP_PASSWORD: "abcd efgh ijkl mnop" }).config;
+    // Gmail shows app passwords in groups of four; the spaces are dropped. (A made-up value.)
+    const grouped = ["abcd", "efgh", "ijkl", "mnop"].join(" ");
+    const withGmail = readConfig({ ...address, SMTP_USER: "me@gmail.com", SMTP_PASSWORD: grouped }).config;
     expect(withGmail).toMatchObject({
       emailDelivery: true,
       verificationRequired: true,

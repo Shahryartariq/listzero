@@ -3,10 +3,13 @@
  * Whole devices syncing through the real API: the app's sync code (src/sync) on one side, the
  * server's on the other, a real Postgres in between. No browser, so it runs in a second.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { emptyData, type AppData, type Task } from "../src/lib/types";
 import { pendingCount, syncOnce, SyncFailure, type SyncIO, type SyncReply } from "../src/sync/run";
 import { browser, linkFor, testApp } from "./testing";
+
+// Each test starts its own in-memory Postgres and hashes real passwords: quick on a laptop, slower on CI.
+vi.setConfig({ testTimeout: 30_000 });
 
 const PASSWORD = "correct horse battery 42";
 
