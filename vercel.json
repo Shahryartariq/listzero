@@ -3,7 +3,11 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/(today|inbox|upcoming|board|done|focus|search|settings|menu)",
+      "source": "/api/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/(today|inbox|upcoming|board|done|focus|search|settings|menu|sign-in|sign-up|verify-email|forgot-password|reset-password|two-factor|account|admin)",
       "destination": "/index.html"
     },
     {
@@ -83,7 +87,26 @@
           "value": "noindex"
         }
       ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
     }
   ],
-  "trailingSlash": false
+  "trailingSlash": false,
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 30,
+      "includeFiles": "api/_bundle.js"
+    }
+  }
 }

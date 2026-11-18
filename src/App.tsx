@@ -16,6 +16,17 @@ const Focus = lazyView(() => import("./views/Focus").then((m) => m.Focus));
 const Search = lazyView(() => import("./views/Search").then((m) => m.Search));
 const Settings = lazyView(() => import("./views/Settings").then((m) => m.Settings));
 
+// Accounts are optional, so nothing about them is in the main download.
+const auth = () => import("./views/account/Auth");
+const SignIn = lazyView(() => auth().then((m) => m.SignIn));
+const SignUp = lazyView(() => auth().then((m) => m.SignUp));
+const VerifyEmail = lazyView(() => auth().then((m) => m.VerifyEmail));
+const ForgotPassword = lazyView(() => auth().then((m) => m.ForgotPassword));
+const ResetPassword = lazyView(() => auth().then((m) => m.ResetPassword));
+const TwoFactor = lazyView(() => auth().then((m) => m.TwoFactor));
+const Account = lazyView(() => import("./views/account/Account").then((m) => m.Account));
+const Admin = lazyView(() => import("./views/account/Admin").then((m) => m.Admin));
+
 export function App() {
   return (
     <StoreProvider>
@@ -34,6 +45,14 @@ export function App() {
             <Route path="settings" element={<Settings />} />
             <Route path="about" element={<About />} />
             <Route path="menu" element={<Menu />} />
+            <Route path="sign-in" element={<SignIn />} />
+            <Route path="sign-up" element={<SignUp />} />
+            <Route path="verify-email" element={<VerifyEmail />} />
+            <Route path="forgot-password" element={<ForgotPassword />} />
+            <Route path="reset-password" element={<ResetPassword />} />
+            <Route path="two-factor" element={<TwoFactor />} />
+            <Route path="account" element={<Account />} />
+            <Route path="admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

@@ -10,3 +10,8 @@ test-results
 playwright-report
 *.tsbuildinfo
 .vercel
+
+# The API bundle is built from server/ (scripts/build-api.mjs)
+api/_bundle.js
+# Local database files, if PGLITE_DIR is used
+.pglite

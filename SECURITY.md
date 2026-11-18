@@ -13,8 +13,13 @@ You should hear back within a week. Please give a fix a reasonable time to ship 
 
 ## What is in scope
 
-Listzero is a static web app. It has no server, no accounts and no database: tasks are kept in the visitor's
-browser (`localStorage`). The things worth reporting are therefore mostly:
+Listzero is a web app that keeps tasks in the visitor's browser (`localStorage`). Accounts are optional: with
+one, a small API (`server/`, served at `/api`) signs people in with Better Auth and syncs their tasks through
+Postgres. The things worth reporting are mostly:
+
+- reading or changing another account's tasks, or signing in as someone else
+- getting past email confirmation, two-factor, rate limits, a suspension, or the admin role's limits
+- a sign-in, reset or confirmation link that can be reused, guessed or sent somewhere else
 
 - script injection through task text, list names, a backup file or the address bar
 - anything that lets one site or tab read or change another visitor's saved tasks
@@ -33,10 +38,20 @@ browser (`localStorage`). The things worth reporting are therefore mostly:
   validator (`src/lib/backup.ts`) that checks and clamps every field. Backup files over 5 MB are refused.
 - **Analytics:** addresses and titles are replaced with fixed ones before anything is sent
   (`src/lib/analytics.ts`), and it is off under Do Not Track and Global Privacy Control.
+- **Accounts:** passwords are hashed by Better Auth (scrypt) and checked against known leaks; sessions are
+  `HttpOnly`, `Secure`, `SameSite=Lax` cookies; requests from other origins are refused; sign-in, sign-up and
+  reset are rate-limited per address in the database; email must be confirmed before the first sign-in; reset
+  and confirmation links expire. The admin role can list, suspend, sign out and delete accounts, and is refused
+  impersonation and setting someone's password. Admins are named in `ADMIN_EMAILS` and only get the role once
+  that email is confirmed.
+- **Sync:** every request needs a session and a same-origin `Origin`; every task and list is checked by the same
+  validator as backup files; an account is capped at 5,000 tasks and 100 lists, and a request body at 2 MB.
+  Rows are always read and written by the signed-in account's id.
 - **Supply chain:** GitHub Actions are pinned to commit hashes and run with a read-only token; Dependabot
   opens update PRs monthly; CI runs `npm audit` on what ships; CodeQL scans the code.
 
 ## What it does not protect against
 
-Tasks are stored unencrypted in the browser. Anyone with access to the device and browser profile, and any
+Tasks are stored unencrypted in the browser, and for accounts unencrypted in the database (the database is
+encrypted at rest by the host). Anyone with access to the device and browser profile, and any
 browser extension with access to the page, can read them. Do not put secrets in a to-do list.

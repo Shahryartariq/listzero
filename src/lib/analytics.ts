@@ -25,6 +25,14 @@ const SCREENS: Record<string, string> = {
   "/about": "How it works",
   "/menu": "Menu",
   "/list": "List",
+  "/sign-in": "Sign in",
+  "/sign-up": "Create an account",
+  "/verify-email": "Confirm your email",
+  "/forgot-password": "Reset your password",
+  "/reset-password": "Choose a new password",
+  "/two-factor": "Two-factor code",
+  "/account": "Account",
+  "/admin": "People",
   "/not-found": "Page not found",
 };
 

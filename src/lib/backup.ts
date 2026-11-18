@@ -23,7 +23,7 @@ export const MAX_TASKS = 5000;
 export const MAX_TITLE = 300;
 export const MAX_NOTES = 5000;
 const MAX_STEPS = 50;
-const MAX_LISTS = 100;
+export const MAX_LISTS = 100;
 const REPEATS: Repeat[] = ["daily", "weekdays", "weekly", "monthly", "yearly"];
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -48,7 +48,12 @@ function readStep(v: unknown): Step | null {
   return { id: stepId, title, done: v.done === true };
 }
 
-function readTask(v: unknown, listIds: Set<string>): Task | null {
+/**
+ * A task from untrusted input, with every field checked and clamped, or null when it is not a task.
+ * Pass the known list ids to drop a link to a list that does not exist; pass null to keep any
+ * well-formed list id (the server checks one item at a time and cannot know the others).
+ */
+export function readTask(v: unknown, listIds: Set<string> | null): Task | null {
   if (!isObject(v)) return null;
   const taskId = id(v.id);
   const title = text(v.title, MAX_TITLE).trim();
@@ -63,7 +68,7 @@ function readTask(v: unknown, listIds: Set<string>): Task | null {
     id: taskId,
     title,
     notes: text(v.notes, MAX_NOTES),
-    listId: listId && listIds.has(listId) ? listId : null,
+    listId: listId && (listIds === null || listIds.has(listId)) ? listId : null,
     due,
     time: due && isTime(v.time) ? v.time : null,
     priority: v.priority === 1 || v.priority === 2 || v.priority === 3 ? (v.priority as Priority) : 0,
@@ -79,7 +84,7 @@ function readTask(v: unknown, listIds: Set<string>): Task | null {
   };
 }
 
-function readList(v: unknown): TaskList | null {
+export function readList(v: unknown): TaskList | null {
   if (!isObject(v)) return null;
   const listId = id(v.id);
   const name = text(v.name, 60).trim();
