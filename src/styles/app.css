@@ -1778,6 +1778,8 @@ td[data-today="true"] .cal__num {
 
 /* Table */
 .table-scroll {
+  /* Anything positioned inside scrolls with the table instead of widening the page. */
+  position: relative;
   overflow-x: auto;
   border-radius: var(--r-m);
   background: var(--glass);
@@ -1990,6 +1992,345 @@ td[data-today="true"] .cal__num {
 }
 
 /* ---------- Phone ---------- */
+
+/* ---------- Accounts: sign-in screens, the Account page, sync ---------- */
+
+/* The sign-in screens are one narrow column of calm, large fields. */
+.auth {
+  max-width: 26rem;
+}
+
+.auth__lead {
+  margin: 0 0 1.25rem;
+  color: var(--muted);
+}
+
+.auth__wide {
+  width: 100%;
+}
+
+.auth > .btn,
+.auth > .form {
+  margin-bottom: 0.75rem;
+}
+
+/* "or", with a rule either side. */
+.auth__or {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.25rem 0 1rem;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+.auth__or::before,
+.auth__or::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--line-strong);
+}
+
+.auth__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1.25rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.auth__links a,
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.form__field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.form__field .label {
+  margin-bottom: 0;
+}
+
+.form__field .field {
+  width: 100%;
+}
+
+.field[aria-invalid="true"] {
+  border-color: var(--p1);
+}
+
+/* The password field leaves room for the show/hide button inside it. */
+.form__password {
+  position: relative;
+}
+
+.form__password .field {
+  padding-right: calc(var(--tap) + 0.25rem);
+}
+
+.form__reveal {
+  position: absolute;
+  top: 50%;
+  right: 0.2rem;
+  transform: translateY(-50%);
+}
+
+.form__error,
+.form__alert {
+  margin: 0;
+  color: var(--p1);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.form__alert,
+.form__notice {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--r-s);
+  background: var(--glass);
+  box-shadow: inset 0 0 0 1px var(--edge);
+}
+
+.form__alert {
+  border-left: 0.3rem solid var(--p1);
+  color: var(--ink);
+}
+
+.form__notice {
+  border-left: 0.3rem solid var(--mark);
+  font-weight: 600;
+}
+
+.form__check {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: var(--tap);
+}
+
+.form__check input {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--ink);
+}
+
+.form--inline {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+
+/* Password strength: a bar that fills in four steps, with the word beside it. */
+.meter {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.meter__bar {
+  flex: 1;
+  height: 0.3rem;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.meter__bar span {
+  display: block;
+  width: 8%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--p1);
+  transition: width 0.2s;
+}
+
+.meter[data-strength="1"] .meter__bar span {
+  width: 25%;
+}
+
+.meter[data-strength="2"] .meter__bar span {
+  width: 50%;
+  background: var(--p2);
+}
+
+.meter[data-strength="3"] .meter__bar span {
+  width: 75%;
+  background: var(--p3);
+}
+
+.meter[data-strength="4"] .meter__bar span {
+  width: 100%;
+  background: var(--c-moss);
+}
+
+/* The account's line in the sidebar: the name, cut short if long, and a dot for sync. */
+.nav__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sync-dot {
+  display: inline-block;
+  flex: none;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+
+p > .sync-dot {
+  margin: 0 0.35rem 0 0;
+}
+
+.sync-dot[data-phase="synced"] {
+  background: var(--c-moss);
+}
+
+.sync-dot[data-phase="syncing"] {
+  background: var(--mark);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.sync-dot[data-phase="offline"] {
+  background: var(--c-ochre);
+}
+
+.sync-dot[data-phase="error"] {
+  background: var(--p1);
+}
+
+.account .setting > h2 {
+  margin: 0;
+  font-family: inherit;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.account .setting p {
+  margin: 0;
+}
+
+/* A choice between two or three actions, each with a line saying what it means. */
+.choice {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.choice .hint {
+  margin: 0 0 0.6rem;
+}
+
+/* Rows of devices or passkeys: what it is on the left, the one action on the right. */
+.rowlist {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rowlist li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  min-height: var(--tap);
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.prose .rowlist,
+.prose .codes {
+  padding-left: 0;
+  list-style: none;
+}
+
+.prose .rowlist li + li,
+.prose .codes li + li {
+  margin-top: 0;
+}
+
+.rowlist li:first-child {
+  border-top: 0;
+}
+
+.rowlist .meta {
+  margin-left: 0.4rem;
+}
+
+.qr {
+  width: 11rem;
+  max-width: 100%;
+  border-radius: var(--r-s);
+}
+
+.codes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.codes code,
+.secret {
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.4rem;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  font-family: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+}
+
+.codes code {
+  display: block;
+  text-align: center;
+}
+
+/* The admin's table of accounts: no checkbox column, so the first column is an ordinary one. */
+.grid--people th:first-child,
+.grid--people td:first-child {
+  width: auto;
+  padding-right: 0.9rem;
+}
+
+.grid--people tbody th {
+  font-weight: 600;
+}
+
+.grid--people td {
+  white-space: normal;
+}
+
+.grid--people .setting__row {
+  flex-wrap: nowrap;
+}
 
 @media (max-width: 48rem) {
   .app {

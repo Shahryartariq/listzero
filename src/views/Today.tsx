@@ -6,6 +6,7 @@ import { TaskRows } from "../components/TaskRow";
 import { addDays, describeMinutes, fromDay } from "../lib/dates";
 import { activeFilters, applyDisplay } from "../lib/display";
 import { exampleData } from "../lib/examples";
+import { useAccountConfig } from "../account/config";
 import { doneCounts, todayView, totalEstimate } from "../lib/store";
 import { useStore } from "../state/store-context";
 import { useDisplay } from "../state/useDisplay";
@@ -15,6 +16,7 @@ import { wide } from "./Lists";
 const longDay = new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long" });
 
 export function Today() {
+  const accounts = useAccountConfig()?.accounts === true;
   const store = useStore();
   const { data, today } = store;
   const view = todayView(data, today);
@@ -83,7 +85,11 @@ export function Today() {
             Listzero is a free to-do list for busy minds. Type a task the way you would say it, see one day at a
             time, and get today to zero.
           </p>
-          <p>Add your first task above. There is no account, and your tasks never leave this browser.</p>
+          <p>
+            {accounts
+              ? "Add your first task above. You do not need an account, and without one your tasks never leave this browser."
+              : "Add your first task above. There is no account, and your tasks never leave this browser."}
+          </p>
           <div className="empty__actions">
             <button
               type="button"

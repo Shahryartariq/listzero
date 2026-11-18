@@ -53,6 +53,10 @@ export interface Store {
   /** Saves how one view is displayed; null puts it back to the defaults. */
   setDisplay(view: string, display: Display | null): void;
   replaceAll(next: AppData, message: string): void;
+  /** The data as it is this instant, even between renders. For code that runs outside React's flow (sync). */
+  read(): AppData;
+  /** Swaps in data that did not come from something the user just did (sync, signing out). No message, no Undo. */
+  load(next: AppData): void;
   dayOf(timestamp: number): string;
 }
 

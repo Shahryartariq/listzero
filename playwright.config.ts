@@ -19,9 +19,18 @@ export default defineConfig({
     { name: "desktop", use: { ...devices["Desktop Chrome"], channel, viewport: { width: 1280, height: 800 } } },
     { name: "phone", use: { ...devices["Pixel 7"], channel } },
   ],
-  webServer: {
-    command: "npm run preview",
-    url: "http://localhost:4173",
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      // The API with an in-memory database and an outbox instead of real email.
+      command: "npx tsx server/local.ts",
+      url: "http://localhost:8787/api/config",
+      env: { SITE_URL: "http://localhost:4173", QUIET: "1", ADMIN_EMAILS: "admin-desktop@listzero.test,admin-phone@listzero.test" },
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: "npm run preview",
+      url: "http://localhost:4173",
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 });

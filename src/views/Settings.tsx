@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { Appearance } from "../components/Appearance";
 import { Icon } from "../components/Icon";
 import { Confirm } from "../components/Sheet";
+import { useAccountConfig } from "../account/config";
 import { browserObjects } from "../lib/analytics";
 import { parseBackup, serialize } from "../lib/backup";
 import { downloadText } from "../lib/download";
@@ -12,6 +13,7 @@ import { useStore } from "../state/store-context";
 import { usePageTitle } from "../state/usePageTitle";
 
 export function Settings() {
+  const accounts = useAccountConfig()?.accounts === true;
   const store = useStore();
   const { settings } = store.data;
   const file = useRef<HTMLInputElement>(null);
@@ -135,8 +137,15 @@ export function Settings() {
       <div className="setting">
         <span className="setting__name">Your data</span>
         <p className="hint">
-          {store.data.tasks.length} {store.data.tasks.length === 1 ? "task" : "tasks"} in this browser. Nothing is
-          stored on a server, so a backup file is the way to move to another device or browser.
+          {store.data.tasks.length} {store.data.tasks.length === 1 ? "task" : "tasks"} in this browser.{" "}
+          {accounts ? (
+            <>
+              A backup file is a copy you keep yourself. An <Link to="/account">account</Link> keeps your tasks the
+              same on every device.
+            </>
+          ) : (
+            "Nothing is stored on a server, so a backup file is the way to move to another device or browser."
+          )}
         </p>
         <div className="setting__row">
           <button type="button" className="btn btn--quiet" onClick={exportBackup}>
