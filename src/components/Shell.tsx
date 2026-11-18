@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
+import { useAccountConfig } from "../account/config";
 import { countScreen } from "../lib/analytics";
 import { downloadText } from "../lib/download";
 import { lazyView } from "../lib/lazyView";
@@ -15,6 +16,10 @@ import { Toasts } from "./Toasts";
 
 // The task sheet is the largest single component and is only needed once a task is opened.
 const TaskSheet = lazyView(() => import("./TaskSheet").then((m) => m.TaskSheet));
+
+// The account's parts are fetched only on a copy of Listzero that has accounts.
+const AccountEntry = lazyView(() => import("../account/parts").then((m) => m.AccountEntry));
+const SyncRunner = lazyView(() => import("../account/parts").then((m) => m.SyncRunner));
 
 function isTyping(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -33,6 +38,7 @@ const GO: Record<string, string> = {
 
 export function NavItems({ onNewList, onAppearance }: { onNewList(): void; onAppearance(): void }) {
   const store = useStore();
+  const accounts = useAccountConfig()?.accounts === true;
   const today = todayView(store.data, store.today);
   const counts: Record<string, number> = {
     "/inbox": inboxView(store.data).length,
@@ -96,6 +102,11 @@ export function NavItems({ onNewList, onAppearance }: { onNewList(): void; onApp
       </div>
 
       <nav className="nav side__foot" aria-label="More">
+        {accounts && (
+          <Suspense fallback={null}>
+            <AccountEntry />
+          </Suspense>
+        )}
         <button type="button" className="nav__link nav__button" onClick={onAppearance}>
           <Icon name="palette" />
           Appearance
@@ -122,6 +133,7 @@ export function Shell() {
   const pendingG = useRef(0);
   useTheme(store.data.settings);
   useSeo(location.pathname);
+  const accounts = useAccountConfig()?.accounts === true;
 
   // Visit counting for the public site. Only the kind of screen is sent; see lib/analytics.
   const counting = store.data.settings.analytics;
@@ -263,6 +275,11 @@ export function Shell() {
         </NavLink>
       </nav>
 
+      {accounts && (
+        <Suspense fallback={null}>
+          <SyncRunner />
+        </Suspense>
+      )}
       {new URLSearchParams(location.search).has("task") && (
         <Suspense fallback={null}>
           <TaskSheet />

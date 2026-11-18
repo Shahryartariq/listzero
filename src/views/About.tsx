@@ -1,10 +1,13 @@
 import { useEffect } from "react";
 import { Link, useLocation } from "react-router";
+import { useAccountConfig } from "../account/config";
 import { usePageTitle } from "../state/usePageTitle";
 
 export function About() {
   const { hash } = useLocation();
   usePageTitle("How it works");
+  // Whether this copy of Listzero offers accounts; the text below says only what is true here.
+  const accounts = useAccountConfig()?.accounts === true;
 
   // A link such as /about#privacy lands on that section.
   useEffect(() => {
@@ -176,14 +179,35 @@ export function About() {
       </table>
 
       <h2 id="your-data">Your data</h2>
-      <p>
-        Listzero is free and has no accounts. Your tasks are saved in this browser on this device and are never sent
-        to a server. It works offline, and you can install it from your browser’s menu.
-      </p>
-      <p>
-        The trade-off: tasks do not sync between devices, and clearing your browser data clears them. Save a backup
-        file from <Link to="/settings">Settings</Link> now and then, and load it wherever you need it.
-      </p>
+      {accounts ? (
+        <>
+          <p>
+            Listzero is free and works without an account. Without one, your tasks are saved in this browser on this
+            device and are never sent to a server. It works offline, and you can install it from your browser’s
+            menu.
+          </p>
+          <p>
+            The trade-off without an account: tasks do not sync between devices, and clearing your browser data
+            clears them. Save a backup file from <Link to="/settings">Settings</Link> now and then, or sign in.
+          </p>
+          <p>
+            <Link to="/sign-in">Signing in</Link> is optional. With an account, your tasks and lists are also kept on
+            Listzero’s server, so they are the same on every device you sign in on. Changes made offline are sent
+            when you are back online. Appearance and other settings stay on each device.
+          </p>
+        </>
+      ) : (
+        <>
+          <p>
+            Listzero is free and has no accounts. Your tasks are saved in this browser on this device and are never
+            sent to a server. It works offline, and you can install it from your browser’s menu.
+          </p>
+          <p>
+            The trade-off: tasks do not sync between devices, and clearing your browser data clears them. Save a
+            backup file from <Link to="/settings">Settings</Link> now and then, and load it wherever you need it.
+          </p>
+        </>
+      )}
 
       <h2 id="privacy">Privacy</h2>
       <p>
@@ -201,6 +225,15 @@ export function About() {
         You can turn the counting off in <Link to="/settings">Settings</Link>. It is also off when your browser
         sends “Do Not Track” or “Global Privacy Control”, and it never runs on a copy of Listzero you host yourself.
       </p>
+
+      {accounts && (
+        <p>
+          If you create an account, the server stores your email, name, username, a scrambled form of your password
+          that cannot be read back, and your tasks and lists. They are used to sign you in and to sync, and for
+          nothing else. Emails that confirm your address or reset a password are sent through Gmail. You can delete
+          the account, and everything stored with it, from the Account page.
+        </p>
+      )}
 
       <h2>What it does not do</h2>
       <ul>
