@@ -1,13 +1,14 @@
-import { Suspense, lazy } from "react";
+import { Suspense } from "react";
 import type { Layout, Sort } from "../../lib/display";
+import { lazyView } from "../../lib/lazyView";
 import type { Task } from "../../lib/types";
 import type { AddDefaults } from "../../state/store-context";
 import { TaskRows } from "../TaskRow";
 
 // Each of these is its own download, fetched when its layout is first chosen.
-const BoardColumns = lazy(() => import("./BoardColumns").then((m) => ({ default: m.BoardColumns })));
-const CalendarLayout = lazy(() => import("./CalendarLayout").then((m) => ({ default: m.CalendarLayout })));
-const TableLayout = lazy(() => import("./TableLayout").then((m) => ({ default: m.TableLayout })));
+const BoardColumns = lazyView(() => import("./BoardColumns").then((m) => m.BoardColumns));
+const CalendarLayout = lazyView(() => import("./CalendarLayout").then((m) => m.CalendarLayout));
+const TableLayout = lazyView(() => import("./TableLayout").then((m) => m.TableLayout));
 
 interface TaskLayoutProps {
   layout: Exclude<Layout, "list">;

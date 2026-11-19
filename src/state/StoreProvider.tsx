@@ -257,6 +257,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         notify(message, before);
       },
 
+      read: snapshot,
+
+      load(next: AppData) {
+        if (next === dataRef.current) return;
+        dispatch({ type: "replace", data: next });
+        // Visible to read() at once, before React has rendered.
+        dataRef.current = next;
+      },
+
       dayOf: (timestamp: number) => toDay(new Date(timestamp)),
     };
   }, [data, today, persistent, initial.persistent, damaged, forgetDamaged, toasts, dismissToast, undoToast, notify]);

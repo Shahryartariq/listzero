@@ -2,6 +2,19 @@
 
 Notable changes to Listzero. Dates are when the change reached the live site.
 
+## 1.1.0 (unreleased)
+
+### Accounts and sync, optional
+
+- Sign in with email and password, a username and password, Google, or a passkey.
+- Email confirmation, password reset by email, and refusal of passwords known from data leaks.
+- Two-factor codes from an authenticator app, with backup codes.
+- Tasks and lists sync between devices, including changes made offline. A browser holding another account's
+  tasks asks before mixing them; signing out offers to keep or remove the tasks here.
+- An Account page (profile, password, two-factor, passkeys, Google, signed-in devices, sign out, delete account)
+  and an admin page for managing accounts.
+- Without the server settings, nothing changes: no sign-in is shown and tasks stay in the browser.
+
 ## 1.0.0 (2026-11-16)
 
 The first release.

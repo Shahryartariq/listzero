@@ -31,8 +31,14 @@ function inlineThemeScript(): Plugin {
   };
 }
 
+const apiProxy = { target: "http://localhost:8787", changeOrigin: false };
+
 export default defineConfig({
-  preview: { headers: securityHeaders },
+  // The API runs beside the site in development and in the browser tests (`npm run api`), and both
+  // servers forward /api to it, so the browser sees one site, as it does in production.
+  // With the API not running, /api fails and the app simply has no accounts.
+  server: { proxy: { "/api": apiProxy } },
+  preview: { headers: securityHeaders, proxy: { "/api": apiProxy } },
   plugins: [
     react(),
     inlineThemeScript(),
@@ -70,17 +76,22 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
+        // A new version takes over as soon as it is installed, instead of waiting for every tab to close.
+        // (The plugin only turns these on by itself when it also injects the registration script.)
+        skipWaiting: true,
+        clientsClaim: true,
         globIgnores: ["**/og.png", "**/*-latin-ext-*.woff2", "**/theme.js", "**/google*.html"],
         navigateFallback: "/index.html",
         // Real files (robots.txt, sitemap.xml, llms.txt, .well-known/…) are not app screens.
-        navigateFallbackDenylist: [/^\/[^/]+\.[a-z0-9]+$/i, /^\/\.well-known\//],
+        // Nor is the API: signing in with Google comes back through /api/auth/callback as a page load.
+        navigateFallbackDenylist: [/^\/[^/]+\.[a-z0-9]+$/i, /^\/\.well-known\//, /^\/api\//],
         cleanupOutdatedCaches: true,
       },
     }),
   ],
   test: {
     environment: "jsdom",
-    include: ["src/**/*.test.{ts,tsx}"],
+    include: ["src/**/*.test.{ts,tsx}", "server/**/*.test.ts"],
     setupFiles: ["src/test-setup.ts"],
   },
 });

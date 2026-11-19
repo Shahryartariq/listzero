@@ -308,6 +308,25 @@ test.describe("flows that were missing", () => {
     expect(await page.evaluate(() => localStorage.getItem("listzero:v1:unreadable"))).toBeNull();
   });
 
+  test("a new version takes over without waiting for every tab to close", async ({ request }) => {
+    const worker = await (await request.get("/sw.js")).text();
+    expect(worker).toContain("self.skipWaiting()");
+    expect(worker).toContain("clientsClaim()");
+    // Without the two settings above, the worker only skips waiting when a page asks it to.
+    expect(worker).not.toContain("SKIP_WAITING");
+  });
+
+  test("a screen whose download fails shows a way out instead of a blank page", async ({ page }) => {
+    await page.route("**/assets/Settings-*.js", (route) => route.abort());
+    await page.goto("/settings");
+    // One automatic reload is tried first, then the message.
+    await expect(page.getByRole("alert")).toContainText("This screen did not load.");
+    await expect(page.getByRole("link", { name: "Today" }).first()).toBeVisible();
+    await page.unroute("**/assets/Settings-*.js");
+    await page.getByRole("button", { name: "Reload" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+  });
+
   test("the shortcut to Settings is listed with the others", async ({ page }) => {
     test.skip(isPhone(page), "Keyboard shortcuts are for keyboards.");
     await page.goto("/about");
