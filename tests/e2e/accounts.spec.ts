@@ -1,4 +1,5 @@
 import { createHmac, randomUUID } from "node:crypto";
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type APIRequestContext, type Browser, type Page } from "@playwright/test";
 import { addTask, day, row, seed } from "./helpers";
 
@@ -305,7 +306,7 @@ test.describe("the Account page", () => {
     await section.getByLabel("Your password, to confirm it is you", { exact: true }).fill(who.password);
     await section.getByRole("button", { name: "Continue" }).click();
     await expect(section.getByRole("img", { name: /QR code/ })).toBeVisible();
-    const secret = (await section.locator(".secret").textContent()) ?? "";
+    const secret = ((await section.locator(".secret").textContent()) ?? "").replace(/\s/g, "");
     await section.getByLabel("6-digit code").fill(totp(secret));
     await section.getByRole("button", { name: "Turn on", exact: true }).click();
     await expect(section.getByRole("list", { name: "Backup codes" }).locator("code")).toHaveCount(10);
@@ -434,6 +435,45 @@ test.describe("admins", () => {
     await other.context.close();
   });
 });
+
+async function expectNoViolations(page: Page) {
+  await page.waitForTimeout(300);
+  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
+  expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`)).toEqual([]);
+}
+
+for (const scheme of ["light", "dark"] as const) {
+  test.describe(`account screens, ${scheme} theme`, () => {
+    test.use({ colorScheme: scheme });
+
+    test("pass automated WCAG checks, with errors, sheets and the two-factor setup showing", async ({ page, request }) => {
+      await page.goto("/sign-in");
+      await page.getByRole("button", { name: "Sign in", exact: true }).click();
+      await expectNoViolations(page);
+
+      await page.goto("/sign-up");
+      await page.getByLabel("Email").fill("bad");
+      await page.getByLabel("Password", { exact: true }).fill("short");
+      await page.getByRole("button", { name: "Create account" }).click();
+      await expectNoViolations(page);
+
+      const who = await account(request);
+      await signedIn(page, who);
+      await expectNoViolations(page);
+
+      const twoFactor = page.getByRole("region", { name: "Two-factor sign-in" });
+      await twoFactor.getByRole("button", { name: "Turn on two-factor" }).click();
+      await twoFactor.getByLabel("Your password, to confirm it is you", { exact: true }).fill(who.password);
+      await twoFactor.getByRole("button", { name: "Continue" }).click();
+      await expect(twoFactor.getByRole("img", { name: /QR code/ })).toBeVisible();
+      await expectNoViolations(page);
+
+      await page.getByRole("region", { name: "Sign out" }).getByRole("button", { name: "Sign out" }).click();
+      await expect(page.getByRole("dialog", { name: "Sign out" })).toBeVisible();
+      await expectNoViolations(page);
+    });
+  });
+}
 
 test.describe("a copy of Listzero without accounts", () => {
   test("has no sign-in anywhere and works as before", async ({ page }) => {

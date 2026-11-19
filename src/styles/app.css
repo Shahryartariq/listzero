@@ -2237,6 +2237,8 @@ p > .sync-dot {
 .choice {
   display: grid;
   gap: 0.4rem;
+  /* Room between the question and the first answer. */
+  margin-top: 1rem;
 }
 
 .choice .hint {
@@ -2297,6 +2299,14 @@ p > .sync-dot {
   list-style: none;
 }
 
+/* The two-factor key on its own line, in groups of four, so it wraps as one block. */
+.secret {
+  display: block;
+  margin: -0.4rem 0 0;
+  letter-spacing: 0.04em;
+  line-height: 1.7;
+}
+
 .codes code,
 .secret {
   padding: 0.15rem 0.5rem;
@@ -2330,6 +2340,63 @@ p > .sync-dot {
 
 .grid--people .setting__row {
   flex-wrap: nowrap;
+}
+
+.grid--people .grid__date {
+  white-space: nowrap;
+}
+
+/* On a phone each person is a card: name and email, then labelled lines, then the buttons. */
+@media (max-width: 40rem) {
+  .grid--people {
+    min-width: 0;
+  }
+
+  .grid--people,
+  .grid--people tbody,
+  .grid--people tr,
+  .grid--people th,
+  .grid--people td {
+    display: block;
+  }
+
+  .grid--people thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .grid--people tbody tr {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .grid--people tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .grid--people tbody th,
+  .grid--people td,
+  .grid--people th:first-child,
+  .grid--people td:first-child {
+    width: auto;
+    min-width: 0;
+    padding: 0.1rem 0;
+    border-bottom: 0;
+  }
+
+  .grid--people td[data-label]::before {
+    content: attr(data-label) ": ";
+    color: var(--muted);
+  }
+
+  .grid--people .setting__row {
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
 }
 
 @media (max-width: 48rem) {

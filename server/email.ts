@@ -61,21 +61,37 @@ interface Parts {
 
 function layout({ heading, body, action, url, footer }: Parts): Pick<Mail, "html" | "text"> {
   const link = escape(url);
+  // Light by default. Mail apps that honour prefers-color-scheme (Apple Mail, iOS Mail, Outlook for
+  // Mac) get the app's dark colours; Gmail applies its own dark mode either way.
   const html = `<!doctype html>
-<html lang="en"><body style="margin:0;background:#f1f2ec;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1c2a29">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px">
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
+<style>
+  :root { color-scheme: light dark; supported-color-schemes: light dark; }
+  @media (prefers-color-scheme: dark) {
+    .lz-page { background: #141c1b !important; }
+    .lz-card { background: #1d2827 !important; }
+    .lz-ink { color: #eef0e8 !important; }
+    .lz-body { color: #c9d0cb !important; }
+    .lz-muted, .lz-muted a { color: #a3aeab !important; }
+    .lz-button { background: #eef0e8 !important; color: #1c2a29 !important; }
+  }
+</style>
+</head><body class="lz-page" style="margin:0;background:#f1f2ec;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1c2a29">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="lz-page" style="padding:32px 16px;background:#f1f2ec">
     <tr><td align="center">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#fbfbf7;border-radius:20px;padding:32px">
-        <tr><td style="font-size:15px;font-weight:700;color:#1c2a29"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#f2cf4a;margin-right:8px"></span>Listzero</td></tr>
-        <tr><td style="padding-top:18px;font-size:22px;font-weight:700;line-height:1.3">${escape(heading)}</td></tr>
-        <tr><td style="padding-top:12px;font-size:16px;line-height:1.6;color:#33403f">${escape(body)}</td></tr>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="lz-card" style="max-width:480px;background:#fbfbf7;border-radius:20px;padding:32px">
+        <tr><td class="lz-ink" style="font-size:15px;font-weight:700;color:#1c2a29"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#f2cf4a;margin-right:8px"></span>Listzero</td></tr>
+        <tr><td class="lz-ink" style="padding-top:18px;font-size:22px;font-weight:700;line-height:1.3;color:#1c2a29">${escape(heading)}</td></tr>
+        <tr><td class="lz-body" style="padding-top:12px;font-size:16px;line-height:1.6;color:#33403f">${escape(body)}</td></tr>
         <tr><td style="padding-top:24px">
-          <a href="${link}" style="display:inline-block;background:#1c2a29;color:#f1f2ec;text-decoration:none;padding:13px 22px;border-radius:999px;font-size:16px;font-weight:600">${escape(action)}</a>
+          <a href="${link}" class="lz-button" style="display:inline-block;background:#1c2a29;color:#f1f2ec;text-decoration:none;padding:13px 22px;border-radius:999px;font-size:16px;font-weight:600">${escape(action)}</a>
         </td></tr>
-        <tr><td style="padding-top:24px;font-size:13px;line-height:1.6;color:#586463">
+        <tr><td class="lz-muted" style="padding-top:24px;font-size:13px;line-height:1.6;color:#586463">
           Or paste this link into your browser:<br><a href="${link}" style="color:#33403f;word-break:break-all">${link}</a>
         </td></tr>
-        <tr><td style="padding-top:24px;font-size:13px;line-height:1.6;color:#586463">${escape(footer)}</td></tr>
+        <tr><td class="lz-muted" style="padding-top:24px;font-size:13px;line-height:1.6;color:#586463">${escape(footer)}</td></tr>
       </table>
     </td></tr>
   </table>

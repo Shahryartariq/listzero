@@ -247,6 +247,13 @@ export function SignUp() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; username?: string; password?: string; form?: string }>({});
+  // Editing a field clears what was said about it, so an old error never sits under a fixed value.
+  const edited =
+    (field: "email" | "username" | "password", set: (value: string) => void) =>
+    (value: string) => {
+      set(value);
+      setErrors((current) => (current[field] || current.form ? { ...current, [field]: undefined, form: undefined } : current));
+    };
   const [busy, setBusy] = useState(false);
   const [sentTo, setSentTo] = useState("");
 
@@ -290,11 +297,11 @@ export function SignUp() {
         </>
       )}
       <form className="form" onSubmit={submit} noValidate>
-        <TextField label="Email" type="email" value={email} onChange={setEmail} error={errors.email} autoComplete="email" inputMode="email" required />
+        <TextField label="Email" type="email" value={email} onChange={edited("email", setEmail)} error={errors.email} autoComplete="email" inputMode="email" required />
         <TextField
           label="Username"
           value={username}
-          onChange={setUsername}
+          onChange={edited("username", setUsername)}
           error={errors.username}
           hint="You can sign in with this instead of your email. 3 to 30 letters, numbers, dots, dashes or underscores."
           autoComplete="username"
@@ -303,7 +310,7 @@ export function SignUp() {
           maxLength={30}
           required
         />
-        <PasswordField label="Password" value={password} onChange={setPassword} error={errors.password} autoComplete="new-password" meter hint="At least 8 characters. A few random words work well." />
+        <PasswordField label="Password" value={password} onChange={edited("password", setPassword)} error={errors.password} autoComplete="new-password" meter hint="At least 8 characters. A few random words work well." />
         <FormMessage error={errors.form} />
         <button type="submit" className="btn auth__wide" disabled={busy}>
           {busy ? "Creating…" : "Create account"}
@@ -468,7 +475,17 @@ export function ResetPassword() {
           setDone(true);
         }}
       >
-        <PasswordField label="New password" value={password} onChange={setPassword} error={error} autoComplete="new-password" meter />
+        <PasswordField
+          label="New password"
+          value={password}
+          onChange={(value) => {
+            setPassword(value);
+            setError("");
+          }}
+          error={error}
+          autoComplete="new-password"
+          meter
+        />
         <button type="submit" className="btn auth__wide" disabled={busy}>
           {busy ? "Saving…" : "Save new password"}
         </button>
