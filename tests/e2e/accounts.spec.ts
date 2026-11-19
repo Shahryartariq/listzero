@@ -22,13 +22,21 @@ const person = (label = "sam"): Person => {
   return { email: `${label}-${tag}@listzero.test`, username: `${label}_${tag}`, password: PASSWORD };
 };
 
-/** The newest link emailed to an address. */
-async function emailedLink(request: APIRequestContext, to: string): Promise<string> {
+const CONFIRM = /^Confirm your email/;
+const RESET = /^Reset your Listzero password/;
+const DELETE = /^Confirm deleting/;
+
+/**
+ * The link in the newest email of one kind sent to an address. Matching the subject matters with real
+ * email, which arrives a moment after the request that sent it: the newest email may still be the last one.
+ */
+async function emailedLink(request: APIRequestContext, to: string, about = CONFIRM): Promise<string> {
   let link = "";
   await expect
     .poll(async () => {
-      const mails = (await (await request.get(`/api/__test/outbox?to=${encodeURIComponent(to)}`)).json()) as { text: string }[];
-      link = /https?:\/\/\S+/.exec(mails.at(-1)?.text ?? "")?.[0] ?? "";
+      const mails = (await (await request.get(`/api/__test/outbox?to=${encodeURIComponent(to)}`)).json()) as { subject: string; text: string }[];
+      const mail = mails.filter((m) => about.test(m.subject)).at(-1);
+      link = /https?:\/\/\S+/.exec(mail?.text ?? "")?.[0] ?? "";
       return link;
     })
     .not.toBe("");
@@ -163,7 +171,7 @@ test.describe("signing in", () => {
     await page.getByRole("button", { name: "Send the link" }).click();
     await expect(page.getByText(/^If that address has an account/)).toBeVisible();
 
-    await page.goto(await emailedLink(request, who.email));
+    await page.goto(await emailedLink(request, who.email, RESET));
     await expect(page).toHaveURL(/\/reset-password/);
     await page.getByLabel("New password", { exact: true }).fill("a brand new phrase 77");
     await page.getByRole("button", { name: "Save new password" }).click();
@@ -380,7 +388,7 @@ test.describe("the Account page", () => {
     await page.getByRole("dialog").getByRole("button", { name: "Email me the link" }).click();
     await expect(page.getByRole("region", { name: "Delete account" }).getByRole("status")).toContainText("Check your email");
 
-    await page.goto(await emailedLink(request, who.email));
+    await page.goto(await emailedLink(request, who.email, DELETE));
     await page.goto("/today");
     await expect(row(page, "Outlives the account")).toBeVisible();
     await signIn(page, who);
