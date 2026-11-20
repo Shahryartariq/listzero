@@ -71,6 +71,10 @@ export async function syncOnce(io: SyncIO, adopt?: "merge" | "replace"): Promise
   let state: SyncState | null = loadSyncState(io.storage);
 
   if (state && state.userId !== io.user.id) {
+    // The question is only worth asking when the other account left something here.
+    const here = io.read();
+    const nothingHere = here.tasks.length === 0 && here.lists.length === 0;
+    adopt ??= nothingHere ? "replace" : undefined;
     if (!adopt) return { ok: false, reason: "other-account", email: state.email };
     if (adopt === "replace") {
       const data = io.read();

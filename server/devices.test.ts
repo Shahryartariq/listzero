@@ -214,6 +214,23 @@ describe("more than one person on a device", () => {
     await t.close();
   });
 
+  it("does not ask when the other account left nothing on the device", async () => {
+    const t = await testApp();
+    const sam = await person(t, "sam@a.test", "sam");
+    const ada = await person(t, "ada@a.test", "ada");
+    const adasLaptop = device(t, ada.user, ada.session);
+    adasLaptop.add(task("adas"));
+    await adasLaptop.sync();
+
+    // Sam synced an empty browser, signed out, and Ada signs in on it.
+    const shared = device(t, sam.user, sam.session);
+    await shared.sync();
+    shared.as(ada.user, ada.session);
+    expect(await shared.sync()).toEqual({ ok: true, first: true, sent: 0, received: 1 });
+    expect(shared.tasks).toEqual(["Task adas"]);
+    await t.close();
+  });
+
   it("can add what is on the device to the new account when asked", async () => {
     const t = await testApp();
     const sam = await person(t, "sam@a.test", "sam");

@@ -361,9 +361,8 @@ function TwoFactorSection({ user, hasPassword }: { user: SessionUser; hasPasswor
         <form className="form" onSubmit={confirm} noValidate>
           <p>Scan this with an authenticator app (Google Authenticator, 1Password, Authy), then enter the code it shows.</p>
           <QrCode text={step.uri} label="QR code to add Listzero to an authenticator app" />
-          <p className="hint">
-            Cannot scan? Enter this key by hand: <code className="secret">{secret}</code>
-          </p>
+          <p className="hint">Cannot scan? Enter this key by hand (the spaces are optional):</p>
+          <code className="secret">{secret.match(/.{1,4}/g)?.join(" ")}</code>
           <TextField label="6-digit code" value={code} onChange={setCode} inputMode="numeric" autoComplete="one-time-code" maxLength={6} required />
           <div className="setting__row">
             <button type="submit" className="btn btn--quiet" disabled={busy}>

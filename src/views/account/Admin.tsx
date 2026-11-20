@@ -116,24 +116,25 @@ export function Admin() {
       </form>
       <FormMessage {...message} />
 
+      {/* Explicit roles keep this a table for screen readers when the phone layout changes its display. */}
       <div className="table-scroll" role="region" aria-label="Accounts" tabIndex={0}>
-        <table className="grid grid--people">
-          <thead>
-            <tr>
-              <th scope="col">Person</th>
-              <th scope="col">Joined</th>
-              <th scope="col">Role</th>
-              <th scope="col">Status</th>
-              <th scope="col" aria-label="Actions" />
+        <table className="grid grid--people" role="table">
+          <thead role="rowgroup">
+            <tr role="row">
+              <th role="columnheader" scope="col">Person</th>
+              <th role="columnheader" scope="col">Joined</th>
+              <th role="columnheader" scope="col">Role</th>
+              <th role="columnheader" scope="col">Status</th>
+              <th role="columnheader" scope="col" aria-label="Actions" />
             </tr>
           </thead>
-          <tbody>
+          <tbody role="rowgroup">
             {people.map((person) => {
               const self = person.id === me.id;
               const admin = person.role === "admin";
               return (
-                <tr key={person.id}>
-                  <th scope="row">
+                <tr role="row" key={person.id}>
+                  <th role="rowheader" scope="row">
                     {person.name}
                     {self ? " (you)" : ""}
                     <br />
@@ -142,10 +143,12 @@ export function Admin() {
                       {person.username ? ` · @${person.username}` : ""}
                     </span>
                   </th>
-                  <td>{day(person.createdAt)}</td>
-                  <td>{admin ? "Admin" : "User"}</td>
-                  <td>{person.banned ? `Suspended${person.banReason ? `: ${person.banReason}` : ""}` : person.emailVerified ? "Active" : "Email not confirmed"}</td>
-                  <td>
+                  <td role="cell" data-label="Joined" className="grid__date">
+                    {day(person.createdAt)}
+                  </td>
+                  <td role="cell" data-label="Role">{admin ? "Admin" : "User"}</td>
+                  <td role="cell" data-label="Status">{person.banned ? `Suspended${person.banReason ? `: ${person.banReason}` : ""}` : person.emailVerified ? "Active" : "Email not confirmed"}</td>
+                  <td role="cell">
                     {!self && (
                       <div className="setting__row">
                         <button
@@ -198,8 +201,8 @@ export function Admin() {
               );
             })}
             {people.length === 0 && (
-              <tr>
-                <td colSpan={5}>No accounts match.</td>
+              <tr role="row">
+                <td role="cell" colSpan={5}>No accounts match.</td>
               </tr>
             )}
           </tbody>
