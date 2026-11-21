@@ -57,7 +57,14 @@ describe("readData", () => {
       dailyLimit: 3,
       calm: true,
       analytics: true,
+      sidebarCollapsed: false,
     });
+    // The narrow sidebar is on only when it was turned on.
+    const sidebarWith = (sidebarCollapsed: unknown) =>
+      readData({ version: 1, tasks: [], settings: { sidebarCollapsed } })?.settings.sidebarCollapsed;
+    expect(sidebarWith(true)).toBe(true);
+    expect(sidebarWith("yes")).toBe(false);
+    expect(sidebarWith(undefined)).toBe(false);
     // Visit counting stays off only when it was turned off; anything else means the default.
     const settingsWith = (analytics: unknown) => readData({ version: 1, tasks: [], settings: { analytics } })?.settings;
     expect(settingsWith(false)?.analytics).toBe(false);

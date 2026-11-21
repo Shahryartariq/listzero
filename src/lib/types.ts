@@ -74,6 +74,8 @@ export interface Settings {
   calm: boolean;
   /** Let the public site count page visits. Never includes task content. */
   analytics: boolean;
+  /** On wide screens, show the sidebar as a narrow strip of icons. */
+  sidebarCollapsed: boolean;
 }
 
 export interface AppData {
@@ -92,6 +94,7 @@ export const DEFAULT_SETTINGS: Settings = {
   dailyLimit: 5,
   calm: false,
   analytics: true,
+  sidebarCollapsed: false,
 };
 
 export function emptyData(): AppData {

@@ -13,6 +13,7 @@
   var choice = "system";
   var palette = "chalk";
   var large = false;
+  var narrowSide = false;
   try {
     var saved = JSON.parse(localStorage.getItem("listzero:v1") || "null");
     var s = saved && saved.settings;
@@ -20,6 +21,7 @@
       if (s.theme === "light" || s.theme === "dark") choice = s.theme;
       if (Object.prototype.hasOwnProperty.call(PAPER, s.palette)) palette = s.palette;
       large = s.textSize === "large";
+      narrowSide = s.sidebarCollapsed === true;
     }
   } catch (e) {
     /* storage blocked: follow the system */
@@ -29,6 +31,8 @@
   root.dataset.theme = dark ? "dark" : "light";
   root.dataset.palette = palette;
   if (large) root.dataset.text = "large";
+  // The sidebar's width is part of the layout, so it is set before the first paint too.
+  if (narrowSide) root.dataset.sidebar = "collapsed";
   var meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", PAPER[palette][dark ? 1 : 0]);
 })();

@@ -1,7 +1,7 @@
 import { createHmac, randomUUID } from "node:crypto";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type APIRequestContext, type Browser, type Page } from "@playwright/test";
-import { addTask, day, row, seed } from "./helpers";
+import { addTask, day, row, seed, settled } from "./helpers";
 
 /**
  * Accounts and sync, against the real API with an in-memory database (playwright.config.ts starts it).
@@ -437,7 +437,7 @@ test.describe("admins", () => {
 });
 
 async function expectNoViolations(page: Page) {
-  await page.waitForTimeout(300);
+  await settled(page);
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
   expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`)).toEqual([]);
 }
