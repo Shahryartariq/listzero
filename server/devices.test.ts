@@ -36,6 +36,9 @@ type TestApp = Awaited<ReturnType<typeof testApp>>;
 /** A device: its own data, its own storage, its own cookies. */
 function device(_t: TestApp, user: { id: string; email: string }, session: ReturnType<typeof browser>) {
   let data: AppData = emptyData();
+  // What the device has written to its storage, as a reload would find it.
+  let disk: AppData | null = null;
+  let full = false;
   const items = new Map<string, string>();
   let online = true;
   const io: SyncIO = {
@@ -43,6 +46,11 @@ function device(_t: TestApp, user: { id: string; email: string }, session: Retur
     read: () => data,
     load: (next) => {
       data = next;
+    },
+    keep: (next) => {
+      if (full) return false;
+      disk = next;
+      return true;
     },
     storage: {
       getItem: (k) => items.get(k) ?? null,
@@ -76,6 +84,14 @@ function device(_t: TestApp, user: { id: string; email: string }, session: Retur
     setOnline(value: boolean) {
       online = value;
     },
+    /** Storage that refuses new writes, as when a browser has run out of room for the site. */
+    setFull(value: boolean) {
+      full = value;
+    },
+    /** A reload: only what reached storage is left. */
+    reload() {
+      data = disk ?? emptyData();
+    },
     as(next: { id: string; email: string }, cookies: ReturnType<typeof browser>) {
       io.user = next;
       session = cookies;
@@ -95,6 +111,53 @@ async function person(t: TestApp, email: string, username: string) {
   };
   return { user, session, another };
 }
+
+describe("a device that cannot keep the account's tasks", () => {
+  it("never tells the account they were deleted", async () => {
+    const t = await testApp();
+    const sam = await person(t, "sam@a.test", "sam");
+    const laptop = device(t, sam.user, sam.session);
+    laptop.add(task("a"), task("b"), task("c"));
+    await laptop.sync();
+
+    // A browser out of room signs in: the tasks arrive on screen but cannot be written down.
+    const phone = device(t, sam.user, await sam.another());
+    phone.setFull(true);
+    expect(await phone.sync()).toEqual({ ok: false, reason: "full", message: "" });
+    expect(phone.tasks).toEqual(["Task a", "Task b", "Task c"]);
+
+    // After a reload the tasks are gone from this device, and the account must still have them.
+    phone.reload();
+    phone.setFull(false);
+    expect(await phone.sync()).toMatchObject({ ok: true });
+    expect(phone.tasks).toEqual(["Task a", "Task b", "Task c"]);
+    expect(await laptop.sync()).toMatchObject({ ok: true, received: 0 });
+    expect(laptop.tasks).toEqual(["Task a", "Task b", "Task c"]);
+    await t.close();
+  });
+
+  it("keeps a task it sent while full, and gets it back after a reload", async () => {
+    const t = await testApp();
+    const sam = await person(t, "sam@a.test", "sam");
+    const laptop = device(t, sam.user, sam.session);
+    laptop.add(task("a"));
+    await laptop.sync();
+
+    laptop.setFull(true);
+    laptop.add(task("b"));
+    expect(await laptop.sync()).toMatchObject({ ok: false, reason: "full" });
+    laptop.reload();
+    laptop.setFull(false);
+    expect(laptop.tasks).toEqual(["Task a"]);
+    await laptop.sync();
+    expect(laptop.tasks).toEqual(["Task a", "Task b"]);
+
+    const phone = device(t, sam.user, await sam.another());
+    await phone.sync();
+    expect(phone.tasks).toEqual(["Task a", "Task b"]);
+    await t.close();
+  });
+});
 
 describe("devices of one person", () => {
   it("first sign-in adds this device's tasks to the account, and a second device gets them", async () => {

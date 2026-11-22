@@ -8,7 +8,7 @@ import { Icon } from "../components/Icon";
 import { Sheet } from "../components/Sheet";
 import { safeStorage } from "../lib/backup";
 import { useStore } from "../state/store-context";
-import { clearGuestItems, forgetAccountCopy, GUEST, moveLegacyAccount, readGuest, syncKey, withGuestItems } from "../state/workspace";
+import { clearGuestItems, forgetAccountCopy, GUEST, moveLegacyAccount, readGuest, syncKey, withGuestItems, writeAccount } from "../state/workspace";
 import { pendingCount, SyncFailure, syncOnce, type SyncIO, type SyncReply } from "../sync/run";
 import { registerSyncRunner, requestSync, setSyncStatus, useSyncStatus, type SyncStatus } from "../sync/status";
 import { authClient } from "./client";
@@ -119,6 +119,10 @@ export function SyncRunner() {
         if (!mine()) throw new SyncFailure("server", "switched");
         latest.current.load(next);
       },
+      keep: (next) => {
+        if (!mine()) throw new SyncFailure("server", "switched");
+        return writeAccount(safeStorage(), userId, next);
+      },
       storage: safeStorage(),
       stateKey: syncKey(userId),
       post,
@@ -138,6 +142,13 @@ export function SyncRunner() {
       } else if (outcome.reason === "unauthorized") {
         setSyncStatus({ phase: "off", pending: 0, message: "" });
         void refetch();
+      } else if (outcome.reason === "full") {
+        setSyncStatus({
+          phase: "error",
+          pending: pendingCount(io),
+          message:
+            "This browser is out of room, so syncing is paused to keep your account safe. Save a backup from Settings, then clear finished tasks in Done.",
+        });
       } else if (outcome.reason === "too-many") {
         setSyncStatus({
           phase: "error",

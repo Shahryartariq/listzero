@@ -310,6 +310,78 @@ test.describe("sync", () => {
     await expect(row(page, "Belongs to the second person")).toHaveCount(0);
   });
 
+  test("a browser out of room never deletes the account's tasks", async ({ page, browser, request }) => {
+    const who = await account(request);
+    await signedIn(page, who);
+    // 200 tasks in the account, sent straight to the sync API.
+    const status = await page.evaluate(async () => {
+      const changes = Array.from({ length: 200 }, (_, i) => {
+        const id = `full-${i.toString().padStart(4, "0")}`;
+        const data = { id, title: `Account task ${i} with a title long enough to take some room`, notes: "", listId: null, due: null, time: null, priority: 0, estimate: null, steps: [], repeat: null, color: null, doing: false, createdAt: 1 + i, completedAt: null };
+        return { kind: "task", id, data };
+      });
+      const response = await fetch("/api/sync", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cursor: 0, changes }) });
+      return response.status;
+    });
+    expect(status).toBe(200);
+
+    // Another browser with almost no room left signs in.
+    const { context, page: laptop } = await device(browser);
+    await laptop.goto("/");
+    await laptop.evaluate(() => {
+      let i = 0;
+      for (const size of [500_000, 50_000, 5_000]) {
+        const chunk = "x".repeat(size);
+        try {
+          for (;;) localStorage.setItem(`filler:${i++}`, chunk);
+        } catch {
+          /* full at this size; try smaller */
+        }
+      }
+      // Room for small writes, not for 200 tasks.
+      localStorage.removeItem(`filler:${i - 2}`);
+      localStorage.removeItem(`filler:${i - 3}`);
+    });
+    await signIn(laptop, who);
+    await expect(laptop).toHaveURL(/\/today$/);
+    await laptop.goto("/account");
+    await expect(laptop.getByRole("region", { name: "Sync" }).getByRole("status")).toContainText("out of room");
+    await laptop.reload();
+    await laptop.goto("/account");
+    await expect(laptop.getByRole("region", { name: "Sync" }).getByRole("status")).toContainText(/out of room|In sync/);
+    await context.close();
+
+    // The account still has every task.
+    const { context: other, page: phone } = await device(browser);
+    await signedIn(phone, who);
+    await phone.goto("/today");
+    const count = await phone.evaluate(() => {
+      const key = Object.keys(localStorage).find((k) => k.startsWith("listzero:account:"));
+      return key ? (JSON.parse(localStorage.getItem(key)!) as { tasks: unknown[] }).tasks.length : 0;
+    });
+    expect(count).toBe(200);
+    await other.close();
+  });
+
+  test("tasks missing from this browser are downloaded again, not deleted from the account", async ({ page, browser, request }) => {
+    const who = await account(request);
+    await signedIn(page, who);
+    await page.goto("/today");
+    await addTask(page, "Still in the account");
+    await synced(page);
+    await page.evaluate(() => {
+      for (const key of Object.keys(localStorage)) if (key.startsWith("listzero:account:")) localStorage.removeItem(key);
+    });
+    await page.goto("/today");
+    await expect(row(page, "Still in the account")).toBeVisible();
+
+    const { context, page: phone } = await device(browser);
+    await signedIn(phone, who);
+    await phone.goto("/today");
+    await expect(row(phone, "Still in the account")).toBeVisible();
+    await context.close();
+  });
+
   test("someone signed in skips the front page, and sees their tasks even when the account cannot be reached", async ({ page, request }) => {
     const who = await account(request);
     await signedIn(page, who);

@@ -9,6 +9,7 @@ import { LIST_COLORS, type AppData, type ListColor, type Settings, type Task } f
 import { StoreContext, type AddDefaults, type Store, type Toast } from "./store-context";
 import {
   ACTIVE_KEY,
+  checkAccountCopy,
   keyOf,
   parseAccount,
   readAccount,
@@ -57,6 +58,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     // Someone was signed in here: start with their tasks while the session is checked.
     const workspace = remembered(storage);
     if (workspace.kind === "account") {
+      checkAccountCopy(storage, workspace.userId);
       return { ...loaded, data: readAccount(storage, workspace.userId, loaded.data.settings), workspace };
     }
     return { ...loaded, workspace };
@@ -129,6 +131,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       remember(storage, next);
       if (sameWorkspace(next, workspaceRef.current)) return;
       const settings = dataRef.current.settings;
+      if (next.kind === "account") checkAccountCopy(storage, next.userId);
       const loaded = next.kind === "guest" ? readGuest(storage, settings) : readAccount(storage, next.userId, settings);
       workspaceRef.current = next;
       lastSaved.current = keyOf(next) + JSON.stringify(loaded);

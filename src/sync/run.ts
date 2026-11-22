@@ -29,7 +29,7 @@ export interface SyncReply {
 
 export class SyncFailure extends Error {
   constructor(
-    readonly reason: "unauthorized" | "offline" | "too-many" | "server",
+    readonly reason: "unauthorized" | "offline" | "too-many" | "full" | "server",
     message = "",
   ) {
     super(message);
@@ -42,6 +42,13 @@ export interface SyncIO {
   read(): AppData;
   /** Puts new data in place. */
   load(next: AppData): void;
+  /**
+   * Writes the data to this device's storage now, and says whether that worked. What the device
+   * remembers about the account is only saved after this, so it never describes tasks the device
+   * failed to keep. (If it did, the next sync would read those tasks as deleted and delete them from
+   * the account.)
+   */
+  keep?(data: AppData): boolean;
   storage: Pick<Storage, "getItem" | "setItem" | "removeItem"> | null;
   /** Where this account's sync state is kept on the device (one key per account). */
   stateKey?: string;
@@ -103,6 +110,7 @@ export async function syncOnce(io: SyncIO, adopt?: "merge" | "replace"): Promise
       // Anything edited here while the request was away stays as it is and goes out next round.
       const now = io.read();
       io.load(applyChanges(now, reply.changes, changedBetween(base, now)));
+      if (io.keep && !io.keep(io.read())) throw new SyncFailure("full");
 
       current = {
         ...current,
