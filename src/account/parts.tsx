@@ -9,6 +9,7 @@ import { Sheet } from "../components/Sheet";
 import { safeStorage } from "../lib/backup";
 import { useStore } from "../state/store-context";
 import { clearGuestItems, forgetAccountCopy, GUEST, moveLegacyAccount, readGuest, syncKey, withGuestItems } from "../state/workspace";
+import { loadSyncState } from "../sync/engine";
 import { pendingCount, SyncFailure, syncOnce, type SyncIO, type SyncReply } from "../sync/run";
 import { registerSyncRunner, requestSync, setSyncStatus, useSyncStatus, type SyncStatus } from "../sync/status";
 import { authClient } from "./client";
@@ -54,6 +55,19 @@ export function SyncRunner() {
   // Only a check that worked says "signed out". Offline, keep whoever was signed in.
   const known = !session.isPending && !session.error;
   const refetch = session.refetch;
+  const unreachable = Boolean(session.error) && !session.data;
+
+  // The check failed: ask again when the connection is back, and now and then until it answers.
+  useEffect(() => {
+    if (!unreachable) return;
+    const retry = () => void refetch();
+    const timer = window.setInterval(retry, 60_000);
+    window.addEventListener("online", retry);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("online", retry);
+    };
+  }, [unreachable, refetch]);
 
   /** The guest's tasks and lists on offer to the account that just signed in. */
   const [offer, setOffer] = useState<{ tasks: number; lists: number } | null>(null);
@@ -261,7 +275,22 @@ export function syncLabel(status: SyncStatus): string {
 export function AccountEntry() {
   const session = authClient.useSession();
   const status = useSyncStatus();
+  const { workspace } = useStore();
   if (session.isPending && !session.data) return null;
+  if (!session.data && session.error && workspace.kind === "account") {
+    // The check failed, and someone is signed in here: they still are, as far as anyone knows.
+    const name = loadSyncState(safeStorage(), syncKey(workspace.userId))?.email || "Your account";
+    const note = "Cannot reach your account right now";
+    return (
+      <NavLink to="/account" className="nav__link" data-tip={`${name}. ${note}`}>
+        <Icon name="user" />
+        <span className="nav__name nav__label">{name}</span>
+        <span className="sync-dot" data-phase="offline">
+          <span className="sr-only">{note}</span>
+        </span>
+      </NavLink>
+    );
+  }
   if (!session.data) {
     return (
       <NavLink to="/sign-in" className="nav__link" data-tip="Sign in">

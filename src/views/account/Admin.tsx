@@ -4,7 +4,7 @@ import { Link, Navigate } from "react-router";
 import { authClient } from "../../account/client";
 import { useAccountConfig } from "../../account/config";
 import { authMessage } from "../../account/messages";
-import { FormMessage } from "../../account/ui";
+import { CannotReach, FormMessage } from "../../account/ui";
 import { Confirm, Sheet } from "../../components/Sheet";
 import { usePageTitle } from "../../state/usePageTitle";
 
@@ -63,7 +63,10 @@ export function Admin() {
 
   if (config === null || (session.isPending && !session.data)) return null;
   if (!config.accounts) return <Navigate to="/today" replace />;
-  if (!me) return <Navigate to="/sign-in?next=/admin" replace />;
+  if (!me) {
+    if (session.error) return <CannotReach title="People" onRetry={() => void session.refetch()} />;
+    return <Navigate to="/sign-in?next=/admin" replace />;
+  }
   if (!isAdmin) {
     return (
       <div className="view">

@@ -141,3 +141,24 @@ export function GoogleMark() {
     </svg>
   );
 }
+
+/**
+ * The session check failed (offline, or the server did not answer). That says nothing about whether
+ * someone is signed in, so this page waits instead of sending them to the sign-in form.
+ */
+export function CannotReach({ title, onRetry }: { title: string; onRetry(): void }) {
+  return (
+    <div className="view prose account">
+      <header className="head">
+        <h1 className="title">{title}</h1>
+      </header>
+      <p className="auth__lead">Listzero cannot reach your account right now. You may be offline.</p>
+      <p>Your tasks are still here. Changes you make now sync when the connection is back.</p>
+      <div className="setting__row">
+        <button type="button" className="btn" onClick={onRetry}>
+          Try again
+        </button>
+      </div>
+    </div>
+  );
+}

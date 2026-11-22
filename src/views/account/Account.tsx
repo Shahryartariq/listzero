@@ -6,7 +6,7 @@ import { authClient, type SessionUser } from "../../account/client";
 import { useAccountConfig, type AccountConfig } from "../../account/config";
 import { authMessage, checkPassword, checkUsername } from "../../account/messages";
 import { SignOutSheet, syncLabel } from "../../account/parts";
-import { FormMessage, GoogleMark, PasswordField, TextField } from "../../account/ui";
+import { CannotReach, FormMessage, GoogleMark, PasswordField, TextField } from "../../account/ui";
 import { Confirm } from "../../components/Sheet";
 import { downloadText } from "../../lib/download";
 import { useStore } from "../../state/store-context";
@@ -650,7 +650,10 @@ export function Account() {
 
   if (config === null || (session.isPending && !session.data)) return null;
   if (!config.accounts) return <Navigate to="/today" replace />;
-  if (!session.data) return <Navigate to="/sign-in?next=/account" replace />;
+  if (!session.data) {
+    if (session.error) return <CannotReach title="Account" onRetry={() => void session.refetch()} />;
+    return <Navigate to="/sign-in?next=/account" replace />;
+  }
 
   const { user } = session.data;
   const hasPassword = accounts?.some((a) => a.providerId === "credential") ?? true;
