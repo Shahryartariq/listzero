@@ -1,8 +1,13 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router";
+import { Suspense } from "react";
+import { BrowserRouter, Route, Routes } from "react-router";
+import { useAccountConfig } from "./account/config";
 import { Shell } from "./components/Shell";
+import { Solo } from "./components/Solo";
+import { Toasts } from "./components/Toasts";
 import { lazyView } from "./lib/lazyView";
 import { StoreProvider } from "./state/StoreProvider";
 import { About } from "./views/About";
+import { Landing } from "./views/Landing";
 import { Inbox, ListView, Upcoming } from "./views/Lists";
 import { Menu, NotFound } from "./views/Menu";
 import { Today } from "./views/Today";
@@ -25,15 +30,35 @@ const ForgotPassword = lazyView(() => auth().then((m) => m.ForgotPassword));
 const ResetPassword = lazyView(() => auth().then((m) => m.ResetPassword));
 const TwoFactor = lazyView(() => auth().then((m) => m.TwoFactor));
 const Account = lazyView(() => import("./views/account/Account").then((m) => m.Account));
+const SyncRunner = lazyView(() => import("./account/parts").then((m) => m.SyncRunner));
 const Admin = lazyView(() => import("./views/account/Admin").then((m) => m.Admin));
+
+/** Who is signed in decides whose tasks are shown, on every page. Only loaded where accounts exist. */
+function AccountRuntime() {
+  if (useAccountConfig()?.accounts !== true) return null;
+  return (
+    <Suspense fallback={null}>
+      <SyncRunner />
+    </Suspense>
+  );
+}
 
 export function App() {
   return (
     <StoreProvider>
       <BrowserRouter>
         <Routes>
+          {/* The front page and the ways into an account: no sidebar, one way onward. */}
+          <Route element={<Solo />}>
+            <Route index element={<Landing />} />
+            <Route path="sign-in" element={<SignIn />} />
+            <Route path="sign-up" element={<SignUp />} />
+            <Route path="verify-email" element={<VerifyEmail />} />
+            <Route path="forgot-password" element={<ForgotPassword />} />
+            <Route path="reset-password" element={<ResetPassword />} />
+            <Route path="two-factor" element={<TwoFactor />} />
+          </Route>
           <Route element={<Shell />}>
-            <Route index element={<Navigate to="/today" replace />} />
             <Route path="today" element={<Today />} />
             <Route path="inbox" element={<Inbox />} />
             <Route path="upcoming" element={<Upcoming />} />
@@ -45,17 +70,13 @@ export function App() {
             <Route path="settings" element={<Settings />} />
             <Route path="about" element={<About />} />
             <Route path="menu" element={<Menu />} />
-            <Route path="sign-in" element={<SignIn />} />
-            <Route path="sign-up" element={<SignUp />} />
-            <Route path="verify-email" element={<VerifyEmail />} />
-            <Route path="forgot-password" element={<ForgotPassword />} />
-            <Route path="reset-password" element={<ResetPassword />} />
-            <Route path="two-factor" element={<TwoFactor />} />
             <Route path="account" element={<Account />} />
             <Route path="admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
+        <AccountRuntime />
+        <Toasts />
       </BrowserRouter>
     </StoreProvider>
   );

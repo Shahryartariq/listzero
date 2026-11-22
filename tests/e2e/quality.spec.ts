@@ -20,7 +20,7 @@ for (const scheme of ["light", "dark"] as const) {
     test("every view passes automated WCAG checks", async ({ page }) => {
       await loadExamples(page);
       await expectNoViolations(page);
-      for (const path of ["/inbox", "/upcoming", "/board", "/board?in=all", "/done", "/focus", "/search?q=the", "/settings", "/about", "/menu"]) {
+      for (const path of ["/", "/inbox", "/upcoming", "/board", "/board?in=all", "/done", "/focus", "/search?q=the", "/settings", "/about", "/menu", "/sign-in", "/sign-up"]) {
         await page.goto(path);
         await expect(page.locator("h1").first()).toBeVisible();
         await expectNoViolations(page);
@@ -93,7 +93,7 @@ test("no view scrolls sideways on a 360px screen", async ({ page }) => {
     { title: "Carried", due: day(-3) },
     { title: "Later", due: day(4) },
   ]);
-  for (const path of ["/today", "/inbox", "/upcoming", "/board", "/board?in=all", "/done", "/focus", "/search?q=task", "/settings", "/about", "/menu", "/today?task=seed-1"]) {
+  for (const path of ["/", "/today", "/inbox", "/upcoming", "/board", "/board?in=all", "/done", "/focus", "/search?q=task", "/settings", "/about", "/menu", "/today?task=seed-1", "/sign-in"]) {
     await page.goto(path);
     await expect(page.locator("h1").first()).toBeAttached();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -141,7 +141,7 @@ test("pages have one h1, a description and no console errors", async ({ page }) 
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   page.on("pageerror", (e) => errors.push(String(e)));
   await loadExamples(page);
-  for (const path of ["/today", "/inbox", "/upcoming", "/board", "/done", "/focus", "/search", "/settings", "/about"]) {
+  for (const path of ["/", "/today", "/inbox", "/upcoming", "/board", "/done", "/focus", "/search", "/settings", "/about", "/sign-in"]) {
     await page.goto(path);
     await expect(page.locator("h1")).toHaveCount(1);
   }

@@ -3,6 +3,7 @@ import type { TokenKind } from "../lib/parse";
 import type { Display } from "../lib/display";
 import type { TaskPatch } from "../lib/store";
 import type { AppData, ListColor, Settings, Task } from "../lib/types";
+import type { Workspace } from "./workspace";
 
 export interface Toast {
   id: string;
@@ -57,6 +58,12 @@ export interface Store {
   read(): AppData;
   /** Swaps in data that did not come from something the user just did (sync, signing out). No message, no Undo. */
   load(next: AppData): void;
+  /** Whose tasks are shown: the guest's, or one signed-in account's. */
+  workspace: Workspace;
+  /** The same, this instant, even between renders (for sync, which must never cross between people). */
+  readWorkspace(): Workspace;
+  /** Shows the guest's tasks or an account's (and remembers it for the next visit). */
+  switchWorkspace(next: Workspace): void;
   dayOf(timestamp: number): string;
 }
 

@@ -7,8 +7,40 @@ import { parseTask, type TokenKind } from "../lib/parse";
 import { findList, reducer, type TaskPatch } from "../lib/store";
 import { LIST_COLORS, type AppData, type ListColor, type Settings, type Task } from "../lib/types";
 import { StoreContext, type AddDefaults, type Store, type Toast } from "./store-context";
+import {
+  ACTIVE_KEY,
+  keyOf,
+  parseAccount,
+  readAccount,
+  readGuest,
+  remember,
+  remembered,
+  sameWorkspace,
+  writeAccount,
+  writeSettings,
+  type Workspace,
+} from "./workspace";
 
 const TOAST_MS = 7000;
+const PERSIST_KEY = "listzero:persist";
+
+/**
+ * Asks the browser to keep this site's data even when space runs low, once, after the first task
+ * is saved (asking on load can show a prompt for nothing). A refusal is remembered, not repeated.
+ */
+function askToPersist(storage: Storage | null) {
+  try {
+    if (!navigator.storage?.persist || storage?.getItem(PERSIST_KEY)) return;
+    storage?.setItem(PERSIST_KEY, "asked");
+    void navigator.storage
+      .persisted()
+      .then((already) => (already ? true : navigator.storage.persist()))
+      .then((granted) => storage?.setItem(PERSIST_KEY, granted ? "granted" : "refused"))
+      .catch(() => undefined);
+  } catch {
+    /* Best effort: data is saved either way. */
+  }
+}
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const storage = useMemo(() => safeStorage(), []);
@@ -22,7 +54,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         /* nothing more we can do */
       }
     }
-    return loaded;
+    // Someone was signed in here: start with their tasks while the session is checked.
+    const workspace = remembered(storage);
+    if (workspace.kind === "account") {
+      return { ...loaded, data: readAccount(storage, workspace.userId, loaded.data.settings), workspace };
+    }
+    return { ...loaded, workspace };
   }, [storage]);
 
   const [data, dispatch] = useReducer(reducer, initial.data);
@@ -47,7 +84,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [today, setToday] = useState(() => todayOf());
   const [toasts, setToasts] = useState<Toast[]>([]);
   const dataRef = useRef(data);
+  const [workspace, setWorkspace] = useState<Workspace>(initial.workspace);
+  const workspaceRef = useRef<Workspace>(initial.workspace);
   const lastSaved = useRef<string | null>(null);
+  const lastSettings = useRef<string | null>(null);
 
   // Counts every change to the data. An Undo is only good for the version right after its own action.
   const version = useRef(0);
@@ -65,24 +105,73 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       );
     }
     dataRef.current = data;
-    const json = JSON.stringify(data);
+    const ws = workspaceRef.current;
+    const json = keyOf(ws) + JSON.stringify(data);
     if (json === lastSaved.current) return;
     lastSaved.current = json;
-    setPersistent(save(storage, data));
+    const settings = JSON.stringify(data.settings);
+    let ok: boolean;
+    if (ws.kind === "guest") {
+      ok = save(storage, data);
+    } else {
+      ok = writeAccount(storage, ws.userId, data);
+      // Settings belong to the device, so they are kept with the guest's record either way.
+      if (settings !== lastSettings.current) ok = writeSettings(storage, data.settings) && ok;
+    }
+    if (ok) lastSettings.current = settings;
+    setPersistent(ok);
+    if (ok && data.tasks.length > 0) askToPersist(storage);
   }, [data, storage]);
 
-  // Another tab changed the data: follow it instead of overwriting it.
+  /** Shows the guest's tasks, or one account's, keeping this device's settings. No message, no Undo. */
+  const switchWorkspace = useCallback(
+    (next: Workspace) => {
+      remember(storage, next);
+      if (sameWorkspace(next, workspaceRef.current)) return;
+      const settings = dataRef.current.settings;
+      const loaded = next.kind === "guest" ? readGuest(storage, settings) : readAccount(storage, next.userId, settings);
+      workspaceRef.current = next;
+      lastSaved.current = keyOf(next) + JSON.stringify(loaded);
+      dataRef.current = loaded;
+      setWorkspace(next);
+      dispatch({ type: "replace", data: loaded });
+      // An Undo from one person's tasks must never land in another's.
+      setToasts((list) => (list.some((t) => t.undo) ? list.map((t) => (t.undo ? { ...t, undo: null } : t)) : list));
+    },
+    [storage],
+  );
+
+  // Another tab changed the data, or signed in or out: follow it instead of overwriting it.
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key !== STORAGE_KEY || e.newValue === null) return;
-      const next = parseBackup(e.newValue);
+      const ws = workspaceRef.current;
+      if (e.key === ACTIVE_KEY) {
+        switchWorkspace(remembered(storage));
+        return;
+      }
+      if (e.newValue === null) return;
+      let next: AppData | null = null;
+      if (e.key === keyOf(ws)) {
+        next =
+          ws.kind === "guest"
+            ? parseBackup(e.newValue)
+            : parseAccount(e.newValue, dataRef.current.settings);
+      } else if (ws.kind === "account" && e.key === STORAGE_KEY) {
+        // Settings changed in a tab where nobody is signed in.
+        const guest = parseBackup(e.newValue);
+        if (guest && JSON.stringify(guest.settings) !== JSON.stringify(dataRef.current.settings)) {
+          next = { ...dataRef.current, settings: guest.settings };
+        }
+      }
       if (!next) return;
-      lastSaved.current = JSON.stringify(next);
+      lastSaved.current = keyOf(ws) + JSON.stringify(next);
+      lastSettings.current = JSON.stringify(next.settings);
+      dataRef.current = next;
       dispatch({ type: "replace", data: next });
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  }, [storage, switchWorkspace]);
 
   // The day changes while the tab stays open.
   useEffect(() => {
@@ -259,6 +348,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       read: snapshot,
 
+      workspace,
+      readWorkspace: () => workspaceRef.current,
+      switchWorkspace,
+
       load(next: AppData) {
         if (next === dataRef.current) return;
         dispatch({ type: "replace", data: next });
@@ -268,7 +361,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       dayOf: (timestamp: number) => toDay(new Date(timestamp)),
     };
-  }, [data, today, persistent, initial.persistent, damaged, forgetDamaged, toasts, dismissToast, undoToast, notify]);
+  }, [data, today, persistent, initial.persistent, damaged, forgetDamaged, toasts, dismissToast, undoToast, notify, workspace, switchWorkspace]);
 
   return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>;
 }

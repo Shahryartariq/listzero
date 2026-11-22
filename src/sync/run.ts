@@ -43,6 +43,8 @@ export interface SyncIO {
   /** Puts new data in place. */
   load(next: AppData): void;
   storage: Pick<Storage, "getItem" | "setItem" | "removeItem"> | null;
+  /** Where this account's sync state is kept on the device (one key per account). */
+  stateKey?: string;
   /** Sends a request to /api/sync. Throws SyncFailure. */
   post(body: { cursor: number; changes: Change[] }): Promise<SyncReply>;
 }
@@ -61,14 +63,14 @@ export type Outcome =
   | { ok: false; reason: SyncFailure["reason"]; message: string };
 
 /** What this device has that the account does not, without contacting anyone. */
-export function pendingCount(io: Pick<SyncIO, "read" | "storage" | "user">): number {
-  const state = loadSyncState(io.storage);
+export function pendingCount(io: Pick<SyncIO, "read" | "storage" | "user" | "stateKey">): number {
+  const state = loadSyncState(io.storage, io.stateKey);
   if (!state || state.userId !== io.user.id) return io.read().tasks.length + io.read().lists.length;
   return localChanges(io.read(), state.known).length;
 }
 
 export async function syncOnce(io: SyncIO, adopt?: "merge" | "replace"): Promise<Outcome> {
-  let state: SyncState | null = loadSyncState(io.storage);
+  let state: SyncState | null = loadSyncState(io.storage, io.stateKey);
 
   if (state && state.userId !== io.user.id) {
     // The question is only worth asking when the other account left something here.
@@ -107,7 +109,7 @@ export async function syncOnce(io: SyncIO, adopt?: "merge" | "replace"): Promise
         cursor: reply.cursor,
         known: settle(reply.reset ? emptyFingerprints() : current.known, sending, reply.changes),
       };
-      saveSyncState(io.storage, current);
+      saveSyncState(io.storage, current, io.stateKey);
       sent += sending.length;
       received += reply.changes.length;
 
@@ -123,9 +125,4 @@ export async function syncOnce(io: SyncIO, adopt?: "merge" | "replace"): Promise
     throw error;
   }
   return { ok: true, first, sent, received };
-}
-
-/** Forgets what this device knew about the account. The tasks themselves are not touched. */
-export function forgetAccount(storage: SyncIO["storage"]): void {
-  saveSyncState(storage, null);
 }

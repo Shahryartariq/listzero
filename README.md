@@ -103,9 +103,10 @@ device you sign in on.
 - **Two-factor codes** from an authenticator app, with ten one-time backup codes.
 - **An Account page:** sync status, profile, password, two-factor, passkeys, Google, every device you are signed in
   on (sign any of them out), sign out, and delete the account (confirmed by email).
-- **Sync that respects what is already here.** Signing in on a device with tasks adds them to the account. Changes
-  made offline are sent later. A browser holding someone else's tasks asks before mixing them. Signing out offers
-  to keep the tasks in the browser or remove them. Appearance and other settings stay per device.
+- **Guests and accounts are kept apart.** A guest's tasks live in the browser. Each account's tasks have their own
+  place too, so people who share a browser never see each other's. Signing in with guest tasks asks once whether to
+  add them to the account; signing out takes the account's tasks off the browser and shows the guest tasks again.
+  Changes made offline are sent later. Appearance and other settings stay per device.
 - **An admin page** for the people listed in `ADMIN_EMAILS`: see who has an account, suspend or lift a suspension,
   sign someone out everywhere, change roles, delete an account. Admins never see anyone's tasks and cannot sign in
   as someone else.
@@ -152,11 +153,11 @@ device you sign in on.
 ```
 src/
   lib/         parser, dates, reducer and views, backup validation (all pure, all unit-tested)
-  state/       the store provider, theme and URL helpers
+  state/       the store provider, whose tasks are on screen (guest or account), theme and URL helpers
   components/  quick add, task row, task sheet, dialogs, shell
   views/       Today, Inbox, Upcoming, lists, Done, Focus, Search, Settings, About
   styles/      themes.css (palettes), app.css (layout and components)
-  account/     the auth client, sign-in form parts, the sync runner and sign-out choices
+  account/     the auth client, sign-in form parts, the sync runner, the guest-task offer and sign-out
   sync/        working out what changed, applying the account's changes, the sync loop
 server/        the API: auth, sync, email, database schema (all tested in-process)
 api/           the Vercel Function entry; the bundled server is built into it

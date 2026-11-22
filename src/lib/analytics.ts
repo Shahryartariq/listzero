@@ -14,6 +14,7 @@ export const SITE_HOST = "listzero.vercel.app";
 
 /** The screens that are counted, by their fixed address and name. */
 const SCREENS: Record<string, string> = {
+  "/": "Home",
   "/today": "Today",
   "/inbox": "Inbox",
   "/upcoming": "Upcoming",
@@ -38,8 +39,7 @@ const SCREENS: Record<string, string> = {
 
 /** The address that is safe to report for a path: no ids, no query, no unknown text. */
 export function screenPath(pathname: string): string {
-  const clean = pathname.replace(/\/+$/, "") || "/today";
-  if (clean === "/") return "/today";
+  const clean = pathname.replace(/\/+$/, "") || "/";
   if (/^\/list\/[^/]+$/.test(clean)) return "/list";
   return Object.prototype.hasOwnProperty.call(SCREENS, clean) ? clean : "/not-found";
 }

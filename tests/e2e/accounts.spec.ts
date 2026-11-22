@@ -64,11 +64,21 @@ async function signIn(page: Page, who: Person, name = who.email) {
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }
 
-/** Signed in and the first sync has finished. */
-async function signedIn(page: Page, who: Person) {
+/**
+ * Signed in and the first sync has finished. With tasks here as a guest, Listzero asks once whether to
+ * add them to the account; pass the answer.
+ */
+async function signedIn(page: Page, who: Person, guestTasks?: "Add to my account" | "Not now") {
   await signIn(page, who);
   await expect(page).toHaveURL(/\/today$/);
+  if (guestTasks) await answerOffer(page, guestTasks);
   await synced(page);
+}
+
+async function answerOffer(page: Page, answer: "Add to my account" | "Not now") {
+  const offer = page.getByRole("dialog", { name: "Add your guest tasks?" });
+  await offer.getByRole("button", { name: answer }).click();
+  await expect(offer).toHaveCount(0);
 }
 
 async function synced(page: Page) {
@@ -76,13 +86,18 @@ async function synced(page: Page) {
   await expect(page.getByRole("region", { name: "Sync" }).getByRole("status")).toContainText("In sync");
 }
 
-async function signOut(page: Page, choice: "keep" | "remove") {
+/** Signs out from the Account page and lands on the front page as a guest. */
+async function signOut(page: Page) {
   await page.goto("/account");
   await page.getByRole("region", { name: "Sign out" }).getByRole("button", { name: "Sign out" }).click();
-  const sheet = page.getByRole("dialog", { name: "Sign out" });
-  await sheet.getByRole("button", { name: choice === "keep" ? "Sign out and keep the tasks here" : "Sign out and remove them from this browser" }).click();
-  await expect(page).toHaveURL(/\/sign-in/);
+  await page.getByRole("dialog", { name: "Sign out" }).getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { name: "Get today to zero." })).toBeVisible();
 }
+
+/** Every key this browser keeps for an account (its tasks, and what sync knows). */
+const accountKeys = (page: Page) =>
+  page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("listzero:account:") || k.startsWith("listzero:sync")));
 
 const device = async (browser: Browser) => {
   const context = await browser.newContext({ serviceWorkers: "block" });
@@ -103,7 +118,7 @@ function totp(secret: string, at = Date.now()): string {
 }
 
 test.describe("creating an account", () => {
-  test("sign up, confirm the email, and the tasks already here are kept and synced", async ({ page, request }) => {
+  test("sign up, confirm the email, and the guest's tasks can move into the new account", async ({ page, request }) => {
     await seed(page, [{ title: "Was here before the account", due: day() }]);
     const who = person();
 
@@ -120,9 +135,21 @@ test.describe("creating an account", () => {
 
     await page.goto(await emailedLink(request, who.email));
     await expect(page).toHaveURL(/\/today$/);
+    const offer = page.getByRole("dialog", { name: "Add your guest tasks?" });
+    await expect(offer).toContainText("You have 1 task as a guest in this browser.");
+    await answerOffer(page, "Add to my account");
+    await expect(page.getByText("1 task added to your account.")).toBeVisible();
     await expect(row(page, "Was here before the account")).toBeVisible();
     await synced(page);
     await expect(page.getByText(`Signed in as ${who.email}`)).toBeVisible();
+
+    // It moved: the guest no longer has it, the account does.
+    await signOut(page);
+    await page.goto("/today");
+    await expect(row(page, "Was here before the account")).toHaveCount(0);
+    await signedIn(page, who);
+    await page.goto("/today");
+    await expect(row(page, "Was here before the account")).toBeVisible();
   });
 
   test("the form says what is wrong before anything is sent", async ({ page, request }) => {
@@ -234,45 +261,69 @@ test.describe("sync", () => {
     await two.context.close();
   });
 
-  test("signing out can keep the tasks here or remove them, and the account keeps them either way", async ({ page, request }) => {
+  test("a guest's tasks and an account's tasks stay apart, and signing out takes the account's off this browser", async ({ page, request }) => {
     const who = await account(request);
-    await seed(page, [{ title: "Mine to keep", due: day() }]);
-    await signedIn(page, who);
+    await seed(page, [{ title: "Kept as a guest", due: day() }]);
+    await signedIn(page, who, "Not now");
 
-    await signOut(page, "keep");
     await page.goto("/today");
-    await expect(row(page, "Mine to keep")).toBeVisible();
+    await expect(row(page, "Kept as a guest")).toHaveCount(0);
+    await addTask(page, "Only in the account");
+    await synced(page);
+    expect(await accountKeys(page)).not.toEqual([]);
 
-    await signedIn(page, who);
-    await signOut(page, "remove");
-    await page.goto("/today");
-    await expect(row(page, "Mine to keep")).toHaveCount(0);
+    await signOut(page);
+    expect(await accountKeys(page)).toEqual([]);
+    await expect(page.getByText("As a guest you have 1 open task in this browser.")).toBeVisible();
+    await page.getByRole("link", { name: "Continue as a guest" }).click();
+    await expect(row(page, "Kept as a guest")).toBeVisible();
+    await expect(row(page, "Only in the account")).toHaveCount(0);
 
-    await signedIn(page, who);
+    // Signing in again asks again, and the account's tasks come back from the account.
+    await signedIn(page, who, "Not now");
     await page.goto("/today");
-    await expect(row(page, "Mine to keep")).toBeVisible();
+    await expect(row(page, "Only in the account")).toBeVisible();
+    await expect(row(page, "Kept as a guest")).toHaveCount(0);
   });
 
-  test("someone else's tasks on a shared browser are never mixed in without asking", async ({ page, request }) => {
+  test("two accounts on one browser each see only their own tasks", async ({ page, request }) => {
     const first = await account(request);
     const second = await account(request);
-    await seed(page, [{ title: "Belongs to the first person", due: day() }]);
     await signedIn(page, first);
-    await signOut(page, "keep");
+    await page.goto("/today");
+    await addTask(page, "Belongs to the first person");
+    await synced(page);
+    await signOut(page);
 
-    await signIn(page, second);
-    const sheet = page.getByRole("dialog", { name: "Tasks from another account" });
-    await expect(sheet).toContainText(first.email);
-    await sheet.getByRole("button", { name: "Replace them with my tasks" }).click();
-    await expect(sheet).toHaveCount(0);
+    // The guest is empty, so there is nothing to offer.
+    await signedIn(page, second);
+    await expect(page.getByRole("dialog", { name: "Add your guest tasks?" })).toHaveCount(0);
     await page.goto("/today");
     await expect(row(page, "Belongs to the first person")).toHaveCount(0);
+    await addTask(page, "Belongs to the second person");
+    await synced(page);
+    await signOut(page);
 
-    // The first person still has it.
-    await signOut(page, "remove");
     await signedIn(page, first);
     await page.goto("/today");
     await expect(row(page, "Belongs to the first person")).toBeVisible();
+    await expect(row(page, "Belongs to the second person")).toHaveCount(0);
+  });
+
+  test("someone signed in skips the front page, and sees their tasks even when the account cannot be reached", async ({ page, request }) => {
+    const who = await account(request);
+    await signedIn(page, who);
+    await page.goto("/today");
+    await addTask(page, "Here without the server");
+    await synced(page);
+
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/today$/);
+    // Only a check that worked can say "signed out": a failed one keeps the account's tasks on screen.
+    await page.route("**/api/auth/get-session*", (route) => route.abort());
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/today$/);
+    await expect(row(page, "Here without the server")).toBeVisible();
   });
 });
 
@@ -292,7 +343,7 @@ test.describe("the Account page", () => {
     await password.getByRole("button", { name: "Change password" }).click();
     await expect(password.getByRole("status")).toContainText("Password changed");
 
-    await signOut(page, "remove");
+    await signOut(page);
     await signIn(page, { ...who, password: "another long phrase 91" });
     await expect(page).toHaveURL(/\/today$/);
   });
@@ -314,7 +365,7 @@ test.describe("the Account page", () => {
     await section.getByRole("button", { name: "I have saved them" }).click();
     await expect(section).toContainText("On. Signing in asks for a code");
 
-    await signOut(page, "remove");
+    await signOut(page);
     await signIn(page, who);
     await expect(page).toHaveURL(/\/two-factor/);
     await page.getByLabel("Code", { exact: true }).fill("000000");
@@ -325,7 +376,7 @@ test.describe("the Account page", () => {
     await expect(page).toHaveURL(/\/today$/);
 
     await synced(page);
-    await signOut(page, "remove");
+    await signOut(page);
     await signIn(page, who);
     await page.getByRole("button", { name: "Use a backup code instead" }).click();
     await page.getByLabel("Backup code").fill(codes[0]!);
@@ -347,7 +398,7 @@ test.describe("the Account page", () => {
     await section.getByRole("button", { name: "Add a passkey" }).click();
     await expect(section.getByText("Test key")).toBeVisible();
 
-    await signOut(page, "remove");
+    await signOut(page);
     await page.goto("/sign-in");
     // The test authenticator also answers the browser's passkey autofill by itself, so the page may
     // already be moving on by the time the button is clicked. Either way, no password was typed.
@@ -380,10 +431,13 @@ test.describe("the Account page", () => {
     await two.context.close();
   });
 
-  test("deleting the account is confirmed by email and leaves the tasks in this browser", async ({ page, request }) => {
+  test("deleting the account is confirmed by email and leaves the guest's tasks in this browser", async ({ page, request }) => {
     const who = await account(request);
     await seed(page, [{ title: "Outlives the account", due: day() }]);
-    await signedIn(page, who);
+    await signedIn(page, who, "Not now");
+    await page.goto("/today");
+    await addTask(page, "Goes with the account");
+    await synced(page);
 
     await page.getByRole("region", { name: "Delete account" }).getByRole("button", { name: "Delete my account" }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Email me the link" }).click();
@@ -392,6 +446,8 @@ test.describe("the Account page", () => {
     await page.goto(await emailedLink(request, who.email, DELETE));
     await page.goto("/today");
     await expect(row(page, "Outlives the account")).toBeVisible();
+    await expect(row(page, "Goes with the account")).toHaveCount(0);
+    expect(await accountKeys(page)).toEqual([]);
     await signIn(page, who);
     await expect(page.getByRole("alert")).toBeVisible();
   });
@@ -479,6 +535,10 @@ test.describe("a copy of Listzero without accounts", () => {
   test("has no sign-in anywhere and works as before", async ({ page }) => {
     await page.route("**/api/config", (route) => route.fulfill({ status: 404, contentType: "text/html", body: "<!doctype html>" }));
     await seed(page, [{ title: "Still local", due: day() }]);
+    await page.goto("/");
+    await expect(page.getByRole("link", { name: "Continue as a guest" })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Sign in/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Continue with Google" })).toHaveCount(0);
     await page.goto("/menu");
     await expect(page.getByRole("link", { name: "Settings" }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);

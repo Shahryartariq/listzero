@@ -578,7 +578,8 @@ function DeleteSection({ hasPassword, config }: { hasPassword: boolean; config: 
   return (
     <Section title="Delete account">
       <p className="hint">
-        Deletes your account and the tasks stored with it. Tasks already in this browser stay here. It cannot be undone.
+        Deletes your account and its tasks, on every device. Guest tasks in this browser are not affected. It cannot be
+        undone.
       </p>
       {asking ? (
         <form
@@ -614,7 +615,7 @@ function DeleteSection({ hasPassword, config }: { hasPassword: boolean; config: 
           body={
             config.email
               ? "We will email you a link to confirm. Nothing is deleted until you open it."
-              : "Your account and the tasks stored with it are deleted. Tasks in this browser stay."
+              : "Your account and its tasks are deleted. Guest tasks in this browser stay."
           }
           confirmLabel={config.email ? "Email me the link" : "Continue"}
           onClose={() => setOpen(false)}

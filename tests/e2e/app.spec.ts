@@ -4,6 +4,7 @@ import { addTask, day, isPhone, row, seed } from "./helpers";
 test.describe("capture", () => {
   test("a first visit starts at zero, and a new task survives a reload", async ({ page }) => {
     await page.goto("/");
+    await page.getByRole("link", { name: "Start as a guest" }).click();
     await expect(page).toHaveURL(/\/today$/);
     await expect(page.getByRole("heading", { name: "A clean slate." })).toBeVisible();
     await expect(page.locator(".zero-head__count")).toHaveText("0");

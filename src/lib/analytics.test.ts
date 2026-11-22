@@ -4,7 +4,8 @@ import { SITE_HOST, analyticsAllowed, browserObjects, screenPath, screenTitle } 
 describe("what analytics is allowed to see", () => {
   it("reports fixed screen addresses and drops everything personal", () => {
     expect(screenPath("/today")).toBe("/today");
-    expect(screenPath("/")).toBe("/today");
+    expect(screenPath("/")).toBe("/");
+    expect(screenTitle("/")).toBe("Home | Listzero");
     expect(screenPath("/about/")).toBe("/about");
     // A list's id and name never leave the browser.
     expect(screenPath("/list/k3J9s-private-id")).toBe("/list");

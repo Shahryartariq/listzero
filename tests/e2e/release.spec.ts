@@ -9,18 +9,17 @@ test.describe("search engines", () => {
     const canonical = page.locator('link[rel="canonical"]');
 
     await page.goto("/");
-    await expect(page).toHaveURL(/\/today$/);
     await expect(robots).toHaveAttribute("content", "index, follow");
     await expect(canonical).toHaveAttribute("href", `${SITE}/`);
-    // A first visit, which is what a crawler is, keeps the site's own title and reads what Listzero is.
+    // The front page keeps the site's own title and says what Listzero is.
     await expect(page).toHaveTitle("Listzero: a free to-do list for busy minds");
-    await expect(page.getByText("Listzero is a free to-do list for busy minds.")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Get today to zero.");
 
     await page.goto("/about");
     await expect(robots).toHaveAttribute("content", "index, follow");
     await expect(canonical).toHaveAttribute("href", `${SITE}/about`);
 
-    for (const path of ["/inbox", "/upcoming", "/board", "/done", "/focus", "/search", "/settings", "/list/x", "/nope"]) {
+    for (const path of ["/today", "/inbox", "/upcoming", "/board", "/done", "/focus", "/search", "/settings", "/list/x", "/nope"]) {
       await page.goto(path);
       await expect(robots, path).toHaveAttribute("content", "noindex, follow");
       await expect(canonical, path).toHaveCount(0);
