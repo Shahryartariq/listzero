@@ -145,6 +145,8 @@ a {
   display: grid;
   grid-template-columns: 16.5rem minmax(0, 1fr);
   min-height: 100dvh;
+  /* Collapsing the sidebar slides; reduced motion and calm mode make it instant (below). */
+  transition: grid-template-columns 0.2s ease;
 }
 
 .side {
@@ -164,7 +166,19 @@ a {
   box-shadow: var(--tile-shadow);
   -webkit-backdrop-filter: var(--frost);
   backdrop-filter: var(--frost);
+  overflow-x: hidden;
   overflow-y: auto;
+}
+
+.side__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+}
+
+.side__toggle {
+  flex: none;
 }
 
 .brand {
@@ -199,6 +213,8 @@ a {
   display: flex;
   align-items: center;
   gap: 0.7rem;
+  /* Lets a long name shrink to "…" instead of widening the column. */
+  min-width: 0;
   min-height: 2.5rem;
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
@@ -226,6 +242,19 @@ a {
 
 .nav__link svg {
   flex: none;
+}
+
+/* One line each in the sidebar, so it keeps its height while it changes width. A long list name
+   is cut short there and shown in full in a tip; the phone menu lets it wrap. */
+.side .nav__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav__link .dot {
+  margin: 0 0.28rem;
 }
 
 .nav__count {
@@ -261,6 +290,128 @@ a {
   margin-top: auto;
   display: grid;
   gap: 0.125rem;
+}
+
+/* The name beside an icon-only control in the sidebar (components/SideTips.tsx). */
+.side-tip {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 18rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 0.65rem;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.3;
+  transform: translateY(-50%);
+  box-shadow: 0 0.4rem 1.2rem rgb(0 0 0 / 0.2);
+}
+
+.side-tip kbd {
+  padding: 0 0.35rem;
+  border-color: color-mix(in srgb, var(--bg) 40%, transparent);
+  background: transparent;
+  color: inherit;
+}
+
+/* ---------- The narrow sidebar: icons only, on wide screens ---------- */
+
+@media (min-width: 48.0625rem) {
+  :root[data-sidebar="collapsed"] .app {
+    grid-template-columns: 4.75rem minmax(0, 1fr);
+  }
+
+  :root[data-sidebar="collapsed"] .side {
+    gap: 0.85rem;
+    padding: 0.85rem 0.5rem;
+  }
+
+  :root[data-sidebar="collapsed"] .side__top {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  :root[data-sidebar="collapsed"] .brand {
+    padding: 0.35rem;
+  }
+
+  /* Hidden from view, still read out: the names stay the controls' accessible names. */
+  :root[data-sidebar="collapsed"] .side :is(.brand__name, .nav__label, .side__heading > span) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* As tall as a full-width row, so the strip fits a laptop screen without scrolling. */
+  :root[data-sidebar="collapsed"] .side .nav__link {
+    position: relative;
+    justify-content: center;
+    gap: 0;
+    width: 2.625rem;
+    min-height: 2.5rem;
+    margin-inline: auto;
+    padding: 0;
+  }
+
+  :root[data-sidebar="collapsed"] .side .nav__link .dot {
+    width: 0.8rem;
+    height: 0.8rem;
+    margin: 0;
+  }
+
+  /* Counts become small badges on the icon. */
+  :root[data-sidebar="collapsed"] .side .nav__count {
+    position: absolute;
+    top: 0.05rem;
+    right: 0;
+    display: grid;
+    place-items: center;
+    min-width: 1.1rem;
+    height: 1.1rem;
+    margin: 0;
+    padding: 0 0.25rem;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  :root[data-sidebar="collapsed"] .side .nav__link[aria-current="page"] .nav__count {
+    color: var(--bg);
+  }
+
+  :root[data-sidebar="collapsed"] .side .nav__count:empty {
+    display: none;
+  }
+
+  :root[data-sidebar="collapsed"] .side .sync-dot {
+    position: absolute;
+    right: 0.45rem;
+    bottom: 0.45rem;
+    margin: 0;
+    box-shadow: 0 0 0 2px var(--surface);
+  }
+
+  /* "Lists" becomes a rule, with the add button under it. */
+  :root[data-sidebar="collapsed"] .side__heading {
+    justify-content: center;
+    padding: 0.75rem 0 0.15rem;
+    border-top: 1px solid var(--line);
+  }
+
+  :root[data-sidebar="collapsed"] .side__empty {
+    display: none;
+  }
 }
 
 .main:focus {

@@ -170,6 +170,12 @@ export function About() {
             </td>
           </tr>
           <tr>
+            <th scope="row">Collapse or expand the sidebar (wide screens)</th>
+            <td>
+              <kbd>[</kbd>
+            </td>
+          </tr>
+          <tr>
             <th scope="row">This page</th>
             <td>
               <kbd>?</kbd>

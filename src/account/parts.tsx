@@ -225,17 +225,18 @@ export function AccountEntry() {
   if (session.isPending && !session.data) return null;
   if (!session.data) {
     return (
-      <NavLink to="/sign-in" className="nav__link">
+      <NavLink to="/sign-in" className="nav__link" data-tip="Sign in">
         <Icon name="user" />
-        Sign in
+        <span className="nav__label">Sign in</span>
       </NavLink>
     );
   }
   const { user } = session.data;
+  const name = user.name || user.username || user.email;
   return (
-    <NavLink to="/account" className="nav__link" title={syncLabel(status)}>
+    <NavLink to="/account" className="nav__link" data-tip={`${name}. ${syncLabel(status)}`}>
       <Icon name="user" />
-      <span className="nav__name">{user.name || user.username || user.email}</span>
+      <span className="nav__name nav__label">{name}</span>
       <span className="sync-dot" data-phase={status.phase}>
         <span className="sr-only">{syncLabel(status)}</span>
       </span>

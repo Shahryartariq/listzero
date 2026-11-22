@@ -58,6 +58,14 @@ export async function addTask(page: Page, text: string) {
 
 export const row = (page: Page, title: string) => page.locator("[data-task]", { hasText: title });
 
+/**
+ * Waits until no animation or transition is running. Contrast checks need this: a colour sampled
+ * halfway through a fade belongs to no real state of the page.
+ */
+export async function settled(page: Page) {
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
+}
+
 export const isPhone = (page: Page) => (page.viewportSize()?.width ?? 1280) < 768;
 
 /** A day in the current month by its number, e.g. the 10th. Always on the calendar's first screen. */

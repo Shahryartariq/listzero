@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { addTask, day, isPhone, monthDay, openDisplay, row, seed } from "./helpers";
+import { addTask, day, isPhone, monthDay, openDisplay, row, seed, settled } from "./helpers";
 
 const SEED = [
   { title: "Charlie report", due: day(), priority: 1, estimate: 45, color: "blue", listId: "work" },
@@ -278,6 +278,7 @@ test.describe("display: quality", () => {
       await page.getByRole("button", { name: "Load example tasks" }).click();
       await page.getByRole("button", { name: "Dismiss" }).click();
       const check = async () => {
+        await settled(page);
         const results = await new AxeBuilder({ page })
           .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
           .analyze();

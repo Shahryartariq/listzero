@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { useAccountConfig } from "../account/config";
 import { countScreen } from "../lib/analytics";
@@ -12,6 +12,7 @@ import { AppearanceSheet } from "./Appearance";
 import { Icon, type IconName } from "./Icon";
 import { ListSheet } from "./ListSheet";
 import { ScreenBoundary } from "./ScreenBoundary";
+import { SideTips } from "./SideTips";
 import { Toasts } from "./Toasts";
 
 // The task sheet is the largest single component and is only needed once a task is opened.
@@ -55,9 +56,9 @@ export function NavItems({ onNewList, onAppearance }: { onNewList(): void; onApp
     <>
       <nav className="nav" aria-label="Views">
         {main.map((item) => (
-          <NavLink key={item.to} to={item.to} className="nav__link">
+          <NavLink key={item.to} to={item.to} className="nav__link" data-tip={item.label}>
             <Icon name={item.icon} />
-            {item.label}
+            <span className="nav__label">{item.label}</span>
             {counts[item.to] ? (
               <span className="nav__count">
                 {counts[item.to]}
@@ -66,35 +67,35 @@ export function NavItems({ onNewList, onAppearance }: { onNewList(): void; onApp
             ) : null}
           </NavLink>
         ))}
-        <NavLink to="/focus" className="nav__link">
+        <NavLink to="/focus" className="nav__link" data-tip="Focus">
           <Icon name="focus" />
-          Focus
+          <span className="nav__label">Focus</span>
         </NavLink>
-        <NavLink to="/search" className="nav__link">
+        <NavLink to="/search" className="nav__link" data-tip="Search" data-tip-keys="/">
           <Icon name="search" />
-          Search
+          <span className="nav__label">Search</span>
         </NavLink>
       </nav>
 
       <div>
         <div className="side__heading">
           <span id="lists-heading">Lists</span>
-          <button type="button" className="icon-btn" onClick={onNewList} aria-label="New list">
+          <button type="button" className="icon-btn" onClick={onNewList} aria-label="New list" data-tip="New list" data-tip-always>
             <Icon name="plus" size={18} />
           </button>
         </div>
         <nav className="nav" aria-labelledby="lists-heading">
           {store.data.lists.map((list) => (
-            <NavLink key={list.id} to={`/list/${list.id}`} className="nav__link">
-              <span className="dot" style={{ "--dot": `var(--c-${list.color})`, margin: "0 0.28rem" } as React.CSSProperties} />
-              {list.name}
+            <NavLink key={list.id} to={`/list/${list.id}`} className="nav__link" data-tip={list.name}>
+              <span className="dot" style={{ "--dot": `var(--c-${list.color})` } as React.CSSProperties} />
+              <span className="nav__label">{list.name}</span>
               <span className="nav__count">
                 {store.data.tasks.filter((t) => t.listId === list.id && t.completedAt === null).length || ""}
               </span>
             </NavLink>
           ))}
           {store.data.lists.length === 0 && (
-            <p className="hint" style={{ padding: "0.25rem 0.6rem" }}>
+            <p className="hint side__empty" style={{ padding: "0.25rem 0.6rem" }}>
               Lists group tasks, like Work or Home.
             </p>
           )}
@@ -107,17 +108,17 @@ export function NavItems({ onNewList, onAppearance }: { onNewList(): void; onApp
             <AccountEntry />
           </Suspense>
         )}
-        <button type="button" className="nav__link nav__button" onClick={onAppearance}>
+        <button type="button" className="nav__link nav__button" onClick={onAppearance} data-tip="Appearance">
           <Icon name="palette" />
-          Appearance
+          <span className="nav__label">Appearance</span>
         </button>
-        <NavLink to="/settings" className="nav__link">
+        <NavLink to="/settings" className="nav__link" data-tip="Settings">
           <Icon name="settings" />
-          Settings
+          <span className="nav__label">Settings</span>
         </NavLink>
-        <NavLink to="/about" className="nav__link">
+        <NavLink to="/about" className="nav__link" data-tip="How it works" data-tip-keys="?">
           <Icon name="about" />
-          How it works
+          <span className="nav__label">How it works</span>
         </NavLink>
       </nav>
     </>
@@ -131,7 +132,19 @@ export function Shell() {
   const [newList, setNewList] = useState(false);
   const [appearance, setAppearance] = useState(false);
   const pendingG = useRef(0);
+  const side = useRef<HTMLElement>(null);
   useTheme(store.data.settings);
+
+  // The narrow sidebar is a per-device choice. public/theme.js sets the same attribute before the
+  // first paint; this keeps it in step when it changes.
+  const narrow = store.data.settings.sidebarCollapsed;
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    if (narrow) root.dataset.sidebar = "collapsed";
+    else delete root.dataset.sidebar;
+  }, [narrow]);
+  const toggleSide = useRef(() => {});
+  toggleSide.current = () => store.updateSettings({ sidebarCollapsed: !store.read().settings.sidebarCollapsed });
   useSeo(location.pathname);
   const accounts = useAccountConfig()?.accounts === true;
 
@@ -176,6 +189,12 @@ export function Shell() {
         navigate("/search");
       } else if (e.key === "?") {
         navigate("/about");
+      } else if (e.key === "[") {
+        // Only where there is a sidebar to resize.
+        if (side.current && getComputedStyle(side.current).display !== "none") {
+          e.preventDefault();
+          toggleSide.current();
+        }
       } else if (key === "j" || key === "k") {
         const rows = [...document.querySelectorAll<HTMLElement>("[data-row]")];
         if (rows.length === 0) return;
@@ -200,13 +219,28 @@ export function Shell() {
       <a className="skip" href="#main">
         Skip to tasks
       </a>
-      <aside className="side">
-        <Link to="/today" className="brand" aria-label="Listzero, go to Today">
-          <span className="brand__zero" aria-hidden="true" />
-          Listzero
-        </Link>
+      <aside className="side" ref={side}>
+        <div className="side__top">
+          <Link to="/today" className="brand" aria-label="Listzero, go to Today" data-tip="Go to Today">
+            <span className="brand__zero" aria-hidden="true" />
+            <span className="brand__name">Listzero</span>
+          </Link>
+          <button
+            type="button"
+            className="icon-btn side__toggle"
+            onClick={() => toggleSide.current()}
+            aria-label={narrow ? "Expand sidebar" : "Collapse sidebar"}
+            aria-keyshortcuts="["
+            data-tip={narrow ? "Expand sidebar" : "Collapse sidebar"}
+            data-tip-keys="["
+            data-tip-always
+          >
+            <Icon name="sidebar" size={20} />
+          </button>
+        </div>
         <NavItems onNewList={() => setNewList(true)} onAppearance={() => setAppearance(true)} />
       </aside>
+      <SideTips side={side} narrow={narrow} />
 
       <main className="main" id="main" tabIndex={-1}>
         {store.saving === "blocked" && (

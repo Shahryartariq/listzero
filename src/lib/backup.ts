@@ -109,6 +109,7 @@ function readSettings(v: unknown): Settings {
     dailyLimit: limit >= 1 && limit <= 20 ? limit : DEFAULT_SETTINGS.dailyLimit,
     calm: v.calm === true,
     analytics: v.analytics !== false,
+    sidebarCollapsed: v.sidebarCollapsed === true,
   };
 }
 
