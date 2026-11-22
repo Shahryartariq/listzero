@@ -9,8 +9,13 @@ Notable changes to Listzero. Dates are when the change reached the live site.
 - Sign in with email and password, a username and password, Google, or a passkey.
 - Email confirmation, password reset by email, and refusal of passwords known from data leaks.
 - Two-factor codes from an authenticator app, with backup codes.
-- Tasks and lists sync between devices, including changes made offline. A browser holding another account's
-  tasks asks before mixing them; signing out offers to keep or remove the tasks here.
+- Tasks and lists sync between devices, including changes made offline.
+- Guests and accounts each have their own tasks. Signing in with guest tasks asks once whether to add them to the
+  account; signing out takes the account's tasks off the browser and shows the guest tasks again. Two people who
+  share a browser never see each other's tasks.
+- A front page that says what Listzero is, with a working Today to try, and the ways in: as a guest, with Google,
+  or with email. Someone already signed in goes straight to Today.
+- The browser is asked to keep Listzero's data (persistent storage) once the first task is saved.
 - An Account page (profile, password, two-factor, passkeys, Google, signed-in devices, sign out, delete account)
   and an admin page for managing accounts.
 - Without the server settings, nothing changes: no sign-in is shown and tasks stay in the browser.

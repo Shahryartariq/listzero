@@ -201,6 +201,11 @@ export function About() {
             Listzero’s server, so they are the same on every device you sign in on. Changes made offline are sent
             when you are back online. Appearance and other settings stay on each device.
           </p>
+          <p>
+            Guest tasks and each account’s tasks are kept apart, so people who share a browser never see each other’s.
+            When you sign in with guest tasks here, Listzero asks once whether to add them to your account. Signing
+            out takes your account’s tasks off this browser and shows the guest tasks again.
+          </p>
         </>
       ) : (
         <>

@@ -13,14 +13,12 @@ import { Icon, type IconName } from "./Icon";
 import { ListSheet } from "./ListSheet";
 import { ScreenBoundary } from "./ScreenBoundary";
 import { SideTips } from "./SideTips";
-import { Toasts } from "./Toasts";
 
 // The task sheet is the largest single component and is only needed once a task is opened.
 const TaskSheet = lazyView(() => import("./TaskSheet").then((m) => m.TaskSheet));
 
 // The account's parts are fetched only on a copy of Listzero that has accounts.
 const AccountEntry = lazyView(() => import("../account/parts").then((m) => m.AccountEntry));
-const SyncRunner = lazyView(() => import("../account/parts").then((m) => m.SyncRunner));
 
 function isTyping(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -146,7 +144,6 @@ export function Shell() {
   const toggleSide = useRef(() => {});
   toggleSide.current = () => store.updateSettings({ sidebarCollapsed: !store.read().settings.sidebarCollapsed });
   useSeo(location.pathname);
-  const accounts = useAccountConfig()?.accounts === true;
 
   // Visit counting for the public site. Only the kind of screen is sent; see lib/analytics.
   const counting = store.data.settings.analytics;
@@ -309,11 +306,6 @@ export function Shell() {
         </NavLink>
       </nav>
 
-      {accounts && (
-        <Suspense fallback={null}>
-          <SyncRunner />
-        </Suspense>
-      )}
       {new URLSearchParams(location.search).has("task") && (
         <Suspense fallback={null}>
           <TaskSheet />
@@ -330,7 +322,6 @@ export function Shell() {
         />
       )}
       {appearance && <AppearanceSheet onClose={() => setAppearance(false)} />}
-      <Toasts />
     </div>
   );
 }

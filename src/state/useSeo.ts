@@ -4,7 +4,7 @@ const SITE = "https://listzero.vercel.app";
 
 /** The only addresses worth a place in search results, with the address each should be known by. */
 const INDEXED: Record<string, string> = {
-  "/today": "/",
+  "/": "/",
   "/about": "/about",
 };
 
@@ -18,7 +18,7 @@ function head<T extends HTMLElement>(selector: string, create: () => T): T {
 
 /**
  * Tells search engines which screens are pages and which are just the app.
- * The home page and "How it works" are indexed; a visitor's Inbox, Settings and the rest
+ * The front page and "How it works" are indexed; a visitor's Today, Inbox, Settings and the rest
  * are empty to a crawler, so they are marked noindex and carry no canonical address.
  */
 export function useSeo(pathname: string) {

@@ -155,9 +155,10 @@ export function settle(known: Fingerprints, sent: Change[], received: Change[]):
 
 const STATE_KEY = "listzero:sync";
 
-export function loadSyncState(storage: Pick<Storage, "getItem"> | null): SyncState | null {
+/** Each account keeps its own state; `key` names where (the default is the pre-1.1 single key). */
+export function loadSyncState(storage: Pick<Storage, "getItem"> | null, key: string = STATE_KEY): SyncState | null {
   try {
-    const raw = storage?.getItem(STATE_KEY);
+    const raw = storage?.getItem(key);
     if (!raw) return null;
     const v = JSON.parse(raw) as Partial<SyncState> | null;
     if (!v || typeof v.userId !== "string" || typeof v.cursor !== "number" || !v.known) return null;
@@ -176,10 +177,14 @@ export function loadSyncState(storage: Pick<Storage, "getItem"> | null): SyncSta
   }
 }
 
-export function saveSyncState(storage: Pick<Storage, "setItem" | "removeItem"> | null, state: SyncState | null): void {
+export function saveSyncState(
+  storage: Pick<Storage, "setItem" | "removeItem"> | null,
+  state: SyncState | null,
+  key: string = STATE_KEY,
+): void {
   try {
-    if (state) storage?.setItem(STATE_KEY, JSON.stringify(state));
-    else storage?.removeItem(STATE_KEY);
+    if (state) storage?.setItem(key, JSON.stringify(state));
+    else storage?.removeItem(key);
   } catch {
     /* A device that cannot save this simply compares everything again next time. */
   }
