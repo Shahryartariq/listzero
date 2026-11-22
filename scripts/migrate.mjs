@@ -14,7 +14,9 @@ if (!url) {
 } else if (!production) {
   console.log("migrate: not a production build, skipped (run with --force to apply anyway)");
 } else {
-  const pool = new pg.Pool({ connectionString: url, max: 1 });
+  // Check the server's certificate explicitly (see verifiedTls in server/env.ts).
+  const connectionString = url.replace(/([?&]sslmode=)(?:prefer|require|verify-ca)(?=&|$)/i, "$1verify-full");
+  const pool = new pg.Pool({ connectionString, max: 1 });
   try {
     await migrate(drizzle(pool), { migrationsFolder: new URL("../drizzle", import.meta.url).pathname });
     console.log("migrate: database is up to date");

@@ -131,3 +131,12 @@ export function isListedAdmin(
   const proven = verificationRequired || user.emailVerified;
   return proven && adminEmails.includes(user.email.trim().toLowerCase());
 }
+
+/**
+ * Asks Postgres to check the server's certificate, in so many words. Neon's addresses say
+ * `sslmode=require`, which node-postgres treats as `verify-full` today (with a warning) but will
+ * treat as "encrypt without checking" in its next major version. Spelling it out keeps the check.
+ */
+export function verifiedTls(databaseUrl: string): string {
+  return databaseUrl.replace(/([?&]sslmode=)(?:prefer|require|verify-ca)(?=&|$)/i, "$1verify-full");
+}

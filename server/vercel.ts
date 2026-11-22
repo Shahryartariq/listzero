@@ -8,14 +8,14 @@ import { Pool } from "pg";
 import { createApp } from "./app";
 import type { Database } from "./auth";
 import { noMailer, smtpMailer } from "./email";
-import { readConfig } from "./env";
+import { readConfig, verifiedTls } from "./env";
 import * as schema from "./schema";
 
 const { config, missing } = readConfig(process.env);
 
 let db: Database | undefined;
 if (config) {
-  const pool = new Pool({ connectionString: config.databaseUrl, max: 5 });
+  const pool = new Pool({ connectionString: verifiedTls(config.databaseUrl), max: 5 });
   // Lets Vercel close idle connections before it suspends the function.
   attachDatabasePool(pool);
   db = drizzle(pool, { schema }) as unknown as Database;
