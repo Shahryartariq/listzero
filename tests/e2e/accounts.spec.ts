@@ -286,6 +286,31 @@ test.describe("sync", () => {
     await expect(row(page, "Kept as a guest")).toHaveCount(0);
   });
 
+  test("signing out while offline says so, and works once back online", async ({ page, request }) => {
+    const who = await account(request);
+    await signedIn(page, who);
+    await page.goto("/today");
+    await addTask(page, "Kept through a failed sign-out");
+    await synced(page);
+
+    await page.context().setOffline(true);
+    await page.getByRole("region", { name: "Sign out" }).getByRole("button", { name: "Sign out" }).click();
+    const sheet = page.getByRole("dialog", { name: "Sign out" });
+    const button = sheet.getByRole("button", { name: "Sign out", exact: true });
+    await button.click();
+    await expect(sheet.getByRole("alert")).toHaveText("You are offline. Connect to the internet to sign out.");
+    await expect(button).toBeEnabled();
+    // Still signed in: nothing here was removed.
+    expect(await accountKeys(page)).not.toEqual([]);
+
+    await page.context().setOffline(false);
+    await button.click();
+    await expect(page).toHaveURL(/\/$/);
+    expect(await accountKeys(page)).toEqual([]);
+    const session = await page.evaluate(async () => (await fetch("/api/auth/get-session")).json());
+    expect(session).toBeNull();
+  });
+
   test("two accounts on one browser each see only their own tasks", async ({ page, request }) => {
     const first = await account(request);
     const second = await account(request);
