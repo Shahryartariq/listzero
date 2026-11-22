@@ -5,7 +5,8 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import pg from "pg";
 
-const url = process.env.DATABASE_URL?.trim();
+// Neon's direct connection when there is one: schema changes should not go through the pooler.
+const url = (process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL)?.trim();
 const production = process.env.VERCEL_ENV === "production" || process.argv.includes("--force");
 
 if (!url) {
