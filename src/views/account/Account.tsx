@@ -113,7 +113,24 @@ function ProfileSection({ user }: { user: SessionUser }) {
   );
 }
 
-function PasswordSection({ user, hasPassword, config }: { user: SessionUser; hasPassword: boolean; config: AccountConfig }) {
+/** Adds a password to an account that signs in with Google. Everyone stays signed in. */
+async function addPassword(newPassword: string): Promise<{ error?: string }> {
+  try {
+    const response = await fetch("/api/account/set-password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ newPassword }),
+    });
+    if (response.ok) return {};
+    const detail = (await response.json().catch(() => null)) as { code?: string; message?: string } | null;
+    return { error: authMessage({ status: response.status, code: detail?.code, message: detail?.message }) };
+  } catch {
+    return { error: "You are offline. Connect to the internet and try again." };
+  }
+}
+
+function PasswordSection({ user, hasPassword, onAdded }: { user: SessionUser; hasPassword: boolean; onAdded(): void }) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [others, setOthers] = useState(true);
@@ -121,26 +138,31 @@ function PasswordSection({ user, hasPassword, config }: { user: SessionUser; has
   const [busy, setBusy] = useState(false);
 
   if (!hasPassword) {
+    const add = async (e: FormEvent) => {
+      e.preventDefault();
+      setMessage({});
+      const problem = checkPassword(next);
+      if (problem) return setMessage({ error: problem });
+      setBusy(true);
+      const { error } = await addPassword(next);
+      setBusy(false);
+      if (error) return setMessage({ error });
+      setNext("");
+      setMessage({ notice: `Password added. You can also sign in with ${user.email} and this password.` });
+      onAdded();
+    };
     return (
       <Section title="Password">
-        <p>You sign in with Google and have no password here.</p>
-        {config.email ? (
+        <p>You sign in with Google and have no password here. Add one to also sign in with your email.</p>
+        <form className="form" onSubmit={add} noValidate>
+          <PasswordField label="New password" value={next} onChange={setNext} autoComplete="new-password" meter />
+          <FormMessage {...message} />
           <div className="setting__row">
-            <button
-              type="button"
-              className="btn btn--quiet"
-              onClick={async () => {
-                const { error } = await authClient.requestPasswordReset({ email: user.email, redirectTo: "/reset-password" });
-                setMessage(error ? { error: authMessage(error) } : { notice: `We emailed a link to ${user.email} to set one.` });
-              }}
-            >
-              Email me a link to set a password
+            <button type="submit" className="btn btn--quiet" disabled={busy}>
+              {busy ? "Adding…" : "Add password"}
             </button>
           </div>
-        ) : (
-          <p className="hint">This copy of Listzero cannot send email yet, so a password cannot be added here.</p>
-        )}
-        <FormMessage {...message} />
+        </form>
       </Section>
     );
   }
@@ -666,7 +688,7 @@ export function Account() {
 
       <SyncSection />
       <ProfileSection key={user.id} user={user} />
-      {accounts !== null && <PasswordSection user={user} hasPassword={hasPassword} config={config} />}
+      {accounts !== null && <PasswordSection user={user} hasPassword={hasPassword} onAdded={reload} />}
       {accounts !== null && <TwoFactorSection user={user} hasPassword={hasPassword} />}
       <PasskeysSection />
       {config.google && accounts !== null && <ConnectedSection accounts={accounts} reload={reload} />}
