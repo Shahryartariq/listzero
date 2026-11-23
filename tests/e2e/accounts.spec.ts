@@ -310,6 +310,22 @@ test.describe("sync", () => {
     await expect(row(page, "Belongs to the second person")).toHaveCount(0);
   });
 
+  test("someone signed in skips the front page, and sees their tasks even when the account cannot be reached", async ({ page, request }) => {
+    const who = await account(request);
+    await signedIn(page, who);
+    await page.goto("/today");
+    await addTask(page, "Here without the server");
+    await synced(page);
+
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/today$/);
+    // Only a check that worked can say "signed out": a failed one keeps the account's tasks on screen.
+    await page.route("**/api/auth/get-session*", (route) => route.abort());
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/today$/);
+    await expect(row(page, "Here without the server")).toBeVisible();
+  });
+
   test("when the session check fails, a signed-in person is not shown as signed out", async ({ page, request }) => {
     const who = await account(request);
     await signedIn(page, who);
@@ -335,22 +351,6 @@ test.describe("sync", () => {
     await page.unroute("**/api/auth/get-session*");
     await retry.click();
     await expect(page.getByText(`Signed in as ${who.email}`)).toBeVisible();
-  });
-
-  test("someone signed in skips the front page, and sees their tasks even when the account cannot be reached", async ({ page, request }) => {
-    const who = await account(request);
-    await signedIn(page, who);
-    await page.goto("/today");
-    await addTask(page, "Here without the server");
-    await synced(page);
-
-    await page.goto("/");
-    await expect(page).toHaveURL(/\/today$/);
-    // Only a check that worked can say "signed out": a failed one keeps the account's tasks on screen.
-    await page.route("**/api/auth/get-session*", (route) => route.abort());
-    await page.goto("/");
-    await expect(page).toHaveURL(/\/today$/);
-    await expect(row(page, "Here without the server")).toBeVisible();
   });
 });
 

@@ -9,9 +9,9 @@ import { Sheet } from "../components/Sheet";
 import { safeStorage } from "../lib/backup";
 import { useStore } from "../state/store-context";
 import { clearGuestItems, forgetAccountCopy, GUEST, moveLegacyAccount, readGuest, syncKey, withGuestItems } from "../state/workspace";
-import { loadSyncState } from "../sync/engine";
 import { pendingCount, SyncFailure, syncOnce, type SyncIO, type SyncReply } from "../sync/run";
 import { registerSyncRunner, requestSync, setSyncStatus, useSyncStatus, type SyncStatus } from "../sync/status";
+import { loadSyncState } from "../sync/engine";
 import { authClient } from "./client";
 
 async function post(body: unknown): Promise<SyncReply> {
