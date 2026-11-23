@@ -339,7 +339,7 @@ test.describe("sync", () => {
     // The menu still shows who is signed in here, not "Sign in".
     await page.goto("/menu");
     // (On a wide screen the sidebar shows it too.)
-    const entry = page.getByRole("link", { name: new RegExp(who.email.replace(/[.+]/g, "\\$&")) }).first();
+    const entry = page.getByRole("link", { name: who.email }).first();
     await expect(entry).toBeVisible();
     await expect(entry).toHaveAttribute("href", "/account");
     await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
