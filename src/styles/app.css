@@ -724,6 +724,11 @@ a {
   background: color-mix(in srgb, var(--p1) 12%, transparent);
 }
 
+.btn--icon {
+  width: var(--tap);
+  padding: 0;
+}
+
 .btn--small {
   min-height: 2.25rem;
   padding: 0.25rem 0.75rem;
@@ -906,6 +911,29 @@ textarea.field {
 .picker__check {
   display: inline-grid;
   margin-left: 0.5rem;
+}
+
+/* A day chip that opens the browser's own calendar, anchored to the chip. */
+.day-pick {
+  position: relative;
+  display: inline-flex;
+}
+
+.day-pick .seg__opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.day-pick__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .seg {
@@ -1453,6 +1481,29 @@ dialog.sheet--small {
   padding: 0.75rem 1.25rem 1.25rem;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.sheet__body::-webkit-scrollbar {
+  width: 0.5rem;
+}
+
+.sheet__body::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--line-strong) padding-box;
+}
+
+.sheet__end {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.detail__row .picker {
+  font-weight: 500;
 }
 
 .sheet__foot {
