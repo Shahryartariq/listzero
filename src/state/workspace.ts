@@ -63,8 +63,19 @@ export function readAccount(storage: Store | null, userId: string, settings: Set
   return parseAccount(attempt(() => storage?.getItem(accountKey(userId)) ?? null, null), settings);
 }
 
-export function hasAccountCopy(storage: Store | null, userId: string): boolean {
-  return attempt(() => storage?.getItem(accountKey(userId)) != null, false);
+/**
+ * What sync remembers about an account only holds next to that account's tasks. When the tasks are
+ * missing or unreadable here (storage was full, or they were removed), forget it too: the next sync
+ * then starts afresh and downloads everything, instead of reading the missing tasks as deleted and
+ * deleting them from the account.
+ */
+export function checkAccountCopy(storage: Store | null, userId: string): void {
+  if (!storage) return;
+  attempt(() => {
+    const raw = storage.getItem(accountKey(userId));
+    const usable = raw !== null && attempt(() => readData(JSON.parse(raw)) !== null, false);
+    if (!usable) storage.removeItem(syncKey(userId));
+  }, undefined);
 }
 
 /** Saves an account's tasks and lists (not settings, which belong to the device). */

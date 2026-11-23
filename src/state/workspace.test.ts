@@ -6,6 +6,7 @@ import {
   GUEST,
   LEGACY_SYNC_KEY,
   accountKey,
+  checkAccountCopy,
   clearGuestItems,
   forgetAccountCopy,
   keyOf,
@@ -118,6 +119,26 @@ describe("an account's copy on this device", () => {
     const storage = memory({ [ACTIVE_KEY]: "b", [accountKey("a")]: "{}" });
     forgetAccountCopy(storage, "a");
     expect(storage.items.get(ACTIVE_KEY)).toBe("b");
+  });
+});
+
+describe("what sync remembers about an account", () => {
+  it("stays while the account's tasks are here", () => {
+    const storage = memory();
+    writeAccount(storage, "a", data([task("t1")]));
+    storage.setItem(syncKey("a"), "{}");
+    checkAccountCopy(storage, "a");
+    expect(storage.items.has(syncKey("a"))).toBe(true);
+  });
+
+  it("goes when the tasks are missing or unreadable, so the next sync downloads instead of deleting", () => {
+    const missing = memory({ [syncKey("a")]: "{}" });
+    checkAccountCopy(missing, "a");
+    expect(missing.items.has(syncKey("a"))).toBe(false);
+
+    const unreadable = memory({ [syncKey("a")]: "{}", [accountKey("a")]: "{nope" });
+    checkAccountCopy(unreadable, "a");
+    expect(unreadable.items.has(syncKey("a"))).toBe(false);
   });
 });
 
