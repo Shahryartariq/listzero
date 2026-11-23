@@ -36,6 +36,7 @@ const PATHS = {
   key: "M8 14a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM11.5 10.5H20M17 10.5v3M20 10.5v2",
   menu: "M5 7h14M5 12h14M5 17h14",
   note: "M6 4.5h9l3 3V19.5H6zM9 10h6M9 13.5h6",
+  grip: "M9.5 6.5h.01M14.5 6.5h.01M9.5 12h.01M14.5 12h.01M9.5 17.5h.01M14.5 17.5h.01",
 } as const;
 
 export type IconName = keyof typeof PATHS;
@@ -48,7 +49,7 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={name === "more" ? 2.6 : 1.8}
+      strokeWidth={name === "more" || name === "grip" ? 2.6 : 1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"

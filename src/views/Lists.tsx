@@ -43,7 +43,7 @@ export function Inbox() {
       <QuickAdd staysHere={(t) => t.listId === null} />
       <FilterNote view="inbox" shown={tasks.length} total={all.length} />
       {display.layout === "list" ? (
-        <TaskRows tasks={tasks} showList={false} />
+        <TaskRows tasks={tasks} showList={false} onMove={(id, to) => store.moveTask("inbox", tasks, id, to)} />
       ) : (
         <TaskLayout
           layout={display.layout}
@@ -54,6 +54,7 @@ export function Inbox() {
           sort={display.sort}
           onSort={(sort) => set({ ...display, sort })}
           staysHere={(t) => t.listId === null}
+          onMove={(id, to) => store.moveTask("inbox", tasks, id, to)}
         />
       )}
       {all.length === 0 && (
@@ -120,7 +121,11 @@ export function Upcoming() {
                 {minutes > 0 ? `, about ${describeMinutes(minutes)}` : ""}
               </p>
             </div>
-            <TaskRows tasks={group.tasks} showDay={false} />
+            <TaskRows
+              tasks={group.tasks}
+              showDay={false}
+              onMove={(id, to) => store.moveTask("upcoming", group.tasks, id, to)}
+            />
           </section>
         );
       })}
@@ -162,7 +167,7 @@ export function ListView() {
       <QuickAdd defaults={{ listId: list.id }} staysHere={(t) => t.listId === list.id} />
       <FilterNote view={viewKey} shown={tasks.length} total={all.length} />
       {display.layout === "list" ? (
-        <TaskRows tasks={tasks} showList={false} />
+        <TaskRows tasks={tasks} showList={false} onMove={(id, to) => store.moveTask(viewKey, tasks, id, to)} />
       ) : (
         <TaskLayout
           layout={display.layout}
@@ -174,6 +179,7 @@ export function ListView() {
           onSort={(sort) => set({ ...display, sort })}
           defaults={{ listId: list.id }}
           staysHere={(t) => t.listId === list.id}
+          onMove={(id, to) => store.moveTask(viewKey, tasks, id, to)}
         />
       )}
       {all.length === 0 && (

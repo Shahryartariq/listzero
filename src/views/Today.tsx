@@ -123,7 +123,12 @@ export function Today() {
       <FilterNote view="today" shown={due.length + carried.length} total={left} />
 
       {display.layout === "list" ? (
-        <TaskRows tasks={due} showDay={false} quick="tomorrow" />
+        <TaskRows
+          tasks={due}
+          showDay={false}
+          quick="tomorrow"
+          onMove={(id, to) => store.moveTask("today", due, id, to)}
+        />
       ) : (
         <TaskLayout
           layout={display.layout}
@@ -140,6 +145,9 @@ export function Today() {
           sort={display.sort}
           onSort={(sort) => set({ ...display, sort })}
           staysHere={(t) => t.due !== null && t.due <= today}
+          onMove={(id, to) =>
+            store.moveTask("today", applyDisplay([...view.due, ...view.carried], display), id, to)
+          }
         />
       )}
 
@@ -175,7 +183,7 @@ export function Today() {
               {carried.length} from earlier days. It happens.
             </p>
           </div>
-          <TaskRows tasks={carried} quick="today" />
+          <TaskRows tasks={carried} quick="today" onMove={(id, to) => store.moveTask("today", carried, id, to)} />
           <div className="section__actions">
             <button
               type="button"

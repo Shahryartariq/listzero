@@ -45,6 +45,11 @@ export interface Task {
   doing: boolean;
   createdAt: number;
   completedAt: number | null;
+  /**
+   * Where the task sits in "My order", set by dragging it. Lower comes first. Tasks never moved
+   * have none and sit by when they were added (display.ts `rank`).
+   */
+  order?: number;
 }
 
 export interface TaskList {

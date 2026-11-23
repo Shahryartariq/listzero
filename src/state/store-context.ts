@@ -51,6 +51,11 @@ export interface Store {
   updateList(id: string, patch: { name?: string; color?: ListColor }): void;
   deleteList(id: string): void;
   updateSettings(patch: Partial<Settings>): void;
+  /**
+   * Moves a task to position `to` among `shown` (a view's tasks, top to bottom), by hand. The view
+   * switches to "My order" if it was sorted another way.
+   */
+  moveTask(view: string, shown: Task[], id: string, to: number): void;
   /** Saves how one view is displayed; null puts it back to the defaults. */
   setDisplay(view: string, display: Display | null): void;
   replaceAll(next: AppData, message: string): void;

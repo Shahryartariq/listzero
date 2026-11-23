@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
 import { STORAGE_KEY, load, parseBackup, safeStorage, save } from "../lib/backup";
 import { today as todayOf, toDay } from "../lib/dates";
-import { isDefault } from "../lib/display";
+import { DEFAULT_DISPLAY, isDefault, placeTask } from "../lib/display";
 import { newId } from "../lib/id";
 import { parseTask, type TokenKind } from "../lib/parse";
 import { findList, reducer, type TaskPatch } from "../lib/store";
@@ -337,6 +337,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       updateSettings(patch: Partial<Settings>) {
         dispatch({ type: "updateSettings", patch });
+      },
+
+      moveTask(view, shown, id, to) {
+        const orders = placeTask(shown, id, to);
+        if (Object.keys(orders).length === 0) return;
+        const before = snapshot();
+        dispatch({ type: "setOrders", orders });
+        // Moving a task by hand only sticks in "My order": switch this view to it, once.
+        const display = dataRef.current.settings.display[view] ?? DEFAULT_DISPLAY;
+        if (display.sort !== "manual") {
+          dispatch({ type: "setDisplay", view, display: { ...display, sort: "manual" } });
+          notify("Sorted by your order now.", before);
+        }
       },
 
       setDisplay(view, display) {

@@ -7,6 +7,8 @@ import {
   applyDisplay,
   isDefault,
   matches,
+  placeTask,
+  rank,
   readDisplay,
   readDisplays,
   sortTasks,
@@ -178,5 +180,66 @@ describe("display in the store", () => {
     state = reducer(state, { type: "deleteList", id: "work" });
     expect(state.settings.display["list:work"]).toBeUndefined();
     expect(state.settings.display.today?.filters.lists).toEqual(["inbox"]);
+  });
+});
+
+describe("my order", () => {
+  const ordered = (tasks: Task[], orders: Record<string, number>) =>
+    sortTasks(
+      tasks.map((t) => (t.id in orders ? { ...t, order: orders[t.id] } : t)),
+      "manual",
+    ).map((t) => t.title);
+
+  it("starts as the order the tasks were added in", () => {
+    const a = task("A", { createdAt: 1 });
+    const b = task("B", { createdAt: 2 });
+    const c = task("C", { createdAt: 3 });
+    expect(sortTasks([c, a, b], "manual").map((t) => t.title)).toEqual(["A", "B", "C"]);
+    expect(rank(a)).toBe(1);
+  });
+
+  it("moves one task between its new neighbours, changing only that task", () => {
+    const tasks = [task("A", { createdAt: 10 }), task("B", { createdAt: 20 }), task("C", { createdAt: 30 })];
+    const down = placeTask(tasks, tasks[0]!.id, 2);
+    expect(Object.keys(down)).toEqual([tasks[0]!.id]);
+    expect(ordered(tasks, down)).toEqual(["B", "C", "A"]);
+
+    const middle = placeTask(tasks, tasks[2]!.id, 1);
+    expect(middle[tasks[2]!.id]).toBe(15);
+    expect(ordered(tasks, middle)).toEqual(["A", "C", "B"]);
+
+    expect(ordered(tasks, placeTask(tasks, tasks[2]!.id, 0))).toEqual(["C", "A", "B"]);
+    expect(placeTask(tasks, tasks[1]!.id, 1)).toEqual({});
+  });
+
+  it("numbers a view afresh when it was shown another way, keeping what was on screen", () => {
+    // Shown by priority, not in added order: C, A, B on screen. Move B to the top.
+    const a = task("A", { createdAt: 10 });
+    const b = task("B", { createdAt: 20 });
+    const c = task("C", { createdAt: 30 });
+    const shown = [c, a, b];
+    const orders = placeTask(shown, b.id, 0);
+    expect(Object.keys(orders).sort()).toEqual([a.id, b.id, c.id].sort());
+    expect(ordered(shown, orders)).toEqual(["B", "C", "A"]);
+    expect(Math.min(...Object.values(orders))).toBe(10);
+  });
+
+  it("numbers afresh when two neighbours have no room between them", () => {
+    const tasks = [task("A", { createdAt: 5 }), task("B", { createdAt: 5 }), task("C", { createdAt: 6 })];
+    const orders = placeTask(tasks, tasks[2]!.id, 1);
+    expect(ordered(tasks, orders)).toEqual(["A", "C", "B"]);
+  });
+
+  it("keeps a valid order through a backup and drops a broken one", () => {
+    const base = task("Kept", { order: 12.5 });
+    const data = readData({ version: 1, tasks: [base, { ...task("Odd"), order: "soon" }, { ...task("Huge"), order: 1e20 }], lists: [] });
+    expect(data!.tasks.map((t) => t.order)).toEqual([12.5, undefined, undefined]);
+  });
+
+  it("is a sort the display settings accept", () => {
+    expect(readDisplay({ layout: "list", sort: "manual" }).sort).toBe("manual");
+    const state = reducer(emptyData(), { type: "addTasks", tasks: [task("A")] });
+    const moved = reducer(state, { type: "setOrders", orders: { [state.tasks[0]!.id]: 7 } });
+    expect(moved.tasks[0]!.order).toBe(7);
   });
 });

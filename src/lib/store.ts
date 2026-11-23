@@ -14,6 +14,7 @@ export type Action =
   | { type: "reopenTask"; id: string }
   | { type: "deleteTask"; id: string }
   | { type: "setDue"; ids: string[]; due: string | null }
+  | { type: "setOrders"; orders: Record<string, number> }
   | { type: "clearDone" }
   | { type: "addList"; list: TaskList }
   | { type: "updateList"; id: string; name?: string; color?: ListColor }
@@ -91,6 +92,12 @@ export function reducer(state: AppData, action: Action): AppData {
         ),
       };
     }
+
+    case "setOrders":
+      return {
+        ...state,
+        tasks: state.tasks.map((t) => (t.id in action.orders ? { ...t, order: action.orders[t.id] } : t)),
+      };
 
     case "clearDone":
       return { ...state, tasks: state.tasks.filter((t) => t.completedAt === null) };

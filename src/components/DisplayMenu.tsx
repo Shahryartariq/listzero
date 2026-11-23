@@ -26,6 +26,7 @@ const LAYOUT_LABEL: Record<Layout, { label: string; icon: IconName }> = {
 
 const SORT_LABEL: Record<Sort, string> = {
   smart: "Suggested",
+  manual: "My order",
   priority: "Priority",
   day: "Day",
   name: "Name",
