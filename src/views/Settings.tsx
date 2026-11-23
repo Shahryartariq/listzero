@@ -8,7 +8,7 @@ import { browserObjects } from "../lib/analytics";
 import { parseBackup, serialize } from "../lib/backup";
 import { downloadText } from "../lib/download";
 import { exampleData } from "../lib/examples";
-import { emptyData } from "../lib/types";
+import { emptyData, type AppData } from "../lib/types";
 import { useStore } from "../state/store-context";
 import { usePageTitle } from "../state/usePageTitle";
 
@@ -18,6 +18,10 @@ export function Settings() {
   const { settings } = store.data;
   const file = useRef<HTMLInputElement>(null);
   const [confirming, setConfirming] = useState(false);
+  // With an account signed in, what is on screen is the account's: replacing or deleting it reaches every device.
+  const [pendingBackup, setPendingBackup] = useState<AppData | null>(null);
+  const inAccount = store.workspace.kind === "account";
+  const count = (n: number) => `${n} ${n === 1 ? "task" : "tasks"}`;
   usePageTitle("Settings");
 
   const exportBackup = () => {
@@ -32,8 +36,11 @@ export function Settings() {
       store.notify("That file is not a Listzero backup. Nothing was changed.");
       return;
     }
-    store.replaceAll(data, `Backup loaded: ${data.tasks.length} ${data.tasks.length === 1 ? "task" : "tasks"}.`);
+    if (inAccount) setPendingBackup(data);
+    else loadBackup(data);
   };
+
+  const loadBackup = (data: AppData) => store.replaceAll(data, `Backup loaded: ${count(data.tasks.length)}.`);
 
   return (
     <div className="view prose">
@@ -137,8 +144,10 @@ export function Settings() {
       <div className="setting">
         <span className="setting__name">Your data</span>
         <p className="hint">
-          {store.data.tasks.length} {store.data.tasks.length === 1 ? "task" : "tasks"} in this browser.{" "}
-          {accounts ? (
+          {count(store.data.tasks.length)} {inAccount ? "in your account" : "in this browser"}.{" "}
+          {inAccount ? (
+            "A backup file is a copy you keep yourself."
+          ) : accounts ? (
             <>
               A backup file is a copy you keep yourself. An <Link to="/account">account</Link> keeps your tasks the
               same on every device.
@@ -176,7 +185,11 @@ export function Settings() {
             Add example tasks
           </button>
         </div>
-        <p className="hint">Loading a backup replaces what is here. You can undo it right after.</p>
+        <p className="hint">
+          {inAccount
+            ? "Loading a backup replaces the tasks in your account, on every device you sign in on. You can undo it right after."
+            : "Loading a backup replaces what is here. You can undo it right after."}
+        </p>
       </div>
 
       <div className="setting">
@@ -223,13 +236,32 @@ export function Settings() {
         </div>
       </div>
 
-      {confirming && (
+      {confirming &&
+        (inAccount ? (
+          <Confirm
+            title="Delete everything in your account?"
+            body="This deletes every task and list in your account, on every device you sign in on. Save a backup first if you might want them back."
+            confirmLabel="Delete from my account"
+            onConfirm={() => store.replaceAll({ ...emptyData(), settings }, "Everything in your account deleted.")}
+            onClose={() => setConfirming(false)}
+          />
+        ) : (
+          <Confirm
+            title="Delete everything?"
+            body="This removes every task and list from this browser. Save a backup first if you might want them back."
+            confirmLabel="Delete everything"
+            onConfirm={() => store.replaceAll({ ...emptyData(), settings }, "Everything deleted.")}
+            onClose={() => setConfirming(false)}
+          />
+        ))}
+
+      {pendingBackup && (
         <Confirm
-          title="Delete everything?"
-          body="This removes every task and list from this browser. Save a backup first if you might want them back."
-          confirmLabel="Delete everything"
-          onConfirm={() => store.replaceAll({ ...emptyData(), settings }, "Everything deleted.")}
-          onClose={() => setConfirming(false)}
+          title="Replace your account's tasks?"
+          body={`The ${count(store.data.tasks.length)} and lists in your account are replaced with the ${count(pendingBackup.tasks.length)} in the backup, on every device you sign in on. You can undo it right after.`}
+          confirmLabel="Replace them"
+          onConfirm={() => loadBackup(pendingBackup)}
+          onClose={() => setPendingBackup(null)}
         />
       )}
     </div>

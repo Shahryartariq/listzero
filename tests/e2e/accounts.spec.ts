@@ -399,6 +399,46 @@ test.describe("sync", () => {
   });
 });
 
+test.describe("Settings while signed in", () => {
+  test("deleting everything and loading a backup say they reach the account on every device, and do", async ({ page, browser, request }) => {
+    const who = await account(request);
+    await signedIn(page, who);
+    await page.goto("/today");
+    await addTask(page, "First of two");
+    await addTask(page, "Second of two");
+    await synced(page);
+
+    await page.goto("/settings");
+    await expect(page.getByText("2 tasks in your account.")).toBeVisible();
+    await expect(page.getByText("Loading a backup replaces the tasks in your account, on every device you sign in on.")).toBeVisible();
+
+    // A backup with one task asks first, and names both numbers.
+    await page.getByLabel("Backup file").setInputFiles({
+      name: "backup.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify({ version: 1, tasks: [{ id: "from-backup", title: "From the backup", notes: "", listId: null, due: null, time: null, priority: 0, estimate: null, steps: [], repeat: null, color: null, doing: false, createdAt: 1, completedAt: null }], lists: [] })),
+    });
+    const replace = page.getByRole("dialog", { name: "Replace your account's tasks?" });
+    await expect(replace).toContainText("The 2 tasks and lists in your account are replaced with the 1 task in the backup, on every device");
+    await replace.getByRole("button", { name: "Cancel" }).click();
+    await expect(page.getByText("2 tasks in your account.")).toBeVisible();
+
+    await page.getByRole("button", { name: "Delete everything" }).click();
+    const confirm = page.getByRole("dialog", { name: "Delete everything in your account?" });
+    await expect(confirm).toContainText("on every device you sign in on");
+    await confirm.getByRole("button", { name: "Delete from my account" }).click();
+    await expect(page.getByText("0 tasks in your account.")).toBeVisible();
+    await synced(page);
+
+    // Another device sees the same.
+    const { context, page: phone } = await device(browser);
+    await signedIn(phone, who);
+    await phone.goto("/settings");
+    await expect(phone.getByText("0 tasks in your account.")).toBeVisible();
+    await context.close();
+  });
+});
+
 test.describe("the Account page", () => {
   test("profile and password can be changed", async ({ page, request }) => {
     const who = await account(request);
