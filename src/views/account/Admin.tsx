@@ -5,6 +5,7 @@ import { authClient } from "../../account/client";
 import { useAccountConfig } from "../../account/config";
 import { authMessage } from "../../account/messages";
 import { CannotReach, FormMessage } from "../../account/ui";
+import { Picker } from "../../components/Picker";
 import { Confirm, Sheet } from "../../components/Sheet";
 import { usePageTitle } from "../../state/usePageTitle";
 
@@ -265,15 +266,21 @@ export function Admin() {
               Reason (they see this)
             </label>
             <input id="ban-reason" className="field" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} />
-            <label className="label" htmlFor="ban-days">
+            <span className="label" aria-hidden="true">
               For how long
-            </label>
-            <select id="ban-days" className="field" value={days} onChange={(e) => setDays(e.target.value)}>
-              <option value="1">1 day</option>
-              <option value="7">7 days</option>
-              <option value="30">30 days</option>
-              <option value="0">Until lifted</option>
-            </select>
+            </span>
+            <Picker
+              label="For how long"
+              wide
+              value={days}
+              options={[
+                { value: "1", label: "1 day" },
+                { value: "7", label: "7 days" },
+                { value: "30", label: "30 days" },
+                { value: "0", label: "Until lifted" },
+              ]}
+              onChange={setDays}
+            />
           </div>
         </Sheet>
       )}

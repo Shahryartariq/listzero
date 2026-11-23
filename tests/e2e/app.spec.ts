@@ -408,19 +408,24 @@ test.describe("board", () => {
     await page.goto("/board");
     await expect(column(page, "To do").locator("[data-task]")).toHaveText(/Today thing/);
 
-    await page.getByLabel("Show tasks from").selectOption("Work");
+    const scope = page.getByRole("combobox", { name: "Show tasks from" });
+    const showFrom = async (name: string) => {
+      await scope.click();
+      await page.getByRole("option", { name, exact: true }).click();
+    };
+    await showFrom("Work");
     await expect(page).toHaveURL(/\/board\?in=work$/);
     await expect(column(page, "To do").locator("[data-task]")).toHaveText(/Work thing/);
     await addTask(page, "Added on the Work board");
     await expect(column(page, "To do").locator("[data-task]")).toHaveCount(2);
 
-    await page.getByLabel("Show tasks from").selectOption("Everything open");
+    await showFrom("Everything open");
     await expect(column(page, "To do").locator("[data-task]")).toHaveCount(4);
-    await page.getByLabel("Show tasks from").selectOption("Inbox");
+    await showFrom("Inbox");
     await expect(column(page, "To do").locator("[data-task]")).toHaveText([/Today thing/, /Loose idea/]);
 
     await page.goto("/board?in=deleted-list");
-    await expect(page.getByLabel("Show tasks from")).toHaveValue("today");
+    await expect(page.getByRole("combobox", { name: "Show tasks from" })).toHaveText("Today");
   });
 
   test("more than three tasks in progress gets a gentle note, not a block", async ({ page }) => {
