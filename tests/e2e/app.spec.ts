@@ -321,6 +321,40 @@ test.describe("focus", () => {
     await expect(page.getByRole("heading", { name: "Nothing to focus on." })).toBeVisible();
   });
 
+  test("the timer pauses, takes 5 more minutes, survives a reload, and the app steps back", async ({ page }) => {
+    await seed(page, [{ title: "Write report", due: day() }, { title: "Call Sara", due: day() }]);
+    await page.goto("/focus");
+    // Only the task: no sidebar, no tab bar.
+    await expect(page.locator(".side")).toBeHidden();
+    await expect(page.getByRole("navigation", { name: "Main" })).toBeHidden();
+
+    await page.getByRole("button", { name: "25m" }).click();
+    await expect(page.getByRole("timer")).toHaveText(/^2[45]:\d\d$/);
+    await page.getByRole("button", { name: "Pause" }).click();
+    const paused = await page.getByRole("timer").textContent();
+    await page.waitForTimeout(1200);
+    await expect(page.getByRole("timer")).toHaveText(paused!);
+    await expect(page).toHaveTitle(/^Paused \| Write report$/);
+
+    await page.getByRole("button", { name: "+5 min" }).click();
+    await expect(page.getByRole("timer")).toHaveText(/^(29|30):\d\d$/);
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Resume" })).toBeVisible();
+    await page.getByRole("button", { name: "Resume" }).click();
+    await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
+
+    // The next task starts fresh, with the title focused for keyboard and screen reader users.
+    await page.getByRole("button", { name: "Not now" }).click();
+    await expect(page.getByRole("heading", { name: "Call Sara" })).toBeFocused();
+    await expect(page.getByRole("timer")).toHaveCount(0);
+
+    // Escape leaves, and everything comes back.
+    await page.keyboard.press("Escape");
+    await expect(page).toHaveURL(/\/today$/);
+    if (!isPhone(page)) await expect(page.locator(".side")).toBeVisible();
+    else await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
+  });
+
   test("any task can be focused from its sheet, even when it is not due today", async ({ page }) => {
     await seed(page, [{ title: "Someday project" }, { title: "Due today", due: day() }]);
     await page.goto("/inbox?task=seed-1");
