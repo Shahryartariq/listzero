@@ -117,7 +117,7 @@ export function Admin() {
       <FormMessage {...message} />
 
       {/* Explicit roles keep this a table for screen readers when the phone layout changes its display. */}
-      <div className="table-scroll" role="region" aria-label="Accounts" tabIndex={0}>
+      <div className="table-scroll table-scroll--people" role="region" aria-label="Accounts" tabIndex={0}>
         <table className="grid grid--people" role="table">
           <thead role="rowgroup">
             <tr role="row">
