@@ -286,6 +286,23 @@ test.describe("sync", () => {
     await expect(row(page, "Kept as a guest")).toHaveCount(0);
   });
 
+  test("the question about guest tasks survives the page change after signing in", async ({ page, request }) => {
+    const who = await account(request);
+    await seed(page, [{ title: "Waiting as a guest", due: day() }]);
+    await page.goto("/today");
+    await expect(row(page, "Waiting as a guest")).toBeVisible();
+    // A slow page load after signing in: the session update reaches this page before it is replaced.
+    await page.route("**/verify-email*", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await route.continue();
+    });
+    await signIn(page, who);
+    await expect(page).toHaveURL(/\/today$/);
+    await expect(page.getByRole("dialog", { name: "Add your guest tasks?" })).toBeVisible();
+    await answerOffer(page, "Add to my account");
+    await expect(row(page, "Waiting as a guest")).toBeVisible();
+  });
+
   test("two accounts on one browser each see only their own tasks", async ({ page, request }) => {
     const first = await account(request);
     const second = await account(request);

@@ -37,6 +37,28 @@ async function post(body: unknown): Promise<SyncReply> {
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 /**
+ * The question about guest tasks waits here (for this tab) until it is answered. Signing in with a
+ * password replaces the page, and the new session can reach the old page first: without this, the
+ * question would be asked on a page about to go away, and never on the new one.
+ */
+const OFFER_KEY = "listzero:offer";
+const offerWaiting = (userId: string) => {
+  try {
+    return sessionStorage.getItem(OFFER_KEY) === userId;
+  } catch {
+    return false;
+  }
+};
+const setOfferWaiting = (userId: string | null) => {
+  try {
+    if (userId) sessionStorage.setItem(OFFER_KEY, userId);
+    else sessionStorage.removeItem(OFFER_KEY);
+  } catch {
+    /* the question is then asked on this page only */
+  }
+};
+
+/**
  * Keeps the right tasks on screen and in sync. Signed in: that account's own tasks, synced. Signed
  * out: the guest's. The first time someone signs in from guest mode with tasks, it asks once
  * whether to bring them into the account.
@@ -90,7 +112,10 @@ export function SyncRunner() {
     latest.current.switchWorkspace({ kind: "account", userId });
     if (!moved && current.kind === "guest") {
       const guest = readGuest(storage, latest.current.read().settings);
-      if (guest.tasks.length + guest.lists.length > 0) setOffer({ tasks: guest.tasks.length, lists: guest.lists.length });
+      if (guest.tasks.length + guest.lists.length > 0) {
+        setOfferWaiting(userId);
+        setOffer({ tasks: guest.tasks.length, lists: guest.lists.length });
+      }
     }
   }, [known, userId]);
 
@@ -162,6 +187,14 @@ export function SyncRunner() {
   // Signed in, with that account's tasks on screen: sync now. Otherwise sync is off.
   const onScreen = store.workspace.kind === "account" ? store.workspace.userId : null;
   const active = userId !== null && onScreen === userId;
+
+  // A question asked before the page changed is asked again here.
+  useEffect(() => {
+    if (!active || !userId || !offerWaiting(userId)) return;
+    const guest = readGuest(safeStorage(), latest.current.read().settings);
+    if (guest.tasks.length + guest.lists.length > 0) setOffer({ tasks: guest.tasks.length, lists: guest.lists.length });
+    else setOfferWaiting(null);
+  }, [active, userId]);
   useEffect(() => {
     if (!active) {
       if (known && !userId) setSyncStatus({ phase: "off", at: null, pending: 0, message: "" });
@@ -202,12 +235,16 @@ export function SyncRunner() {
 
   if (!offer || !active) return null;
 
+  const answered = () => {
+    setOfferWaiting(null);
+    setOffer(null);
+  };
   const bringIn = () => {
     const storage = safeStorage();
     const { data: combined, tasks } = withGuestItems(latest.current.read(), readGuest(storage, latest.current.read().settings));
     latest.current.load(combined);
     clearGuestItems(storage);
-    setOffer(null);
+    answered();
     latest.current.notify(tasks > 0 ? `${plural(tasks, "task", "tasks")} added to your account.` : "Added to your account.");
   };
   const what = [offer.tasks > 0 ? plural(offer.tasks, "task", "tasks") : "", offer.lists > 0 ? plural(offer.lists, "list", "lists") : ""]
@@ -219,10 +256,10 @@ export function SyncRunner() {
     <Sheet
       title="Add your guest tasks?"
       small
-      onClose={() => setOffer(null)}
+      onClose={answered}
       footer={
         <>
-          <button type="button" className="btn btn--quiet" onClick={() => setOffer(null)}>
+          <button type="button" className="btn btn--quiet" onClick={answered}>
             Not now
           </button>
           <button type="button" className="btn" onClick={bringIn}>
