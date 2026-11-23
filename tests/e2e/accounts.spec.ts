@@ -422,6 +422,33 @@ test.describe("sync", () => {
     await expect(page).toHaveURL(/\/today$/);
     await expect(row(page, "Here without the server")).toBeVisible();
   });
+
+  test("when the session check fails, a signed-in person is not shown as signed out", async ({ page, request }) => {
+    const who = await account(request);
+    await signedIn(page, who);
+    await page.route("**/api/auth/get-session*", (route) => route.abort());
+
+    await page.goto("/account");
+    await expect(page).toHaveURL(/\/account$/);
+    await expect(page.getByRole("heading", { name: "Account", level: 1 })).toBeVisible();
+    await expect(page.getByText("Listzero cannot reach your account right now. You may be offline.")).toBeVisible();
+
+    // The menu still shows who is signed in here, not "Sign in".
+    await page.goto("/menu");
+    // (On a wide screen the sidebar shows it too.)
+    const entry = page.getByRole("link", { name: who.email }).first();
+    await expect(entry).toBeVisible();
+    await expect(entry).toHaveAttribute("href", "/account");
+    await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
+
+    // Once the server answers again, Try again shows the account.
+    await page.goto("/account");
+    const retry = page.getByRole("button", { name: "Try again" });
+    await expect(retry).toBeVisible();
+    await page.unroute("**/api/auth/get-session*");
+    await retry.click();
+    await expect(page.getByText(`Signed in as ${who.email}`)).toBeVisible();
+  });
 });
 
 test.describe("Settings while signed in", () => {
