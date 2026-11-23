@@ -1,9 +1,11 @@
 // @vitest-environment node
 import { randomBytes } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
+import { and, eq } from "drizzle-orm";
 import { MAX_LISTS } from "../src/lib/backup";
 import { createApp } from "./app";
 import { isListedAdmin, readConfig } from "./env";
+import { account } from "./schema";
 import { browser, linkFor, testApp } from "./testing";
 
 // Each test starts its own in-memory Postgres and hashes real passwords: quick on a laptop, slower on CI.
@@ -166,6 +168,36 @@ describe("accounts", () => {
     expect((await laptop.get("/api/auth/get-session")).data).toBeNull();
     expect((await b.post("/api/auth/sign-in/email", { email: "sam@a.test", password: PASSWORD })).status).toBe(401);
     expect((await b.post("/api/auth/sign-in/email", { email: "sam@a.test", password: NEW })).status).toBe(200);
+    await t.close();
+  });
+
+  it("adds a password to an account that has none, keeping every device signed in", async () => {
+    const t = await testApp();
+    const laptop = await join(t, "sam@a.test", "sam");
+    const phone = browser(t.app);
+    await phone.post("/api/auth/sign-in/email", { email: "sam@a.test", password: PASSWORD });
+
+    // An account with a password cannot set another this way.
+    const already = await laptop.post("/api/account/set-password", { newPassword: "a brand new password 77" });
+    expect(already.status).toBe(400);
+    expect(already.data?.code).toBe("PASSWORD_ALREADY_SET");
+
+    // As if Sam had only ever signed in with Google.
+    const id = (await laptop.get("/api/auth/get-session")).data?.user as { id: string };
+    await t.db.delete(account).where(and(eq(account.userId, id.id), eq(account.providerId, "credential")));
+
+    expect((await browser(t.app).post("/api/account/set-password", { newPassword: "a brand new password 77" })).status).toBe(401);
+    expect((await laptop.post("/api/account/set-password", { newPassword: "a brand new password 77" }, { origin: "https://evil.test" })).status).toBe(403);
+    expect((await laptop.get("/api/account/set-password")).status).toBe(405);
+    expect((await laptop.post("/api/account/set-password", { newPassword: "short" })).status).toBe(400);
+
+    const NEW = "a brand new password 77";
+    const set = await laptop.post("/api/account/set-password", { newPassword: NEW });
+    expect(set.status, JSON.stringify(set.data)).toBe(200);
+    expect((await laptop.get("/api/auth/get-session")).data).not.toBeNull();
+    expect((await phone.get("/api/auth/get-session")).data).not.toBeNull();
+    expect((await browser(t.app).post("/api/auth/sign-in/email", { email: "sam@a.test", password: NEW })).status).toBe(200);
+    expect((await laptop.post("/api/account/set-password", { newPassword: "third password 99" })).status).toBe(400);
     await t.close();
   });
 

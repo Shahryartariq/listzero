@@ -15,6 +15,7 @@ const MESSAGES: Record<string, string> = {
   USERNAME_TOO_LONG: "Use at most 30 characters for the username.",
   PASSWORD_COMPROMISED: "This password has appeared in a data breach. Please choose a different one.",
   PASSWORD_TOO_SHORT: "Use at least 8 characters for the password.",
+  PASSWORD_ALREADY_SET: "This account already has a password.",
   PASSWORD_TOO_LONG: "Use at most 128 characters for the password.",
   INVALID_PASSWORD: "That password is not right.",
   BANNED_USER: "This account has been suspended.",

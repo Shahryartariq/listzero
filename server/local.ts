@@ -7,8 +7,11 @@
  *
  *   npm run api                   starts it on http://localhost:8787
  *   GET /api/__test/outbox?to=…   the emails "sent" so far (only exists here, never in production)
+ *   POST /api/__test/google-only?email=…   removes an account's password, as if it had only ever
+ *                                 signed in with Google (only exists here, never in production)
  */
 import { createServer, type IncomingMessage } from "node:http";
+import { and, eq } from "drizzle-orm";
 import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
@@ -64,10 +67,16 @@ createServer(async (req, res) => {
   try {
     const request = await toRequest(req);
     const { pathname, searchParams } = new URL(request.url);
-    const response =
-      pathname === "/api/__test/outbox"
-        ? Response.json(outbox.filter((m) => !searchParams.get("to") || m.to === searchParams.get("to")))
-        : await app(request);
+    let response: Response;
+    if (pathname === "/api/__test/outbox") {
+      response = Response.json(outbox.filter((m) => !searchParams.get("to") || m.to === searchParams.get("to")));
+    } else if (pathname === "/api/__test/google-only" && request.method === "POST") {
+      const [person] = await db.select().from(schema.user).where(eq(schema.user.email, searchParams.get("email") ?? ""));
+      if (person) await db.delete(schema.account).where(and(eq(schema.account.userId, person.id), eq(schema.account.providerId, "credential")));
+      response = Response.json({ ok: Boolean(person) });
+    } else {
+      response = await app(request);
+    }
     res.statusCode = response.status;
     // Set-Cookie must stay as separate headers; everything else can be copied as is.
     for (const [name, value] of response.headers) if (name !== "set-cookie") res.setHeader(name, value);

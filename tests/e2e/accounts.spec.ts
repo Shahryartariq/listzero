@@ -465,6 +465,37 @@ test.describe("Settings while signed in", () => {
 });
 
 test.describe("the Account page", () => {
+  test("someone who signs in with Google adds a password and stays signed in everywhere", async ({ page, browser, request }) => {
+    const who = await account(request);
+    await signedIn(page, who);
+    const { context, page: phone } = await device(browser);
+    await signedIn(phone, who);
+    // As if this account had only ever signed in with Google.
+    expect((await request.post(`/api/__test/google-only?email=${encodeURIComponent(who.email)}`)).ok()).toBe(true);
+
+    await page.goto("/account");
+    const section = page.getByRole("region", { name: "Password" });
+    await expect(section).toContainText("You sign in with Google and have no password here.");
+    await section.getByLabel("New password").fill("short");
+    await section.getByRole("button", { name: "Add password" }).click();
+    await expect(section.getByRole("alert")).toContainText("at least 8 characters");
+
+    const NEW = "a brand new password 77";
+    await section.getByLabel("New password").fill(NEW);
+    await section.getByRole("button", { name: "Add password" }).click();
+    await expect(section.getByText(`Password added. You can also sign in with ${who.email} and this password.`)).toBeVisible();
+    // The section now offers to change it, and nobody was signed out.
+    await expect(section.getByLabel("Current password")).toBeVisible();
+    await synced(page);
+    await synced(phone);
+    await context.close();
+
+    // The new password works.
+    const { context: other, page: laptop } = await device(browser);
+    await signedIn(laptop, { ...who, password: NEW });
+    await other.close();
+  });
+
   test("profile and password can be changed", async ({ page, request }) => {
     const who = await account(request);
     await signedIn(page, who);
