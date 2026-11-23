@@ -170,7 +170,7 @@ test.describe("one day at a time", () => {
     await expect(page.locator(".zero-head__count")).toHaveText("3");
     const carried = page.getByRole("region", { name: "Carried over" });
     await expect(carried.locator("[data-task]")).toHaveCount(2);
-    await expect(carried).toContainText("2 from earlier days. It happens.");
+    await expect(carried).toContainText("2 from earlier days.");
 
     await carried.getByRole("button", { name: "Move all to tomorrow" }).click();
     await expect(carried).toBeHidden();

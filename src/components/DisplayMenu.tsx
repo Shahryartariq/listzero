@@ -236,7 +236,7 @@ export function DisplayMenu({ view, byList = false }: DisplayMenuProps) {
                   </button>
                 </div>
               </div>
-              <p className="hint">Filters only hide tasks in this view. Nothing is deleted.</p>
+              <p className="hint">Filters only hide tasks here.</p>
             </fieldset>
           </div>
         </Sheet>

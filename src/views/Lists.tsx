@@ -36,7 +36,7 @@ export function Inbox() {
       <header className="head">
         <div>
           <h1 className="title">Inbox</h1>
-          <p className="subtitle">Get it out of your head first. Sort it later.</p>
+          <p className="subtitle">Capture now. Sort later.</p>
         </div>
         <DisplayMenu view="inbox" />
       </header>
@@ -60,7 +60,7 @@ export function Inbox() {
       {all.length === 0 && (
         <div className="empty">
           <h2 className="empty__title">The Inbox is empty.</h2>
-          <p>Anything you add without a list lands here. Paste a whole list and each line becomes a task.</p>
+          <p>Tasks without a list land here.</p>
         </div>
       )}
     </div>
@@ -83,7 +83,7 @@ export function Upcoming() {
       <header className="head">
         <div>
           <h1 className="title">Upcoming</h1>
-          <p className="subtitle">What is coming, one day at a time.</p>
+          <p className="subtitle">The days ahead.</p>
         </div>
         <DisplayMenu view="upcoming" byList />
       </header>
@@ -107,7 +107,7 @@ export function Upcoming() {
       {all.length === 0 && (
         <div className="empty">
           <h2 className="empty__title">Nothing scheduled ahead.</h2>
-          <p>Tasks added here are set for tomorrow unless you type another day, like “friday” or “12 dec”.</p>
+          <p>New tasks here go to tomorrow, or the day you type, like “friday”.</p>
         </div>
       )}
       {(display.layout === "list" ? groups : []).map((group) => {

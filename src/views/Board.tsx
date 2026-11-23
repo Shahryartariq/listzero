@@ -58,7 +58,7 @@ export function Board() {
       />
 
       <p className="hint board__foot">
-        Drag cards between columns, or use the buttons on each card. Older finished tasks are in{" "}
+        Drag cards between columns. Older finished tasks are in{" "}
         <Link to="/done">Done</Link>.
       </p>
     </div>

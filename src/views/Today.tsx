@@ -82,13 +82,9 @@ export function Today() {
         <div className="empty">
           <h2 className="empty__title">A clean slate.</h2>
           <p>
-            Listzero is a free to-do list for busy minds. Type a task the way you would say it, see one day at a
-            time, and get today to zero.
-          </p>
-          <p>
             {accounts
-              ? "Add your first task above. You do not need an account, and without one your tasks never leave this browser."
-              : "Add your first task above. There is no account, and your tasks never leave this browser."}
+              ? "Add your first task above, the way you would say it. No account needed: tasks stay in this browser."
+              : "Add your first task above, the way you would say it. Tasks stay in this browser."}
           </p>
           <div className="empty__actions">
             <button
@@ -108,7 +104,7 @@ export function Today() {
       {!firstVisit && left === 0 && (
         <div className="empty">
           <h2 className="empty__title">Today is at zero.</h2>
-          <p>Nothing is due. Pull something in from the Inbox, or stop here. Stopping counts.</p>
+          <p>Nothing due. Pull one in from the Inbox, or stop here.</p>
           <div className="empty__actions">
             <Link to="/inbox" className="btn btn--quiet">
               Open the Inbox
@@ -154,8 +150,7 @@ export function Today() {
       {overflow.length > 0 && (
         <div className="note">
           <p>
-            {view.due.length} tasks is a lot for one day. Keep the top {limit} and move the other {overflow.length} to
-            tomorrow?
+            {view.due.length} tasks is a lot for one day. Move {overflow.length} to tomorrow?
           </p>
           <button
             type="button"
@@ -180,7 +175,7 @@ export function Today() {
               Carried over
             </h2>
             <p className="section__note">
-              {carried.length} from earlier days. It happens.
+              {carried.length} from earlier days.
             </p>
           </div>
           <TaskRows tasks={carried} quick="today" onMove={(id, to) => store.moveTask("today", carried, id, to)} />
@@ -218,7 +213,7 @@ export function Today() {
                 store.setDue(
                   carried.map((t) => t.id),
                   null,
-                  "Dates removed. They are still in their lists.",
+                  "Dates removed.",
                 )
               }
             >
