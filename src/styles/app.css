@@ -34,6 +34,27 @@
   font-size: 112.5%;
 }
 
+/* Big monitors: the same layout, a step larger. (Media queries measure in the browser's own rem.) */
+@media (min-width: 112.5rem) {
+  :root {
+    font-size: 106.25%;
+  }
+
+  :root[data-text="large"] {
+    font-size: 118.75%;
+  }
+}
+
+@media (min-width: 150rem) {
+  :root {
+    font-size: 112.5%;
+  }
+
+  :root[data-text="large"] {
+    font-size: 125%;
+  }
+}
+
 *,
 *::before,
 *::after {
@@ -320,7 +341,8 @@ a {
 
 /* ---------- The narrow sidebar: icons only, on wide screens ---------- */
 
-@media (min-width: 48.0625rem) {
+/* Exactly where the phone layout (below) does not apply. */
+@media (min-width: 48.0625rem) and (min-height: 30.0625rem), (min-width: 60.0625rem) {
   :root[data-sidebar="collapsed"] .app {
     grid-template-columns: 4.75rem minmax(0, 1fr);
   }
@@ -451,16 +473,26 @@ a {
 
 .head {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem 1rem;
   margin-bottom: 1.5rem;
+}
+
+.head > :first-child {
+  flex: 1 1 15rem;
+  min-width: 0;
 }
 
 .head__title {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.head .title {
+  overflow-wrap: anywhere;
 }
 
 /* The one loud thing: how far today is from zero. */
@@ -1305,8 +1337,10 @@ dialog.sheet--small {
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: 2rem;
+  width: 100%;
   min-height: calc(100dvh - 9rem);
   max-width: 40rem;
+  margin-inline: auto;
 }
 
 .focus__bar {
@@ -2167,7 +2201,22 @@ td[data-today="true"] .cal__num {
 }
 
 .solo__top .brand {
+  flex: none;
   padding-inline: 0;
+}
+
+.solo__top > .link {
+  white-space: nowrap;
+}
+
+@media (max-width: 22.5rem) {
+  .solo__top {
+    gap: 0.75rem;
+  }
+
+  .solo__top > .link {
+    font-size: 0.875rem;
+  }
 }
 
 .solo__main {
@@ -2229,6 +2278,8 @@ td[data-today="true"] .cal__num {
 
 .landing__links a,
 .landing__foot a {
+  display: inline-block;
+  padding-block: 0.15rem;
   font-weight: 600;
   text-underline-offset: 0.18em;
 }
@@ -2668,8 +2719,13 @@ p > .sync-dot {
   white-space: nowrap;
 }
 
-/* On a phone each person is a card: name and email, then labelled lines, then the buttons. */
-@media (max-width: 40rem) {
+/* Where the table does not fit (a phone, a tablet, the sidebar open on a small laptop) each person is a
+   card: name and email, then labelled lines, then the buttons. */
+.table-scroll--people {
+  container-type: inline-size;
+}
+
+@container (max-width: 46rem) {
   .grid--people {
     min-width: 0;
   }
@@ -2721,7 +2777,8 @@ p > .sync-dot {
   }
 }
 
-@media (max-width: 48rem) {
+/* Phones, and phones held sideways (short and not wide): a tab bar instead of the sidebar. */
+@media (max-width: 48rem), (max-height: 30rem) and (max-width: 60rem) {
   .app {
     grid-template-columns: minmax(0, 1fr);
   }
