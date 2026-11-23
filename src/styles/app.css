@@ -1723,6 +1723,10 @@ dialog.sheet--small {
 
 .focus__task {
   align-self: center;
+}
+
+/* The next task comes in after one is finished or put off. (On arrival the sidebar moves instead.) */
+.focus[data-arriving] .focus__task {
   animation: focus-in 0.45s var(--ease) both;
 }
 

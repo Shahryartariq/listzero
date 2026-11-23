@@ -259,7 +259,7 @@ function FocusTask({ task, position, total, takeFocus, onSkip, onDone }: FocusTa
   const share = timer === null ? 1 : Math.max(0, Math.min(1, left / timer.total));
 
   return (
-    <div className="focus" data-leaving={leaving || undefined}>
+    <div className="focus" data-arriving={takeFocus || undefined} data-leaving={leaving || undefined}>
       <div className="focus__bar">
         <h1 className="sr-only">Focus</h1>
         <span className="focus__count">
@@ -301,7 +301,7 @@ function FocusTask({ task, position, total, takeFocus, onSkip, onDone }: FocusTa
         )}
 
         <span className="sr-only" role="status">
-          {finished ? "Time’s up." : ""}
+          {finished ? "Time is up." : ""}
         </span>
         <div className="timer" data-state={finished ? "up" : running ? "on" : paused ? "paused" : "idle"}>
           {timer !== null ? (
