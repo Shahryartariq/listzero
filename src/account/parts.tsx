@@ -304,6 +304,7 @@ export function SignOutSheet({ onClose }: { onClose(): void }) {
   const status = useSyncStatus();
   const [busy, setBusy] = useState(false);
   const [unsent, setUnsent] = useState<number | null>(null);
+  const [problem, setProblem] = useState("");
   const ws = store.workspace;
   const userId = ws.kind === "account" ? ws.userId : null;
 
@@ -324,7 +325,21 @@ export function SignOutSheet({ onClose }: { onClose(): void }) {
 
   const signOut = async () => {
     setBusy(true);
-    await authClient.signOut();
+    setProblem("");
+    // Signing out needs the server: until it has ended the session, this browser is still signed in.
+    let failed = "";
+    try {
+      const { error } = await authClient.signOut();
+      // 401: the session had already ended, which is what signing out is for.
+      if (error && error.status !== 401) failed = "Could not sign out. Please try again.";
+    } catch {
+      failed = "You are offline. Connect to the internet to sign out.";
+    }
+    if (failed) {
+      setProblem(failed);
+      setBusy(false);
+      return;
+    }
     if (userId) forgetAccountCopy(safeStorage(), userId);
     store.switchWorkspace(GUEST);
     store.notify("Signed out. Your tasks are safe in your account.");
@@ -355,6 +370,11 @@ export function SignOutSheet({ onClose }: { onClose(): void }) {
           <p className="form__alert" role="alert">
             {plural(unsent, "change has", "changes have")} not reached your account yet ({syncLabel(status).toLowerCase()}).
             Connect to the internet and wait a moment, or sign out and lose {unsent === 1 ? "it" : "them"}.
+          </p>
+        )}
+        {problem && (
+          <p className="form__alert" role="alert">
+            {problem}
           </p>
         )}
       </div>
