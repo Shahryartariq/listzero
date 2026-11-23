@@ -692,15 +692,18 @@ a {
   transform: scale(0.97);
 }
 
+/* Quiet controls are glass, like the tiles, with an outline that stays at 3:1 (themes.test.ts). */
 .btn--quiet {
-  background: transparent;
+  background: var(--glass);
   color: var(--ink);
+  border-width: 1.5px;
   border-color: var(--line-strong);
+  box-shadow: inset 0 1px 0 var(--shine);
   font-weight: 500;
 }
 
 .btn--quiet:hover {
-  background: var(--hover);
+  background: color-mix(in srgb, var(--surface) 94%, var(--ink));
   border-color: var(--ink);
 }
 
@@ -811,20 +814,21 @@ textarea.field {
   min-height: var(--tap);
   max-width: 100%;
   padding: 0.4rem 0.75rem 0.4rem 1rem;
-  border: 0;
+  border: 1.5px solid var(--line-strong);
   border-radius: 999px;
   background: var(--glass);
-  box-shadow: var(--tile-shadow);
-  -webkit-backdrop-filter: var(--frost);
-  backdrop-filter: var(--frost);
+  box-shadow: inset 0 1px 0 var(--shine);
   font-weight: 600;
   text-align: left;
-  transition: background-color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
 }
 
 .picker:hover,
 .picker[aria-expanded="true"] {
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border-color: var(--ink);
+  background: color-mix(in srgb, var(--surface) 94%, var(--ink));
 }
 
 .picker--wide {
@@ -947,7 +951,8 @@ textarea.field {
   padding: 0.3rem 0.95rem;
   border: 1.5px solid var(--line-strong);
   border-radius: 999px;
-  background: transparent;
+  background: var(--glass);
+  box-shadow: inset 0 1px 0 var(--shine);
   font-size: 0.9375rem;
   transition:
     background-color 0.15s,
@@ -956,7 +961,7 @@ textarea.field {
 
 .seg__opt:hover {
   border-color: var(--ink);
-  background: var(--hover);
+  background: color-mix(in srgb, var(--surface) 94%, var(--ink));
 }
 
 .seg__opt[aria-pressed="true"],
@@ -2199,7 +2204,8 @@ kbd,
   padding: 0.7rem 0.2rem 0.55rem;
   border: 1.5px solid var(--line-strong);
   border-radius: var(--r-m);
-  background: transparent;
+  background: var(--glass);
+  box-shadow: inset 0 1px 0 var(--shine);
   font-size: 0.875rem;
   transition:
     background-color 0.15s,
