@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { addTask, day, isPhone, row, seed } from "./helpers";
+import { addTask, choose, day, isPhone, row, seed } from "./helpers";
 
 test.describe("capture", () => {
   test("a first visit starts at zero, and a new task survives a reload", async ({ page }) => {
@@ -221,8 +221,8 @@ test.describe("task details", () => {
     await sheet.getByRole("textbox", { name: "New step" }).press("Enter");
     await sheet.getByRole("textbox", { name: "New step" }).fill("Write the opening");
     await sheet.getByRole("button", { name: "Add step" }).click();
-    await sheet.getByRole("radio", { name: "High" }).click();
-    await sheet.getByRole("button", { name: "15 min" }).click();
+    await choose(page, "Priority", "High");
+    await choose(page, "Length", "15m");
     await sheet.getByRole("textbox", { name: "Notes" }).fill("Ten minutes, three points.");
     await sheet.getByRole("checkbox", { name: "Mark step “Open the outline” as done" }).click();
 
@@ -238,7 +238,7 @@ test.describe("task details", () => {
     await page.reload();
     await row(page, "Write the talk").locator("[data-row]").click();
     await expect(sheet.getByRole("textbox", { name: "Notes" })).toHaveValue("Ten minutes, three points.");
-    await expect(sheet.getByRole("radio", { name: "High" })).toBeChecked();
+    await expect(sheet.getByRole("combobox", { name: "Priority" })).toHaveText("High");
   });
 
   test("a long task name is shown in full in the sheet", async ({ page }) => {
@@ -269,8 +269,8 @@ test.describe("task details", () => {
     await seed(page, [{ title: "Plan trip", due: day() }]);
     await page.goto("/today?task=seed-1");
     const sheet = page.getByRole("dialog", { name: "Task" });
-    await sheet.getByRole("button", { name: "Tomorrow" }).click();
-    await expect(sheet.getByRole("button", { name: "Tomorrow" })).toHaveAttribute("aria-pressed", "true");
+    await choose(page, "Day", "Tomorrow");
+    await expect(sheet.getByRole("combobox", { name: "Day" })).toHaveText("Tomorrow");
     await sheet.getByRole("button", { name: "Close" }).click();
     await expect(row(page, "Plan trip")).toBeHidden();
     await page.goto("/upcoming");
@@ -499,7 +499,7 @@ test.describe("priority", () => {
     await row(page, "Tax form").locator("[data-row]").click();
     const sheet = page.getByRole("dialog", { name: "Task" });
     await expect(sheet.getByText("Colour", { exact: true })).toHaveCount(0);
-    await sheet.getByRole("radiogroup", { name: "Priority" }).getByRole("radio", { name: "Medium" }).click();
+    await choose(page, "Priority", "Medium");
     await sheet.getByRole("button", { name: "Close" }).click();
     await expect(row(page, "Tax form").locator(".meta--p2")).toHaveText("Medium");
   });

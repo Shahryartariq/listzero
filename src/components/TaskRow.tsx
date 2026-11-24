@@ -141,7 +141,7 @@ export function TaskRow({
           {details && task.time && <span className="meta">{describeTime(task.time)}</span>}
           {details && task.estimate !== null && (
             <span className="meta">
-              <Icon name="clock" size={15} />
+              <Icon name="timer" size={15} />
               {describeMinutes(task.estimate)}
             </span>
           )}

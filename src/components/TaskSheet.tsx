@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
-import { REPEAT_LABEL, addDays, describeDay, describeTime, nextWeekday } from "../lib/dates";
+import { REPEAT_LABEL, addDays, describeDay, describeMinutes, describeTime, nextWeekday } from "../lib/dates";
 import { newId } from "../lib/id";
-import { type Priority, type Repeat, type Task } from "../lib/types";
+import { PRIORITY_LABEL, type Priority, type Repeat, type Task } from "../lib/types";
 import { useStore } from "../state/store-context";
 import { useCloseTask } from "../state/useOpenTask";
 import { Icon } from "./Icon";
@@ -10,14 +10,20 @@ import { Picker, type PickerOption } from "./Picker";
 import { Sheet } from "./Sheet";
 import { Zero } from "./TaskRow";
 
-const PRIORITIES: { value: Priority; label: string }[] = [
-  { value: 0, label: "None" },
-  { value: 3, label: "Low" },
-  { value: 2, label: "Medium" },
-  { value: 1, label: "High" },
+const PRIORITIES: PickerOption<"0" | "1" | "2" | "3">[] = [
+  { value: "0", label: "No priority" },
+  { value: "1", label: PRIORITY_LABEL[1] },
+  { value: "2", label: PRIORITY_LABEL[2] },
+  { value: "3", label: PRIORITY_LABEL[3] },
 ];
 
-const ESTIMATES = [5, 15, 30, 60];
+const LENGTHS = [5, 15, 30, 45, 60, 90, 120];
+
+/** The usual lengths, plus the task's own when it is another. */
+function lengthOptions(current: number | null): PickerOption<string>[] {
+  const minutes = current !== null && !LENGTHS.includes(current) ? [...LENGTHS, current].sort((a, b) => a - b) : LENGTHS;
+  return [{ value: "", label: "No length" }, ...minutes.map((m) => ({ value: String(m), label: describeMinutes(m) }))];
+}
 
 const REPEATS: PickerOption<Repeat | "">[] = [
   { value: "", label: "Does not repeat" },
@@ -32,37 +38,13 @@ function timeOptions(current: string | null): PickerOption<string>[] {
   return [{ value: "", label: "No time" }, ...times.map((t) => ({ value: t, label: describeTime(t) }))];
 }
 
-/** A chip that opens the browser's calendar. The date input sits under it, so the calendar opens there. */
-function DayPick({ value, today, custom, onChange }: { value: string | null; today: string; custom: boolean; onChange(day: string | null): void }) {
-  const input = useRef<HTMLInputElement>(null);
-  return (
-    <span className="day-pick">
-      <button
-        type="button"
-        className="seg__opt"
-        aria-pressed={custom}
-        onClick={() => {
-          try {
-            input.current?.showPicker();
-          } catch {
-            input.current?.focus();
-          }
-        }}
-      >
-        <Icon name="calendar" size={16} />
-        {custom && value ? describeDay(value, today) : "Pick a day"}
-      </button>
-      <input
-        ref={input}
-        type="date"
-        className="day-pick__input"
-        tabIndex={-1}
-        aria-hidden="true"
-        value={value ?? ""}
-        onChange={(e) => onChange(e.target.value || null)}
-      />
-    </span>
-  );
+/** Opens the browser's calendar from a hidden date input that sits under the Day chip. */
+function openCalendar(input: HTMLInputElement | null) {
+  try {
+    input?.showPicker();
+  } catch {
+    input?.focus();
+  }
 }
 
 /** Renders the open task, if the URL names one. Lives once, in the shell. */
@@ -131,6 +113,18 @@ function TaskEditor({ task, onClose }: { task: Task; onClose(): void }) {
   };
 
   const setDue = (due: string | null) => store.updateTask(task.id, { due });
+  const calendar = useRef<HTMLInputElement>(null);
+  const dayValue = task.due ?? "none";
+  const dayOptions: PickerOption<string>[] = [
+    { value: today, label: "Today" },
+    { value: tomorrow, label: "Tomorrow" },
+    ...(nextWeek !== tomorrow ? [{ value: nextWeek, label: "Next week" }] : []),
+    ...(task.due && ![today, tomorrow, nextWeek].includes(task.due)
+      ? [{ value: task.due, label: describeDay(task.due, today) }]
+      : []),
+    { value: "none", label: "No day" },
+    { value: "pick", label: "Pick a date…" },
+  ];
 
   return (
     <Sheet
@@ -159,12 +153,12 @@ function TaskEditor({ task, onClose }: { task: Task; onClose(): void }) {
             {!done && (
               <button
                 type="button"
-                className="btn btn--quiet btn--icon"
+                className="btn btn--quiet"
                 aria-label="Focus on this"
-                title="Focus on this"
                 onClick={() => navigate(`/focus?on=${task.id}`)}
               >
                 <Icon name="focus" size={18} />
+                Focus
               </button>
             )}
             <button
@@ -209,6 +203,88 @@ function TaskEditor({ task, onClose }: { task: Task; onClose(): void }) {
       {done && task.completedAt && (
         <p className="hint">Finished {describeDay(store.dayOf(task.completedAt), today).toLowerCase()}.</p>
       )}
+
+      <div className="props" role="group" aria-label="Details">
+        <span className="props__day">
+          <Picker
+            chip
+            label="Day"
+            icon="calendar"
+            value={dayValue}
+            empty="none"
+            placeholder="No day"
+            options={dayOptions}
+            onChange={(v) => {
+              if (v === "pick") openCalendar(calendar.current);
+              else setDue(v === "none" ? null : v);
+            }}
+          />
+          <input
+            ref={calendar}
+            type="date"
+            className="props__calendar"
+            tabIndex={-1}
+            aria-hidden="true"
+            value={task.due ?? ""}
+            onChange={(e) => setDue(e.target.value || null)}
+          />
+        </span>
+        {task.due && (
+          <Picker
+            chip
+            label="Time"
+            icon="clock"
+            value={task.time ?? ""}
+            empty=""
+            placeholder="Time"
+            startAt="09:00"
+            options={timeOptions(task.time)}
+            onChange={(time) => store.updateTask(task.id, { time: time || null })}
+          />
+        )}
+        {task.due && (
+          <Picker
+            chip
+            label="Repeat"
+            icon="repeat"
+            value={task.repeat ?? ""}
+            empty=""
+            placeholder="Repeat"
+            options={REPEATS}
+            onChange={(repeat) => store.updateTask(task.id, { repeat: repeat || null })}
+          />
+        )}
+        <Picker
+          chip
+          label="Priority"
+          icon="flag"
+          value={String(task.priority) as "0" | "1" | "2" | "3"}
+          empty="0"
+          placeholder="Priority"
+          options={PRIORITIES}
+          onChange={(p) => store.updateTask(task.id, { priority: Number(p) as Priority })}
+        />
+        <Picker
+          chip
+          label="Length"
+          icon="timer"
+          value={task.estimate === null ? "" : String(task.estimate)}
+          empty=""
+          placeholder="Length"
+          options={lengthOptions(task.estimate)}
+          onChange={(m) => store.updateTask(task.id, { estimate: m ? Number(m) : null })}
+        />
+        <Picker
+          chip
+          label="List"
+          value={task.listId ?? ""}
+          options={[
+            { value: "", label: "Inbox" },
+            ...store.data.lists.map((l) => ({ value: l.id, label: l.name, dot: `var(--c-${l.color})` })),
+          ]}
+          onChange={(listId) => store.updateTask(task.id, { listId: listId || null })}
+        />
+      </div>
 
       <div className="detail__group">
         <span className="label" id="steps-label">
@@ -269,145 +345,17 @@ function TaskEditor({ task, onClose }: { task: Task; onClose(): void }) {
             onKeyDown={onStepKey}
             enterKeyHint="done"
           />
-          <button type="button" className="btn btn--quiet" onClick={addStep} disabled={!newStep.trim()}>
-            Add step
-          </button>
+          {newStep.trim() && (
+            <button type="button" className="btn btn--quiet" onClick={addStep}>
+              Add step
+            </button>
+          )}
         </div>
         {task.steps.length === 0 && (
           <p className="hint" style={{ marginTop: "0.5rem" }}>
             Big task? Start with a two-minute step.
           </p>
         )}
-      </div>
-
-      <div className="detail__group">
-        <span className="label" id="day-label">
-          Day
-        </span>
-        <div className="detail__row" role="group" aria-labelledby="day-label">
-          <div className="seg">
-            <button type="button" className="seg__opt" aria-pressed={task.due === today} onClick={() => setDue(today)}>
-              Today
-            </button>
-            <button
-              type="button"
-              className="seg__opt"
-              aria-pressed={task.due === tomorrow}
-              onClick={() => setDue(tomorrow)}
-            >
-              Tomorrow
-            </button>
-            <button
-              type="button"
-              className="seg__opt"
-              aria-pressed={task.due === nextWeek}
-              onClick={() => setDue(nextWeek)}
-            >
-              Next week
-            </button>
-            <button type="button" className="seg__opt" aria-pressed={task.due === null} onClick={() => setDue(null)}>
-              No day
-            </button>
-            <DayPick
-              value={task.due}
-              today={today}
-              custom={task.due !== null && ![today, tomorrow, nextWeek].includes(task.due)}
-              onChange={setDue}
-            />
-          </div>
-        </div>
-        {task.due && (
-          <div className="detail__row" style={{ marginTop: "0.6rem" }}>
-            <Picker
-              label="Time"
-              icon="clock"
-              value={task.time ?? ""}
-              empty=""
-              startAt="09:00"
-              options={timeOptions(task.time)}
-              onChange={(time) => store.updateTask(task.id, { time: time || null })}
-            />
-            <Picker
-              label="Repeat"
-              icon="repeat"
-              value={task.repeat ?? ""}
-              options={REPEATS}
-              onChange={(repeat) => store.updateTask(task.id, { repeat: repeat || null })}
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="detail__group">
-        <span className="label" id="priority-label">
-          Priority
-        </span>
-        <div className="seg" role="radiogroup" aria-labelledby="priority-label">
-          {PRIORITIES.map((p) => (
-            <button
-              key={p.value}
-              type="button"
-              role="radio"
-              className="seg__opt"
-              aria-checked={task.priority === p.value}
-              onClick={() => store.updateTask(task.id, { priority: p.value })}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="detail__group">
-        <span className="label" id="estimate-label">
-          Length
-        </span>
-        <div className="detail__row" role="group" aria-labelledby="estimate-label">
-          <div className="seg">
-            {ESTIMATES.map((m) => (
-              <button
-                key={m}
-                type="button"
-                className="seg__opt"
-                aria-pressed={task.estimate === m}
-                onClick={() => store.updateTask(task.id, { estimate: task.estimate === m ? null : m })}
-              >
-                {m < 60 ? `${m} min` : "1 hour"}
-              </button>
-            ))}
-          </div>
-          <input
-            type="number"
-            className="field"
-            style={{ flex: "0 1 8rem" }}
-            aria-label="Minutes"
-            placeholder="Minutes"
-            min={1}
-            max={1440}
-            inputMode="numeric"
-            value={task.estimate ?? ""}
-            onChange={(e) => {
-              const n = Math.round(Number(e.target.value));
-              store.updateTask(task.id, { estimate: e.target.value && n >= 1 && n <= 1440 ? n : null });
-            }}
-          />
-        </div>
-      </div>
-
-      <div className="detail__group">
-        <span className="label" aria-hidden="true">
-          List
-        </span>
-        <Picker
-          label="List"
-          wide
-          value={task.listId ?? ""}
-          options={[
-            { value: "", label: "Inbox" },
-            ...store.data.lists.map((l) => ({ value: l.id, label: l.name, dot: `var(--c-${l.color})` })),
-          ]}
-          onChange={(listId) => store.updateTask(task.id, { listId: listId || null })}
-        />
       </div>
 
       <div className="detail__group">

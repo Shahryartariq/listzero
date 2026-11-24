@@ -79,3 +79,9 @@ export async function openDisplay(page: Page) {
   await page.getByRole("button", { name: /^Display/ }).click();
   return page.getByRole("dialog", { name: "Display" });
 }
+
+/** Picks an option in one of the app's pickers: a combobox that opens a list of options. */
+export async function choose(page: Page, name: string, option: string) {
+  await page.getByRole("combobox", { name, exact: true }).click();
+  await page.getByRole("option", { name: option, exact: true }).click();
+}
