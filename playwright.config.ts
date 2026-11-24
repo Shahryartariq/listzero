@@ -24,7 +24,7 @@ export default defineConfig({
       // The API with an in-memory database and an outbox instead of real email.
       command: "npx tsx server/local.ts",
       url: "http://localhost:8787/api/config",
-      env: { SITE_URL: "http://localhost:4173", QUIET: "1", ADMIN_EMAILS: "admin-desktop@listzero.test,admin-phone@listzero.test" },
+      env: { SITE_URL: "http://localhost:4173", QUIET: "1", ADMIN_EMAILS: "admin-desktop@listzero.test,admin-phone@listzero.test,boss-desktop@listzero.test,boss-phone@listzero.test" },
       reuseExistingServer: !process.env.CI,
     },
     {

@@ -123,9 +123,16 @@ device you sign in on, and you can share lists with other people.
     change the same task, each field keeps its latest change.
   - Up to 10 people per list and 50 shared lists per person. Deleting your account deletes the shared lists you
     own, and says which before it does.
-- **An admin page** for the people listed in `ADMIN_EMAILS`: see who has an account, suspend or lift a suspension,
-  sign someone out everywhere, change roles, delete an account. Admins never see anyone's tasks and cannot sign in
-  as someone else.
+- **An admin panel** for the people listed in `ADMIN_EMAILS`, signed into at its own address (`/admin/login`):
+  - The numbers at a glance (accounts, online now, active today, new this week, suspended), **who is online now**
+    (a device of theirs synced in the last 3 minutes), and everyone, searchable by name, email or username.
+  - One person's details: how they sign in (password, Google, passkeys), two-factor, their signed-in devices and when
+    each was last here, and how many tasks, lists and shared lists they have. Counts only: admins never see anyone's
+    tasks, and cannot sign in as someone else.
+  - Suspend or lift a suspension, sign someone out everywhere, change roles, delete an account.
+  - Hidden from everyone else: nothing links to it, to anyone who isn't an admin `/admin` is the ordinary "page not
+    found" and its API answers 404, search engines are told not to index it (`X-Robots-Tag` and a robots meta
+    tag), it is left out of `robots.txt` and the sitemap so they don't name it, and visit counting skips it.
 
 ## How it is built
 

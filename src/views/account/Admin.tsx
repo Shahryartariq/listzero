@@ -1,235 +1,526 @@
-/** For admins: who has an account, with the few things an admin may do about it. */
+/**
+ * The admin panel, at /admin. To anyone who isn't a signed-in admin it is the ordinary "page not
+ * found", and its API answers 404, so nothing tells a visitor it is there. Admins sign in at
+ * /admin/login (src/views/account/Auth.tsx), which nothing links to.
+ *
+ * Admins see who has an account, who is online now, and one person's details: how they sign in,
+ * their devices, and how much they keep here (counts, never the tasks themselves).
+ */
 import { useCallback, useEffect, useState } from "react";
-import { Link, Navigate } from "react-router";
-import { authClient } from "../../account/client";
+import { authClient, type SessionUser } from "../../account/client";
 import { useAccountConfig } from "../../account/config";
+import { describeDevice } from "../../account/devices";
 import { authMessage } from "../../account/messages";
-import { CannotReach, FormMessage } from "../../account/ui";
+import { isAdminRole } from "../../account/roles";
+import { FormMessage } from "../../account/ui";
 import { Picker } from "../../components/Picker";
 import { Confirm, Sheet } from "../../components/Sheet";
 import { usePageTitle } from "../../state/usePageTitle";
+import { NotFound } from "../Menu";
 
-interface Person {
+
+type Filter = "all" | "online" | "admins" | "suspended" | "unconfirmed";
+
+interface OnlinePerson {
   id: string;
   name: string;
   email: string;
-  username?: string | null;
-  role?: string | null;
-  banned?: boolean | null;
-  banReason?: string | null;
-  emailVerified: boolean;
-  createdAt: string | Date;
+  seenAt: string;
+  devices: number;
 }
 
-const PAGE = 20;
-const day = (value: string | Date) => new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(new Date(value));
+interface Overview {
+  people: number;
+  admins: number;
+  suspended: number;
+  unconfirmed: number;
+  newThisWeek: number;
+  activeToday: number;
+  onlineMinutes: number;
+  online: OnlinePerson[];
+}
 
-type Pending = { kind: "ban"; person: Person } | { kind: "delete"; person: Person } | null;
+interface PersonRow {
+  id: string;
+  name: string;
+  email: string;
+  username: string | null;
+  role: string;
+  banned: boolean;
+  banReason: string | null;
+  banExpires: string | null;
+  emailVerified: boolean;
+  createdAt: string;
+  seenAt: string | null;
+  online: boolean;
+}
+
+interface PeoplePage {
+  people: PersonRow[];
+  total: number;
+  page: number;
+  pages: number;
+}
+
+interface PersonDetails extends PersonRow {
+  twoFactor: boolean;
+  methods: string[];
+  passkeys: number;
+  lastLoginMethod: string | null;
+  devices: { id: string; userAgent: string | null; signedInAt: string; expiresAt: string; seenAt: string | null; online: boolean }[];
+  counts: { tasks: number; openTasks: number; lists: number; sharedOwned: number; sharedIn: number };
+}
+
+async function ask<T>(action: string, body: Record<string, unknown> = {}): Promise<T> {
+  const response = await fetch(`/api/admin/${action}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error(response.status === 404 ? "That account no longer exists, or you are no longer an admin." : "The server did not answer. Try again.");
+  return (await response.json()) as T;
+}
+
+const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
+const DATE_TIME = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+const day = (iso: string) => DATE.format(new Date(iso));
+
+/** "just now", "4 min ago", "3 h ago", "yesterday", then a date. */
+export function ago(iso: string | null, now = Date.now()): string {
+  if (!iso) return "Never";
+  const minutes = Math.round((now - new Date(iso).getTime()) / 60_000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  if (hours < 48) return "Yesterday";
+  return DATE.format(new Date(iso));
+}
+
+const METHOD: Record<string, string> = { password: "Password", google: "Google", passkey: "Passkey", email: "Email and password", username: "Username and password" };
+
+function status(p: PersonRow): string {
+  if (p.banned) return `Suspended${p.banReason ? `: ${p.banReason}` : ""}`;
+  return p.emailVerified ? "Active" : "Email not confirmed";
+}
 
 export function Admin() {
-  usePageTitle("People");
   const config = useAccountConfig();
   const session = authClient.useSession();
+  if (config === null || (session.isPending && !session.data)) return null;
   const me = session.data?.user;
-  const isAdmin = me?.role === "admin";
+  // Not signed in, not an admin, or no accounts here: the same page as any address that doesn't exist.
+  if (!config.accounts || !me || !isAdminRole(me.role)) return <NotFound />;
+  return <Panel me={me} />;
+}
 
+function Panel({ me }: { me: SessionUser }) {
+  usePageTitle("Admin");
+  const [overview, setOverview] = useState<Overview | null>(null);
+  const [list, setList] = useState<PeoplePage | null>(null);
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
   const [page, setPage] = useState(0);
-  const [people, setPeople] = useState<Person[]>([]);
-  const [total, setTotal] = useState(0);
+  const [open, setOpen] = useState<string | null>(null);
   const [message, setMessage] = useState<{ error?: string; notice?: string }>({});
-  const [pending, setPending] = useState<Pending>(null);
-  const [reason, setReason] = useState("");
-  const [days, setDays] = useState("0");
+  const [now, setNow] = useState(() => Date.now());
 
   const load = useCallback(async () => {
-    const { data, error } = await authClient.admin.listUsers({
-      query: {
-        limit: PAGE,
-        offset: page * PAGE,
-        sortBy: "createdAt",
-        sortDirection: "desc",
-        ...(search ? { searchValue: search, searchField: "email" as const, searchOperator: "contains" as const } : {}),
-      },
-    });
-    if (error || !data) return setMessage({ error: authMessage(error) });
-    setPeople(data.users as Person[]);
-    setTotal(data.total);
-  }, [page, search]);
+    try {
+      const [o, p] = await Promise.all([ask<Overview>("overview"), ask<PeoplePage>("people", { page, search, filter })]);
+      setOverview(o);
+      setList(p);
+      setNow(Date.now());
+    } catch (e) {
+      setMessage({ error: (e as Error).message });
+    }
+  }, [page, search, filter]);
 
+  // Fresh numbers when the page opens, every 30 seconds while it is on screen, and on coming back to it.
   useEffect(() => {
-    if (isAdmin) void load();
-  }, [isAdmin, load]);
-
-  if (config === null || (session.isPending && !session.data)) return null;
-  if (!config.accounts) return <Navigate to="/today" replace />;
-  if (!me) {
-    if (session.error) return <CannotReach title="People" onRetry={() => void session.refetch()} />;
-    return <Navigate to="/sign-in?next=/admin" replace />;
-  }
-  if (!isAdmin) {
-    return (
-      <div className="view">
-        <div className="empty" style={{ paddingTop: 0 }}>
-          <h1 className="empty__title">This page is for admins.</h1>
-          <div className="empty__actions">
-            <Link to="/account" className="btn">
-              Back to Account
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const act = async (work: () => Promise<{ error: { code?: string; message?: string; status?: number } | null }>, done: string) => {
-    setMessage({});
-    const { error } = await work();
-    setMessage(error ? { error: authMessage(error) } : { notice: done });
     void load();
-  };
+    const tick = window.setInterval(() => document.visibilityState === "visible" && void load(), 30_000);
+    const back = () => document.visibilityState === "visible" && void load();
+    document.addEventListener("visibilitychange", back);
+    return () => {
+      window.clearInterval(tick);
+      document.removeEventListener("visibilitychange", back);
+    };
+  }, [load]);
 
-  const pages = Math.max(1, Math.ceil(total / PAGE));
+  const stats: [string, number | undefined][] = [
+    ["Accounts", overview?.people],
+    ["Online now", overview?.online.length],
+    ["Active today", overview?.activeToday],
+    ["New this week", overview?.newThisWeek],
+    ["Suspended", overview?.suspended],
+  ];
 
   return (
-    <div className="view view--wide">
+    <div className="view view--wide admin">
       <header className="head">
-        <h1 className="title">People</h1>
+        <h1 className="title">Admin</h1>
+        <div className="head__tools">
+          <button type="button" className="btn btn--quiet btn--small" onClick={() => void load()}>
+            Refresh
+          </button>
+        </div>
       </header>
-      <p className="auth__lead">
-        {total} {total === 1 ? "account" : "accounts"}. Admins can see who has an account, never anyone’s tasks.
-      </p>
+      <p className="auth__lead">Who has an account and who is here now. Admins never see anyone’s tasks.</p>
 
-      <form
-        className="form form--inline"
-        role="search"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setPage(0);
-          setSearch(query.trim());
-        }}
-      >
-        <label className="sr-only" htmlFor="admin-search">
-          Search by email
-        </label>
-        <input id="admin-search" className="field" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by email" />
-        <button type="submit" className="btn btn--quiet">
-          Search
-        </button>
-      </form>
-      <FormMessage {...message} />
+      <dl className="stats" aria-label="Summary">
+        {stats.map(([label, value]) => (
+          <div className="stats__item" key={label}>
+            <dt>{label}</dt>
+            <dd>{value ?? "–"}</dd>
+          </div>
+        ))}
+      </dl>
 
-      {/* Explicit roles keep this a table for screen readers when the phone layout changes its display. */}
-      <div className="table-scroll table-scroll--people" role="region" aria-label="Accounts" tabIndex={0}>
-        <table className="grid grid--people" role="table">
-          <thead role="rowgroup">
-            <tr role="row">
-              <th role="columnheader" scope="col">Person</th>
-              <th role="columnheader" scope="col">Joined</th>
-              <th role="columnheader" scope="col">Role</th>
-              <th role="columnheader" scope="col">Status</th>
-              <th role="columnheader" scope="col" aria-label="Actions" />
-            </tr>
-          </thead>
-          <tbody role="rowgroup">
-            {people.map((person) => {
-              const self = person.id === me.id;
-              const admin = person.role === "admin";
-              return (
+      <section className="section" aria-labelledby="online-title">
+        <div className="section__head">
+          <h2 className="section__title" id="online-title">
+            Online now
+          </h2>
+          <p className="section__note">Used Listzero in the last {overview?.onlineMinutes ?? 3} minutes</p>
+        </div>
+        {overview && overview.online.length === 0 ? (
+          <p className="hint">Nobody right now.</p>
+        ) : (
+          <ul className="online">
+            {overview?.online.map((p) => (
+              <li key={p.id}>
+                <button type="button" className="online__person" onClick={() => setOpen(p.id)}>
+                  <span className="online__name">
+                    {p.name}
+                    {p.id === me.id ? " (you)" : ""}
+                  </span>
+                  <span className="hint">{p.email}</span>
+                  <span className="hint">
+                    {ago(p.seenAt, now)}
+                    {p.devices > 1 ? ` · ${p.devices} devices` : ""}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="section" aria-labelledby="people-title">
+        <div className="section__head">
+          <h2 className="section__title" id="people-title">
+            People
+          </h2>
+          {list && (
+            <p className="section__note">
+              {list.total} {list.total === 1 ? "account" : "accounts"}
+            </p>
+          )}
+        </div>
+        <form
+          className="form form--inline"
+          role="search"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setPage(0);
+            setSearch(query.trim());
+          }}
+        >
+          <label className="sr-only" htmlFor="admin-search">
+            Search by name, email or username
+          </label>
+          <input
+            id="admin-search"
+            className="field"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Name, email or username"
+          />
+          <button type="submit" className="btn btn--quiet">
+            Search
+          </button>
+          <Picker
+            label="Show"
+            value={filter}
+            options={[
+              { value: "all", label: "Everyone" },
+              { value: "online", label: "Online now" },
+              { value: "admins", label: "Admins" },
+              { value: "suspended", label: "Suspended" },
+              { value: "unconfirmed", label: "Email not confirmed" },
+            ]}
+            onChange={(value) => {
+              setPage(0);
+              setFilter(value as Filter);
+            }}
+          />
+        </form>
+        <FormMessage {...message} />
+
+        {/* Explicit roles keep this a table for screen readers when the phone layout changes its display. */}
+        <div className="table-scroll table-scroll--people" role="region" aria-label="Accounts" tabIndex={0}>
+          <table className="grid grid--people" role="table">
+            <thead role="rowgroup">
+              <tr role="row">
+                <th role="columnheader" scope="col">
+                  Person
+                </th>
+                <th role="columnheader" scope="col">
+                  Last seen
+                </th>
+                <th role="columnheader" scope="col">
+                  Joined
+                </th>
+                <th role="columnheader" scope="col">
+                  Role
+                </th>
+                <th role="columnheader" scope="col">
+                  Status
+                </th>
+                <th role="columnheader" scope="col" aria-label="Actions" />
+              </tr>
+            </thead>
+            <tbody role="rowgroup">
+              {list?.people.map((person) => (
                 <tr role="row" key={person.id}>
                   <th role="rowheader" scope="row">
                     {person.name}
-                    {self ? " (you)" : ""}
+                    {person.id === me.id ? " (you)" : ""}
                     <br />
                     <span className="hint">
                       {person.email}
                       {person.username ? ` · @${person.username}` : ""}
                     </span>
                   </th>
+                  <td role="cell" data-label="Last seen" className="grid__date">
+                    {person.online ? <span className="meta meta--doing">Online</span> : ago(person.seenAt, now)}
+                  </td>
                   <td role="cell" data-label="Joined" className="grid__date">
                     {day(person.createdAt)}
                   </td>
-                  <td role="cell" data-label="Role">{admin ? "Admin" : "User"}</td>
-                  <td role="cell" data-label="Status">{person.banned ? `Suspended${person.banReason ? `: ${person.banReason}` : ""}` : person.emailVerified ? "Active" : "Email not confirmed"}</td>
+                  <td role="cell" data-label="Role">
+                    {isAdminRole(person.role) ? "Admin" : "User"}
+                  </td>
+                  <td role="cell" data-label="Status">
+                    {status(person)}
+                  </td>
                   <td role="cell">
-                    {!self && (
-                      <div className="setting__row">
-                        <button
-                          type="button"
-                          className="btn btn--quiet btn--small"
-                          onClick={() =>
-                            void act(
-                              () => authClient.admin.setRole({ userId: person.id, role: admin ? "user" : "admin" }),
-                              admin ? `${person.name} is now a user.` : `${person.name} is now an admin.`,
-                            )
-                          }
-                        >
-                          {admin ? "Make user" : "Make admin"}
-                        </button>
-                        {person.banned ? (
-                          <button
-                            type="button"
-                            className="btn btn--quiet btn--small"
-                            onClick={() => void act(() => authClient.admin.unbanUser({ userId: person.id }), `${person.name} can sign in again.`)}
-                          >
-                            Lift suspension
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="btn btn--quiet btn--small"
-                            onClick={() => {
-                              setReason("");
-                              setDays("0");
-                              setPending({ kind: "ban", person });
-                            }}
-                          >
-                            Suspend
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          className="btn btn--quiet btn--small"
-                          onClick={() => void act(() => authClient.admin.revokeUserSessions({ userId: person.id }), `${person.name} was signed out everywhere.`)}
-                        >
-                          Sign out everywhere
-                        </button>
-                        <button type="button" className="btn btn--quiet btn--small" onClick={() => setPending({ kind: "delete", person })}>
-                          Delete
-                        </button>
-                      </div>
-                    )}
+                    <button
+                      type="button"
+                      className="btn btn--quiet btn--small"
+                      aria-label={`Details for ${person.email}`}
+                      onClick={() => setOpen(person.id)}
+                    >
+                      Details
+                    </button>
                   </td>
                 </tr>
-              );
-            })}
-            {people.length === 0 && (
-              <tr role="row">
-                <td role="cell" colSpan={5}>No accounts match.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {pages > 1 && (
-        <div className="setting__row">
-          <button type="button" className="btn btn--quiet" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
-            Previous
-          </button>
-          <span>
-            Page {page + 1} of {pages}
-          </span>
-          <button type="button" className="btn btn--quiet" disabled={page + 1 >= pages} onClick={() => setPage((p) => p + 1)}>
-            Next
-          </button>
+              ))}
+              {list?.people.length === 0 && (
+                <tr role="row">
+                  <td role="cell" colSpan={6}>
+                    No accounts match.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
 
-      {pending?.kind === "ban" && (
+        {list && list.pages > 1 && (
+          <div className="setting__row">
+            <button type="button" className="btn btn--quiet" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+              Previous
+            </button>
+            <span>
+              Page {page + 1} of {list.pages}
+            </span>
+            <button type="button" className="btn btn--quiet" disabled={page + 1 >= list.pages} onClick={() => setPage((p) => p + 1)}>
+              Next
+            </button>
+          </div>
+        )}
+      </section>
+
+      {open && (
+        <Details
+          userId={open}
+          self={open === me.id}
+          now={now}
+          onClose={() => setOpen(null)}
+          onChanged={(notice) => {
+            setMessage({ notice });
+            void load();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+type Pending = "ban" | "delete" | null;
+
+function Details({
+  userId,
+  self,
+  now,
+  onClose,
+  onChanged,
+}: {
+  userId: string;
+  self: boolean;
+  now: number;
+  onClose(): void;
+  onChanged(notice: string): void;
+}) {
+  const [person, setPerson] = useState<PersonDetails | null>(null);
+  const [message, setMessage] = useState<{ error?: string; notice?: string }>({});
+  const [pending, setPending] = useState<Pending>(null);
+  const [reason, setReason] = useState("");
+  const [days, setDays] = useState("0");
+
+  const load = useCallback(async () => {
+    try {
+      setPerson(await ask<PersonDetails>("person", { userId }));
+    } catch (e) {
+      setMessage({ error: (e as Error).message });
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const act = async (work: () => Promise<{ error: { code?: string; message?: string; status?: number } | null }>, done: string) => {
+    setMessage({});
+    const { error } = await work();
+    if (error) return setMessage({ error: authMessage(error) });
+    setMessage({ notice: done });
+    onChanged(done);
+    void load();
+  };
+
+  const admin = person ? isAdminRole(person.role) : false;
+  const rows: [string, string][] = person
+    ? [
+        ["Email", `${person.email}${person.emailVerified ? "" : " (not confirmed)"}`],
+        ["Username", person.username ? `@${person.username}` : "None"],
+        ["Role", admin ? "Admin" : "User"],
+        ["Status", status(person) + (person.banned && person.banExpires ? `, until ${day(person.banExpires)}` : "")],
+        ["Last seen", person.online ? "Online now" : ago(person.seenAt, now)],
+        ["Joined", day(person.createdAt)],
+        ["Signs in with", person.methods.map((m) => (m === "passkey" ? `Passkey (${person.passkeys})` : (METHOD[m] ?? m))).join(", ") || "Nothing yet"],
+        ["Last sign-in", person.lastLoginMethod ? (METHOD[person.lastLoginMethod] ?? person.lastLoginMethod) : "Unknown"],
+        ["Two-factor", person.twoFactor ? "On" : "Off"],
+        ["Tasks", `${person.counts.openTasks} open, ${person.counts.tasks - person.counts.openTasks} done`],
+        ["Lists", String(person.counts.lists)],
+        ["Shared lists", `Owns ${person.counts.sharedOwned}, in ${person.counts.sharedIn} more`],
+      ]
+    : [];
+
+  return (
+    <>
+      <Sheet
+        title={person ? person.name : "Account"}
+        onClose={onClose}
+        footer={
+          person && !self ? (
+            <button type="button" className="btn btn--danger" onClick={() => setPending("delete")}>
+              Delete account
+            </button>
+          ) : undefined
+        }
+      >
+        {!person && !message.error && <p className="hint">Loading…</p>}
+        <FormMessage {...message} />
+        {person && (
+          <>
+            <dl className="facts">
+              {rows.map(([label, value]) => (
+                <div className="facts__row" key={label}>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
+
+            <h3 className="label">Signed-in devices</h3>
+            {person.devices.length === 0 ? (
+              <p className="hint">Signed out everywhere.</p>
+            ) : (
+              <ul className="devices">
+                {person.devices.map((d) => (
+                  <li key={d.id}>
+                    <strong>{describeDevice(d.userAgent)}</strong>
+                    {d.online && <span className="meta meta--doing">Online</span>}
+                    <span className="hint">
+                      Signed in {DATE_TIME.format(new Date(d.signedInAt))}
+                      {d.seenAt && !d.online ? ` · last here ${ago(d.seenAt, now).toLowerCase()}` : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {!self && (
+              <>
+                <h3 className="label">Actions</h3>
+                <div className="setting__row">
+                  <button
+                    type="button"
+                    className="btn btn--quiet btn--small"
+                    onClick={() =>
+                      void act(
+                        () => authClient.admin.setRole({ userId: person.id, role: admin ? "user" : "admin" }),
+                        admin ? `${person.name} is now a user.` : `${person.name} is now an admin.`,
+                      )
+                    }
+                  >
+                    {admin ? "Make user" : "Make admin"}
+                  </button>
+                  {person.banned ? (
+                    <button
+                      type="button"
+                      className="btn btn--quiet btn--small"
+                      onClick={() => void act(() => authClient.admin.unbanUser({ userId: person.id }), `${person.name} can sign in again.`)}
+                    >
+                      Lift suspension
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn--quiet btn--small"
+                      onClick={() => {
+                        setReason("");
+                        setDays("0");
+                        setPending("ban");
+                      }}
+                    >
+                      Suspend
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn--quiet btn--small"
+                    disabled={person.devices.length === 0}
+                    onClick={() => void act(() => authClient.admin.revokeUserSessions({ userId: person.id }), `${person.name} was signed out everywhere.`)}
+                  >
+                    Sign out everywhere
+                  </button>
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </Sheet>
+
+      {pending === "ban" && person && (
         <Sheet
-          title={`Suspend ${pending.person.name}`}
+          title={`Suspend ${person.name}`}
           small
           onClose={() => setPending(null)}
           footer={
@@ -241,7 +532,6 @@ export function Admin() {
                 type="button"
                 className="btn btn--danger"
                 onClick={() => {
-                  const person = pending.person;
                   const length = Number(days);
                   setPending(null);
                   void act(
@@ -285,19 +575,23 @@ export function Admin() {
         </Sheet>
       )}
 
-      {pending?.kind === "delete" && (
+      {pending === "delete" && person && (
         <Confirm
-          title={`Delete ${pending.person.email}?`}
-          body="Their account and the tasks stored with it are deleted for good. This cannot be undone."
+          title={`Delete ${person.email}?`}
+          body="Their account, their tasks and the shared lists they own are deleted for good. This cannot be undone."
           confirmLabel="Delete account"
           onClose={() => setPending(null)}
           onConfirm={() => {
-            const person = pending.person;
             setPending(null);
-            void act(() => authClient.admin.removeUser({ userId: person.id }), `${person.email} was deleted.`);
+            void (async () => {
+              const { error } = await authClient.admin.removeUser({ userId: person.id });
+              if (error) return setMessage({ error: authMessage(error) });
+              onChanged(`${person.email} was deleted.`);
+              onClose();
+            })();
           }}
         />
       )}
-    </div>
+    </>
   );
 }

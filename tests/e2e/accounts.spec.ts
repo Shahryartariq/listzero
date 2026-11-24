@@ -666,7 +666,7 @@ test.describe("the Account page", () => {
 });
 
 test.describe("admins", () => {
-  test("can see accounts, suspend one and lift it; other people cannot open the page", async ({ page, request }, testInfo) => {
+  test("can see accounts, suspend one and lift it; to other people the page doesn't exist", async ({ page, request }, testInfo) => {
     const admin = { ...person("admin"), email: `admin-${testInfo.project.name}@listzero.test` };
     const made = await request.post("/api/auth/sign-up/email", {
       headers: { origin: SITE },
@@ -677,14 +677,16 @@ test.describe("admins", () => {
     const target = await account(request);
 
     await signedIn(page, admin);
-    await page.getByRole("link", { name: "Manage people" }).click();
-    await expect(page.getByRole("heading", { name: "People" })).toBeVisible();
-    await page.getByRole("searchbox", { name: "Search by email" }).fill(target.email);
-    await page.getByRole("button", { name: "Search" }).click();
+    await page.getByRole("link", { name: "Open the admin panel" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Admin" })).toBeVisible();
+    await page.getByRole("searchbox", { name: "Search by name, email or username" }).fill(target.email);
+    await page.getByRole("button", { name: "Search", exact: true }).click();
     const line = page.getByRole("row", { name: target.email });
     await expect(line).toContainText("Active");
 
-    await line.getByRole("button", { name: "Suspend" }).click();
+    await line.getByRole("button", { name: `Details for ${target.email}` }).click();
+    const details = page.getByRole("dialog", { name: target.username });
+    await details.getByRole("button", { name: "Suspend" }).click();
     const sheet = page.getByRole("dialog", { name: /^Suspend/ });
     await sheet.getByLabel("Reason (they see this)").fill("Testing");
     await sheet.getByRole("button", { name: "Suspend" }).click();
@@ -694,12 +696,14 @@ test.describe("admins", () => {
     await signIn(other.page, target);
     await expect(other.page.getByRole("alert")).toContainText(/suspended/i);
 
-    await line.getByRole("button", { name: "Lift suspension" }).click();
+    await details.getByRole("button", { name: "Lift suspension" }).click();
     await expect(line).toContainText("Active");
+    await details.getByRole("button", { name: "Close" }).click();
     await signIn(other.page, target);
     await expect(other.page).toHaveURL(/\/today$/);
+    // To anyone but an admin, the panel is a page that doesn't exist.
     await other.page.goto("/admin");
-    await expect(other.page.getByRole("heading", { name: "This page is for admins." })).toBeVisible();
+    await expect(other.page.getByRole("heading", { name: "This page does not exist." })).toBeVisible();
     await other.context.close();
   });
 });

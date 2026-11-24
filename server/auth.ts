@@ -148,7 +148,8 @@ export function createAuth({ db, config, mailer, background }: AuthDeps) {
       twoFactor({ issuer: APP_NAME, backupCodeOptions: { amount: 10, length: 10 } }),
       passkey({ rpID: new URL(config.baseURL).hostname, rpName: APP_NAME, origin: config.baseURL }),
       admin({ defaultRole: "user", adminRoles: ["admin"], ac: access, roles }),
-      lastLoginMethod(),
+      // Kept on the account too, so the admin panel can say how someone last signed in.
+      lastLoginMethod({ storeInDatabase: true }),
       ...(config.pwnedPasswordCheck
         ? [
             haveIBeenPwned({
