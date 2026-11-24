@@ -17,6 +17,7 @@ const PATHS = {
   display: "M5 7h14M8 12h8M10.5 17h3",
   chevronLeft: "M14.5 6l-6 6 6 6",
   chevronRight: "M9.5 6l6 6-6 6",
+  chevronDown: "M6.5 9.5l5.5 5.5 5.5-5.5",
   sidebar: "M6 5h12a1.5 1.5 0 0 1 1.5 1.5v11A1.5 1.5 0 0 1 18 19H6a1.5 1.5 0 0 1-1.5-1.5v-11A1.5 1.5 0 0 1 6 5ZM9.5 5v14",
   board: "M5 5h4v14H5zM10.5 5h4v9h-4zM16 5h3.5v11H16z",
   palette: "M12 4a8 8 0 1 0 0 16c1.2 0 1.8-.9 1.4-1.9-.5-1.2.3-2.4 1.6-2.4H17a3 3 0 0 0 3-3c0-4.3-3.6-8.7-8-8.7ZM8.2 11.5h.01M10.5 8h.01M14.5 8h.01",
@@ -29,6 +30,8 @@ const PATHS = {
   steps: "M5 7h2M10 7h9M5 12h2M10 12h9M5 17h2M10 17h9",
   trash: "M5 7h14M10 7V5h4v2M7 7l.8 12h8.4L17 7M10.5 10.5v5M13.5 10.5v5",
   more: "M6 12h.01M12 12h.01M18 12h.01",
+  play: "M8.5 6.2v11.6a.6.6 0 0 0 .9.5l9.2-5.8a.6.6 0 0 0 0-1L9.4 5.7a.6.6 0 0 0-.9.5Z",
+  pause: "M9 6.5v11M15 6.5v11",
   eye: "M3 12s3.3-6 9-6 9 6 9 6-3.3 6-9 6-9-6-9-6ZM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z",
   eyeOff: "M4 4l16 16M9.9 6.3A8.6 8.6 0 0 1 12 6c5.7 0 9 6 9 6a15 15 0 0 1-2.7 3.4M14 14.1A2.5 2.5 0 0 1 9.9 10M6.3 7.7A15.2 15.2 0 0 0 3 12s3.3 6 9 6c1.2 0 2.3-.3 3.3-.7",
   user: "M12 12a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM5.5 19a6.5 6.5 0 0 1 13 0",
@@ -36,6 +39,7 @@ const PATHS = {
   key: "M8 14a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM11.5 10.5H20M17 10.5v3M20 10.5v2",
   menu: "M5 7h14M5 12h14M5 17h14",
   note: "M6 4.5h9l3 3V19.5H6zM9 10h6M9 13.5h6",
+  grip: "M9.5 6.5h.01M14.5 6.5h.01M9.5 12h.01M14.5 12h.01M9.5 17.5h.01M14.5 17.5h.01",
 } as const;
 
 export type IconName = keyof typeof PATHS;
@@ -48,7 +52,7 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={name === "more" ? 2.6 : 1.8}
+      strokeWidth={name === "more" || name === "grip" ? 2.6 : 1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"

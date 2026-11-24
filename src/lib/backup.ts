@@ -81,6 +81,7 @@ export function readTask(v: unknown, listIds: Set<string> | null): Task | null {
     doing: v.doing === true && timestamp(v.completedAt) === null,
     createdAt: timestamp(v.createdAt) ?? Date.now(),
     completedAt: timestamp(v.completedAt),
+    ...(typeof v.order === "number" && Number.isFinite(v.order) && Math.abs(v.order) < 1e15 ? { order: v.order } : {}),
   };
 }
 

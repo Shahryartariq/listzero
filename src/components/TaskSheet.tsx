@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
-import { REPEAT_LABEL, addDays, describeDay, nextWeekday } from "../lib/dates";
+import { REPEAT_LABEL, addDays, describeDay, describeTime, nextWeekday } from "../lib/dates";
 import { newId } from "../lib/id";
 import { COLOR_NAME, LIST_COLORS, type Priority, type Repeat, type Task } from "../lib/types";
 import { useStore } from "../state/store-context";
 import { useCloseTask } from "../state/useOpenTask";
 import { Icon } from "./Icon";
+import { Picker, type PickerOption } from "./Picker";
 import { Sheet } from "./Sheet";
 import { Zero } from "./TaskRow";
 
@@ -17,6 +18,52 @@ const PRIORITIES: { value: Priority; label: string }[] = [
 ];
 
 const ESTIMATES = [5, 15, 30, 60];
+
+const REPEATS: PickerOption<Repeat | "">[] = [
+  { value: "", label: "Does not repeat" },
+  ...(Object.keys(REPEAT_LABEL) as Repeat[]).map((r) => ({ value: r, label: REPEAT_LABEL[r] })),
+];
+
+/** Every half hour, plus the task's own time when it falls between. */
+function timeOptions(current: string | null): PickerOption<string>[] {
+  const times = Array.from({ length: 48 }, (_, i) => `${String(Math.floor(i / 2)).padStart(2, "0")}:${i % 2 ? "30" : "00"}`);
+  if (current && !times.includes(current)) times.push(current);
+  times.sort();
+  return [{ value: "", label: "No time" }, ...times.map((t) => ({ value: t, label: describeTime(t) }))];
+}
+
+/** A chip that opens the browser's calendar. The date input sits under it, so the calendar opens there. */
+function DayPick({ value, today, custom, onChange }: { value: string | null; today: string; custom: boolean; onChange(day: string | null): void }) {
+  const input = useRef<HTMLInputElement>(null);
+  return (
+    <span className="day-pick">
+      <button
+        type="button"
+        className="seg__opt"
+        aria-pressed={custom}
+        onClick={() => {
+          try {
+            input.current?.showPicker();
+          } catch {
+            input.current?.focus();
+          }
+        }}
+      >
+        <Icon name="calendar" size={16} />
+        {custom && value ? describeDay(value, today) : "Pick a day"}
+      </button>
+      <input
+        ref={input}
+        type="date"
+        className="day-pick__input"
+        tabIndex={-1}
+        aria-hidden="true"
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value || null)}
+      />
+    </span>
+  );
+}
 
 /** Renders the open task, if the URL names one. Lives once, in the shell. */
 export function TaskSheet() {
@@ -108,12 +155,31 @@ function TaskEditor({ task, onClose }: { task: Task; onClose(): void }) {
             <Icon name="trash" size={18} />
             Delete
           </button>
-          {!done && (
-            <button type="button" className="btn" onClick={() => navigate(`/focus?on=${task.id}`)}>
-              <Icon name="focus" size={18} />
-              Focus on this
+          <span className="sheet__end">
+            {!done && (
+              <button
+                type="button"
+                className="btn btn--quiet btn--icon"
+                aria-label="Focus on this"
+                title="Focus on this"
+                onClick={() => navigate(`/focus?on=${task.id}`)}
+              >
+                <Icon name="focus" size={18} />
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                // Everything else is kept as it changes; a step still being typed goes in now.
+                addStep();
+                onClose();
+              }}
+            >
+              <Icon name="check" size={18} />
+              Save
             </button>
-          )}
+          </span>
         </>
       }
     >
@@ -196,7 +262,7 @@ function TaskEditor({ task, onClose }: { task: Task; onClose(): void }) {
             className="field"
             style={{ flex: "1 1 12rem" }}
             aria-label="New step"
-            placeholder={task.steps.length ? "Add another step" : "What is the first small step?"}
+            placeholder={task.steps.length ? "Add a step" : "First small step"}
             value={newStep}
             maxLength={300}
             onChange={(e) => setNewStep(e.target.value)}
@@ -209,7 +275,7 @@ function TaskEditor({ task, onClose }: { task: Task; onClose(): void }) {
         </div>
         {task.steps.length === 0 && (
           <p className="hint" style={{ marginTop: "0.5rem" }}>
-            Stuck on a big task? Write a first step small enough to start in two minutes.
+            Big task? Start with a two-minute step.
           </p>
         )}
       </div>
@@ -242,37 +308,32 @@ function TaskEditor({ task, onClose }: { task: Task; onClose(): void }) {
             <button type="button" className="seg__opt" aria-pressed={task.due === null} onClick={() => setDue(null)}>
               No day
             </button>
+            <DayPick
+              value={task.due}
+              today={today}
+              custom={task.due !== null && ![today, tomorrow, nextWeek].includes(task.due)}
+              onChange={setDue}
+            />
           </div>
-          <input
-            type="date"
-            className="field"
-            aria-label="Pick a day"
-            value={task.due ?? ""}
-            onChange={(e) => setDue(e.target.value || null)}
-          />
         </div>
         {task.due && (
           <div className="detail__row" style={{ marginTop: "0.6rem" }}>
-            <input
-              type="time"
-              className="field"
-              aria-label="Time"
+            <Picker
+              label="Time"
+              icon="clock"
               value={task.time ?? ""}
-              onChange={(e) => store.updateTask(task.id, { time: e.target.value || null })}
+              empty=""
+              startAt="09:00"
+              options={timeOptions(task.time)}
+              onChange={(time) => store.updateTask(task.id, { time: time || null })}
             />
-            <select
-              className="field"
-              aria-label="Repeat"
+            <Picker
+              label="Repeat"
+              icon="repeat"
               value={task.repeat ?? ""}
-              onChange={(e) => store.updateTask(task.id, { repeat: (e.target.value || null) as Repeat | null })}
-            >
-              <option value="">Does not repeat</option>
-              {(Object.keys(REPEAT_LABEL) as Repeat[]).map((r) => (
-                <option key={r} value={r}>
-                  {REPEAT_LABEL[r]}
-                </option>
-              ))}
-            </select>
+              options={REPEATS}
+              onChange={(repeat) => store.updateTask(task.id, { repeat: repeat || null })}
+            />
           </div>
         )}
       </div>
@@ -332,7 +393,7 @@ function TaskEditor({ task, onClose }: { task: Task; onClose(): void }) {
 
       <div className="detail__group">
         <span className="label" id="estimate-label">
-          How long it takes
+          Length
         </span>
         <div className="detail__row" role="group" aria-labelledby="estimate-label">
           <div className="seg">
@@ -367,22 +428,19 @@ function TaskEditor({ task, onClose }: { task: Task; onClose(): void }) {
       </div>
 
       <div className="detail__group">
-        <label className="label" htmlFor="task-list">
+        <span className="label" aria-hidden="true">
           List
-        </label>
-        <select
-          id="task-list"
-          className="field"
+        </span>
+        <Picker
+          label="List"
+          wide
           value={task.listId ?? ""}
-          onChange={(e) => store.updateTask(task.id, { listId: e.target.value || null })}
-        >
-          <option value="">Inbox</option>
-          {store.data.lists.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.name}
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: "", label: "Inbox" },
+            ...store.data.lists.map((l) => ({ value: l.id, label: l.name, dot: `var(--c-${l.color})` })),
+          ]}
+          onChange={(listId) => store.updateTask(task.id, { listId: listId || null })}
+        />
       </div>
 
       <div className="detail__group">
@@ -396,9 +454,6 @@ function TaskEditor({ task, onClose }: { task: Task; onClose(): void }) {
           maxLength={5000}
           onChange={(e) => store.updateTask(task.id, { notes: e.target.value })}
         />
-        <p className="hint" style={{ marginTop: "0.5rem" }}>
-          Changes save as you type.
-        </p>
       </div>
     </Sheet>
   );

@@ -25,12 +25,14 @@ interface TaskLayoutProps {
   /** What a task added from inside a layout (a calendar day) starts with, and whether it stays in this view. */
   defaults?: AddDefaults;
   staysHere?(task: Task): boolean;
+  /** Lets cards be dragged into a new order. */
+  onMove?(id: string, to: number): void;
 }
 
 /** The layouts other than the plain list, which each view draws itself. */
 export function TaskLayout(props: TaskLayoutProps) {
   if (props.layout === "cards") {
-    return <TaskRows tasks={props.tasks} showDay={props.showDay} showList={props.showList} cards />;
+    return <TaskRows tasks={props.tasks} showDay={props.showDay} showList={props.showList} cards onMove={props.onMove} />;
   }
   return (
     <Suspense fallback={null}>

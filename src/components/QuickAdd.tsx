@@ -134,7 +134,7 @@ export function QuickAdd({ defaults, staysHere }: QuickAddProps) {
             </span>
           ))
         ) : (
-          <span>Type it the way you would say it. Paste a list to add many at once.</span>
+          <span>Paste a list to add many at once.</span>
         )}
       </div>
     </form>

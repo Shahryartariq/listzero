@@ -6,7 +6,7 @@ import { LIST_COLORS, type ListColor, type Priority, type Task } from "./types";
 export const LAYOUTS = ["list", "cards", "board", "calendar", "table"] as const;
 export type Layout = (typeof LAYOUTS)[number];
 
-export const SORTS = ["smart", "priority", "day", "name", "newest", "length"] as const;
+export const SORTS = ["smart", "manual", "priority", "day", "name", "newest", "length"] as const;
 export type Sort = (typeof SORTS)[number];
 
 export const QUICK_MINUTES = 15;
@@ -49,8 +49,43 @@ const byDay = (a: Task, b: Task) => {
   return da === db ? 0 : da < db ? -1 : 1;
 };
 
+/** Where a task sits in "My order": where it was dragged to, or else when it was added. */
+export const rank = (t: Task) => t.order ?? t.createdAt;
+
+/** Room left between two neighbours when a task is numbered afresh. */
+const STEP = 1024;
+
+/**
+ * New places ("order") that put task `id` at position `to` of `shown`, a view's tasks from top to
+ * bottom. When the view is already in "My order" with room between the new neighbours, only the
+ * moved task changes. Otherwise every task in the view is numbered in its new order, starting
+ * where the view started, so it stays roughly where it was among tasks of other views.
+ */
+export function placeTask(shown: Task[], id: string, to: number): Record<string, number> {
+  const from = shown.findIndex((t) => t.id === id);
+  if (from < 0) return {};
+  const next = shown.filter((t) => t.id !== id);
+  const at = Math.max(0, Math.min(to, next.length));
+  const moved = shown[from]!;
+  next.splice(at, 0, moved);
+  const inOrder = (ranks: number[]) => ranks.every((r, i) => i === 0 || r > ranks[i - 1]!);
+  if (at === from && inOrder(shown.map(rank))) return {};
+
+  const ranks = next.map(rank);
+  if (inOrder(ranks.filter((_, i) => i !== at))) {
+    const before = at > 0 ? ranks[at - 1] : undefined;
+    const after = at < next.length - 1 ? ranks[at + 1] : undefined;
+    if (before === undefined && after !== undefined) return { [id]: after - STEP };
+    if (after === undefined && before !== undefined) return { [id]: before + STEP };
+    if (before !== undefined && after !== undefined && after - before > 1e-3) return { [id]: before + (after - before) / 2 };
+  }
+  const start = Math.min(...ranks);
+  return Object.fromEntries(next.map((t, i) => [t.id, start + i * STEP]));
+}
+
 /** Comparators for every sort except "smart", which keeps the order the view already chose. */
 const COMPARE: Record<Exclude<Sort, "smart">, (a: Task, b: Task) => number> = {
+  manual: (a, b) => rank(a) - rank(b) || a.createdAt - b.createdAt || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
   priority: (a, b) => {
     const pa = a.priority === 0 ? 4 : a.priority;
     const pb = b.priority === 0 ? 4 : b.priority;

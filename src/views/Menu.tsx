@@ -26,7 +26,7 @@ export function NotFound({ list = false }: { list?: boolean }) {
         <h1 className="empty__title">{list ? "This list does not exist." : "This page does not exist."}</h1>
         <p>
           {list
-            ? "It may have been deleted, or the link came from another browser. Lists are saved in the browser they were made in. Tasks from a deleted list are in the Inbox."
+            ? "It may have been deleted, or made in another browser. Tasks from deleted lists are in the Inbox."
             : "The address may be mistyped. Your tasks are safe."}
         </p>
         <div className="empty__actions">

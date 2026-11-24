@@ -36,14 +36,14 @@ export function Inbox() {
       <header className="head">
         <div>
           <h1 className="title">Inbox</h1>
-          <p className="subtitle">Get it out of your head first. Sort it later.</p>
+          <p className="subtitle">Capture now. Sort later.</p>
         </div>
         <DisplayMenu view="inbox" />
       </header>
       <QuickAdd staysHere={(t) => t.listId === null} />
       <FilterNote view="inbox" shown={tasks.length} total={all.length} />
       {display.layout === "list" ? (
-        <TaskRows tasks={tasks} showList={false} />
+        <TaskRows tasks={tasks} showList={false} onMove={(id, to) => store.moveTask("inbox", tasks, id, to)} />
       ) : (
         <TaskLayout
           layout={display.layout}
@@ -54,12 +54,13 @@ export function Inbox() {
           sort={display.sort}
           onSort={(sort) => set({ ...display, sort })}
           staysHere={(t) => t.listId === null}
+          onMove={(id, to) => store.moveTask("inbox", tasks, id, to)}
         />
       )}
       {all.length === 0 && (
         <div className="empty">
           <h2 className="empty__title">The Inbox is empty.</h2>
-          <p>Anything you add without a list lands here. Paste a whole list and each line becomes a task.</p>
+          <p>Tasks without a list land here.</p>
         </div>
       )}
     </div>
@@ -82,7 +83,7 @@ export function Upcoming() {
       <header className="head">
         <div>
           <h1 className="title">Upcoming</h1>
-          <p className="subtitle">What is coming, one day at a time.</p>
+          <p className="subtitle">The days ahead.</p>
         </div>
         <DisplayMenu view="upcoming" byList />
       </header>
@@ -106,7 +107,7 @@ export function Upcoming() {
       {all.length === 0 && (
         <div className="empty">
           <h2 className="empty__title">Nothing scheduled ahead.</h2>
-          <p>Tasks added here are set for tomorrow unless you type another day, like “friday” or “12 dec”.</p>
+          <p>New tasks here go to tomorrow, or the day you type, like “friday”.</p>
         </div>
       )}
       {(display.layout === "list" ? groups : []).map((group) => {
@@ -120,7 +121,11 @@ export function Upcoming() {
                 {minutes > 0 ? `, about ${describeMinutes(minutes)}` : ""}
               </p>
             </div>
-            <TaskRows tasks={group.tasks} showDay={false} />
+            <TaskRows
+              tasks={group.tasks}
+              showDay={false}
+              onMove={(id, to) => store.moveTask("upcoming", group.tasks, id, to)}
+            />
           </section>
         );
       })}
@@ -162,7 +167,7 @@ export function ListView() {
       <QuickAdd defaults={{ listId: list.id }} staysHere={(t) => t.listId === list.id} />
       <FilterNote view={viewKey} shown={tasks.length} total={all.length} />
       {display.layout === "list" ? (
-        <TaskRows tasks={tasks} showList={false} />
+        <TaskRows tasks={tasks} showList={false} onMove={(id, to) => store.moveTask(viewKey, tasks, id, to)} />
       ) : (
         <TaskLayout
           layout={display.layout}
@@ -174,6 +179,7 @@ export function ListView() {
           onSort={(sort) => set({ ...display, sort })}
           defaults={{ listId: list.id }}
           staysHere={(t) => t.listId === list.id}
+          onMove={(id, to) => store.moveTask(viewKey, tasks, id, to)}
         />
       )}
       {all.length === 0 && (

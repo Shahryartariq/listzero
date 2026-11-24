@@ -170,7 +170,7 @@ test.describe("one day at a time", () => {
     await expect(page.locator(".zero-head__count")).toHaveText("3");
     const carried = page.getByRole("region", { name: "Carried over" });
     await expect(carried.locator("[data-task]")).toHaveCount(2);
-    await expect(carried).toContainText("2 from earlier days. It happens.");
+    await expect(carried).toContainText("2 from earlier days.");
 
     await carried.getByRole("button", { name: "Move all to tomorrow" }).click();
     await expect(carried).toBeHidden();
@@ -321,6 +321,40 @@ test.describe("focus", () => {
     await expect(page.getByRole("heading", { name: "Nothing to focus on." })).toBeVisible();
   });
 
+  test("the timer pauses, takes 5 more minutes, survives a reload, and the app steps back", async ({ page }) => {
+    await seed(page, [{ title: "Write report", due: day() }, { title: "Call Sara", due: day() }]);
+    await page.goto("/focus");
+    // Only the task: no sidebar, no tab bar.
+    await expect(page.locator(".side")).toBeHidden();
+    await expect(page.getByRole("navigation", { name: "Main" })).toBeHidden();
+
+    await page.getByRole("button", { name: "25m" }).click();
+    await expect(page.getByRole("timer")).toHaveText(/^2[45]:\d\d$/);
+    await page.getByRole("button", { name: "Pause" }).click();
+    const paused = await page.getByRole("timer").textContent();
+    await page.waitForTimeout(1200);
+    await expect(page.getByRole("timer")).toHaveText(paused!);
+    await expect(page).toHaveTitle(/^Paused \| Write report$/);
+
+    await page.getByRole("button", { name: "+5 min" }).click();
+    await expect(page.getByRole("timer")).toHaveText(/^(29|30):\d\d$/);
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Resume" })).toBeVisible();
+    await page.getByRole("button", { name: "Resume" }).click();
+    await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
+
+    // The next task starts fresh, with the title focused for keyboard and screen reader users.
+    await page.getByRole("button", { name: "Not now" }).click();
+    await expect(page.getByRole("heading", { name: "Call Sara" })).toBeFocused();
+    await expect(page.getByRole("timer")).toHaveCount(0);
+
+    // Escape leaves, and everything comes back.
+    await page.keyboard.press("Escape");
+    await expect(page).toHaveURL(/\/today$/);
+    if (!isPhone(page)) await expect(page.locator(".side")).toBeVisible();
+    else await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
+  });
+
   test("any task can be focused from its sheet, even when it is not due today", async ({ page }) => {
     await seed(page, [{ title: "Someday project" }, { title: "Due today", due: day() }]);
     await page.goto("/inbox?task=seed-1");
@@ -408,19 +442,24 @@ test.describe("board", () => {
     await page.goto("/board");
     await expect(column(page, "To do").locator("[data-task]")).toHaveText(/Today thing/);
 
-    await page.getByLabel("Show tasks from").selectOption("Work");
+    const scope = page.getByRole("combobox", { name: "Show tasks from" });
+    const showFrom = async (name: string) => {
+      await scope.click();
+      await page.getByRole("option", { name, exact: true }).click();
+    };
+    await showFrom("Work");
     await expect(page).toHaveURL(/\/board\?in=work$/);
     await expect(column(page, "To do").locator("[data-task]")).toHaveText(/Work thing/);
     await addTask(page, "Added on the Work board");
     await expect(column(page, "To do").locator("[data-task]")).toHaveCount(2);
 
-    await page.getByLabel("Show tasks from").selectOption("Everything open");
+    await showFrom("Everything open");
     await expect(column(page, "To do").locator("[data-task]")).toHaveCount(4);
-    await page.getByLabel("Show tasks from").selectOption("Inbox");
+    await showFrom("Inbox");
     await expect(column(page, "To do").locator("[data-task]")).toHaveText([/Today thing/, /Loose idea/]);
 
     await page.goto("/board?in=deleted-list");
-    await expect(page.getByLabel("Show tasks from")).toHaveValue("today");
+    await expect(page.getByRole("combobox", { name: "Show tasks from" })).toHaveText("Today");
   });
 
   test("more than three tasks in progress gets a gentle note, not a block", async ({ page }) => {

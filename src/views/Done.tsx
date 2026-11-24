@@ -32,7 +32,7 @@ export function Done() {
       {total === 0 && (
         <div className="empty">
           <h2 className="empty__title">Nothing finished yet.</h2>
-          <p>Tasks you tick off are kept here, so on a slow day you can still see what you got done.</p>
+          <p>Finished tasks show up here.</p>
         </div>
       )}
       {groups.map((group) => (

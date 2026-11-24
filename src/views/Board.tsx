@@ -1,5 +1,6 @@
 import { Link, useSearchParams } from "react-router";
 import { BoardColumns } from "../components/layouts/BoardColumns";
+import { Picker } from "../components/Picker";
 import { QuickAdd } from "../components/QuickAdd";
 import { boardView, type BoardScope } from "../lib/store";
 import type { Task } from "../lib/types";
@@ -30,26 +31,18 @@ export function Board() {
           <h1 className="title">Board</h1>
           <p className="subtitle">Move a task along as you work on it.</p>
         </div>
-        <div>
-          <label className="sr-only" htmlFor="board-scope">
-            Show tasks from
-          </label>
-          <select
-            id="board-scope"
-            className="field"
-            value={scope}
-            onChange={(e) => setParams(e.target.value === "today" ? {} : { in: e.target.value }, { replace: true })}
-          >
-            <option value="today">Today</option>
-            <option value="inbox">Inbox</option>
-            {store.data.lists.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
-              </option>
-            ))}
-            <option value="all">Everything open</option>
-          </select>
-        </div>
+        <Picker
+          label="Show tasks from"
+          icon="board"
+          value={scope}
+          options={[
+            { value: "today", label: "Today" },
+            { value: "inbox", label: "Inbox" },
+            ...store.data.lists.map((l) => ({ value: l.id, label: l.name, dot: `var(--c-${l.color})` })),
+            { value: "all", label: "Everything open" },
+          ]}
+          onChange={(next) => setParams(next === "today" ? {} : { in: next }, { replace: true })}
+        />
       </header>
 
       <div className="board__add">
@@ -65,7 +58,7 @@ export function Board() {
       />
 
       <p className="hint board__foot">
-        Drag cards between columns, or use the buttons on each card. Older finished tasks are in{" "}
+        Drag cards between columns. Older finished tasks are in{" "}
         <Link to="/done">Done</Link>.
       </p>
     </div>

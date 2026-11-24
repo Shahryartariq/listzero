@@ -26,6 +26,7 @@ const LAYOUT_LABEL: Record<Layout, { label: string; icon: IconName }> = {
 
 const SORT_LABEL: Record<Sort, string> = {
   smart: "Suggested",
+  manual: "My order",
   priority: "Priority",
   day: "Day",
   name: "Name",
@@ -235,7 +236,7 @@ export function DisplayMenu({ view, byList = false }: DisplayMenuProps) {
                   </button>
                 </div>
               </div>
-              <p className="hint">Filters only hide tasks in this view. Nothing is deleted.</p>
+              <p className="hint">Filters only hide tasks here.</p>
             </fieldset>
           </div>
         </Sheet>
