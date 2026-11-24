@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ShareOwnList } from "../shared/ShareOwnList";
 import { SharedTools } from "../shared/SharedTools";
 import type { SharedList } from "../shared/space";
 import { useNavigate, useParams } from "react-router";
@@ -166,7 +167,7 @@ export function ListView({ listId: given, shared }: { listId?: string; shared?: 
           <h1 className="title">{list.name}</h1>
         </div>
         <div className="head__tools">
-          {shared && <SharedTools list={shared} />}
+          {shared ? <SharedTools list={shared} /> : <ShareOwnList list={list} />}
           <DisplayMenu view={viewKey} />
           {!shared && (
             <button type="button" className="icon-btn" onClick={() => setEditing(true)} aria-label="List options">
