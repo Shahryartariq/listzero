@@ -82,6 +82,8 @@ export function readTask(v: unknown, listIds: Set<string> | null): Task | null {
     createdAt: timestamp(v.createdAt) ?? Date.now(),
     completedAt: timestamp(v.completedAt),
     ...(typeof v.order === "number" && Number.isFinite(v.order) && Math.abs(v.order) < 1e15 ? { order: v.order } : {}),
+    ...(v.doing === true && timestamp(v.completedAt) === null && id(v.doingBy) ? { doingBy: id(v.doingBy)! } : {}),
+    ...(timestamp(v.completedAt) !== null && id(v.doneBy) ? { doneBy: id(v.doneBy)! } : {}),
   };
 }
 
