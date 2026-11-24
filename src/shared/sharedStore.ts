@@ -11,6 +11,20 @@ import type { AppData, Task } from "../lib/types";
 import type { AddDefaults, Store } from "../state/store-context";
 import { asTaskList, callShared, readSpace, requestSharedSync, setSpace, type SharedList } from "./space";
 
+/**
+ * Shows who is on a task and who finished it straight away, as the server will once it hears of it
+ * (the server works this out again and its answer is the one kept).
+ */
+export function stampHere(task: Task, before: Task | null, userId: string): Task {
+  const next: Task = { ...task };
+  const doing = next.doing && next.completedAt === null;
+  if (!doing) delete next.doingBy;
+  else if (!before?.doing || before.completedAt !== null || !next.doingBy) next.doingBy = userId;
+  if (next.completedAt === null) delete next.doneBy;
+  else if (before?.completedAt == null || !next.doneBy) next.doneBy = userId;
+  return next;
+}
+
 export function sharedStore(personal: Store, list: SharedList): Store {
   const listId = list.id;
   const canEdit = list.role !== "view";
@@ -27,7 +41,9 @@ export function sharedStore(personal: Store, list: SharedList): Store {
   const setTasks = (tasks: Task[]) => {
     const s = readSpace();
     if (!s) return;
-    setSpace({ ...s, tasks: [...s.tasks.filter((t) => t.listId !== listId), ...tasks.map((t) => ({ ...t, listId }))] });
+    const was = new Map(s.tasks.map((t) => [t.id, t]));
+    const mine = tasks.map((t) => stampHere({ ...t, listId }, was.get(t.id) ?? null, s.userId));
+    setSpace({ ...s, tasks: [...s.tasks.filter((t) => t.listId !== listId), ...mine] });
     requestSharedSync();
   };
 
@@ -48,6 +64,7 @@ export function sharedStore(personal: Store, list: SharedList): Store {
 
   return {
     ...personal,
+    readOnly: !canEdit,
     data: view(),
     read: view,
     addFromText(lines: string[], defaults: AddDefaults = {}, off: ReadonlySet<TokenKind> = new Set()) {

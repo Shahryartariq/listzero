@@ -27,6 +27,8 @@ export interface AddDefaults {
 
 export interface Store {
   data: AppData;
+  /** A shared list the person can only view: nothing here may change (see src/shared/sharedStore.ts). */
+  readOnly?: boolean;
   /** The current local day, kept fresh across midnight. */
   today: string;
   /** False when the browser will not keep data after this visit. */

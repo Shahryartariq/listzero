@@ -63,9 +63,11 @@ interface ConfirmProps {
   confirmLabel: string;
   onConfirm(): void;
   onClose(): void;
+  /** False for a choice that loses nothing, such as taking over a task. */
+  danger?: boolean;
 }
 
-export function Confirm({ title, body, confirmLabel, onConfirm, onClose }: ConfirmProps) {
+export function Confirm({ title, body, confirmLabel, onConfirm, onClose, danger = true }: ConfirmProps) {
   return (
     <Sheet
       title={title}
@@ -78,7 +80,7 @@ export function Confirm({ title, body, confirmLabel, onConfirm, onClose }: Confi
           </button>
           <button
             type="button"
-            className="btn btn--danger"
+            className={danger ? "btn btn--danger" : "btn"}
             onClick={() => {
               onConfirm();
               onClose();

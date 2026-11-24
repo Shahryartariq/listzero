@@ -1,11 +1,13 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { Icon } from "../components/Icon";
 import { Zero } from "../components/TaskRow";
 import { describeMinutes } from "../lib/dates";
 import { isOpen, nextStep, todayView } from "../lib/store";
 import type { Task } from "../lib/types";
-import { useStore } from "../state/store-context";
+import { sharedStore } from "../shared/sharedStore";
+import { useSpace, useSpaceLoading } from "../shared/space";
+import { StoreContext, useStore } from "../state/store-context";
 import { usePageTitle } from "../state/usePageTitle";
 
 function clock(ms: number): string {
@@ -55,6 +57,51 @@ const calm = () =>
 
 /** One task on the screen and nothing else. */
 export function Focus() {
+  const [params] = useSearchParams();
+  const sharedId = params.get("shared");
+  if (sharedId) return <SharedFocus listId={sharedId} taskId={params.get("on") ?? ""} />;
+  return <TodayFocus />;
+}
+
+/**
+ * One task from a shared list. It is the only one: shared tasks never join the Today queue, so
+ * finishing it or leaving goes back to its list.
+ */
+function SharedFocus({ listId, taskId }: { listId: string; taskId: string }) {
+  const personal = useStore();
+  const space = useSpace();
+  const navigate = useNavigate();
+  const list = space?.lists.find((l) => l.id === listId);
+  const store = useMemo(() => (list ? sharedStore(personal, list) : null), [personal, list, space]); // eslint-disable-line react-hooks/exhaustive-deps
+  const task = store?.data.tasks.find((t) => t.id === taskId && isOpen(t));
+  const back = `/shared/${listId}`;
+  const loading = useSpaceLoading();
+  usePageTitle("Focus");
+  if (loading && !store) return <div className="view" aria-busy="true" />;
+  if (!store || !task || store.readOnly) return <Navigate to={back} replace />;
+
+  return (
+    <StoreContext.Provider value={store}>
+      <FocusTask
+        key={task.id}
+        task={task}
+        position={1}
+        total={1}
+        takeFocus={false}
+        place={list?.name}
+        back={back}
+        onSkip={() => navigate(back)}
+        onDone={() => {
+          writeTimer(null);
+          store.toggleTask(task.id);
+          navigate(back);
+        }}
+      />
+    </StoreContext.Provider>
+  );
+}
+
+function TodayFocus() {
   const store = useStore();
   const [params, setParams] = useSearchParams();
   const [skipped, setSkipped] = useState<string[]>([]);
@@ -131,11 +178,15 @@ interface FocusTaskProps {
   total: number;
   /** Move keyboard focus to the title: the task before it was just finished or put off. */
   takeFocus: boolean;
+  /** The shared list the task is in, said in place of "Task 1 of 3". */
+  place?: string;
+  /** Where Leave focus goes. */
+  back?: string;
   onSkip(): void;
   onDone(): void;
 }
 
-function FocusTask({ task, position, total, takeFocus, onSkip, onDone }: FocusTaskProps) {
+function FocusTask({ task, position, total, takeFocus, place, back = "/today", onSkip, onDone }: FocusTaskProps) {
   const store = useStore();
   const navigate = useNavigate();
   const title = useRef<HTMLHeadingElement>(null);
@@ -175,11 +226,11 @@ function FocusTask({ task, position, total, takeFocus, onSkip, onDone }: FocusTa
       if (e.key !== "Escape" || e.defaultPrevented || document.querySelector("dialog[open]")) return;
       const el = e.target as HTMLElement | null;
       if (el?.closest("input, textarea, select, [contenteditable='true']")) return;
-      navigate("/today");
+      navigate(back);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [navigate]);
+  }, [navigate, back]);
 
   const endsAt = timer?.endsAt ?? null;
   useEffect(() => {
@@ -262,10 +313,8 @@ function FocusTask({ task, position, total, takeFocus, onSkip, onDone }: FocusTa
     <div className="focus" data-arriving={takeFocus || undefined} data-leaving={leaving || undefined}>
       <div className="focus__bar">
         <h1 className="sr-only">Focus</h1>
-        <span className="focus__count">
-          Task {position} of {total}
-        </span>
-        <Link to="/today" className="btn btn--quiet btn--small" aria-keyshortcuts="Escape">
+        <span className="focus__count">{place ? `From “${place}”` : `Task ${position} of ${total}`}</span>
+        <Link to={back} className="btn btn--quiet btn--small" aria-keyshortcuts="Escape">
           <Icon name="close" size={16} />
           Leave focus
         </Link>

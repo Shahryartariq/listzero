@@ -2,9 +2,11 @@ import { useState, type DragEvent } from "react";
 import { describeDay, describeMinutes } from "../../lib/dates";
 import { nextStep, type BoardColumn } from "../../lib/store";
 import type { Task } from "../../lib/types";
+import { doneByLabel, nameOf, onItLabel, useSpace } from "../../shared/space";
 import { useStore } from "../../state/store-context";
 import { useOpenTask } from "../../state/useOpenTask";
 import { Icon } from "../Icon";
+import { Confirm } from "../Sheet";
 import { Zero } from "../TaskRow";
 
 const COLUMNS: { id: BoardColumn; title: string; empty: string }[] = [
@@ -33,7 +35,12 @@ export function BoardColumns({ todo, doing, done, showDay, pullToToday = false }
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<BoardColumn | null>(null);
   const [shown, setShown] = useState<BoardColumn>("todo");
+  const [takeOver, setTakeOver] = useState<Task | null>(null);
+  const space = useSpace();
+  const readOnly = store.readOnly === true;
   const view = { todo, doing, done };
+  /** Someone else pressed Start on it (only in a shared list). */
+  const othersOn = (t: Task) => t.doing && !!t.doingBy && t.doingBy !== space?.userId;
 
   const columnOf = (t: Task): BoardColumn => (t.completedAt !== null ? "done" : t.doing ? "doing" : "todo");
 
@@ -121,7 +128,7 @@ export function BoardColumns({ todo, doing, done, showDay, pullToToday = false }
                       <li
                         key={task.id}
                         className="card"
-                        draggable
+                        draggable={!readOnly}
                         data-task={task.id}
                         data-done={done}
                         data-dragging={dragging === task.id}
@@ -142,10 +149,17 @@ export function BoardColumns({ todo, doing, done, showDay, pullToToday = false }
                             label={done ? `Mark “${task.title}” as not done` : `Mark “${task.title}” as done`}
                             // Unticking a finished card puts it back in To do, as dragging it there would.
                             onToggle={() => move(task, done ? "todo" : "done")}
+                            disabled={readOnly}
                           />
                           <button type="button" className="card__body" data-row onClick={() => open(task.id)}>
                             <span className="row__title">{task.title}</span>
                             <span className="row__meta">
+                              {column.id === "doing" && task.doingBy && (
+                                <span className="meta meta--doing">{onItLabel(nameOf(space, task.doingBy))}</span>
+                              )}
+                              {done && task.doneBy && (
+                                <span className="meta">{doneByLabel(nameOf(space, task.doneBy))}</span>
+                              )}
                               {next && <span className="meta meta--next">Next: {next}</span>}
                               {showDay && !done && task.due && (
                                 <span className="meta">
@@ -162,7 +176,7 @@ export function BoardColumns({ todo, doing, done, showDay, pullToToday = false }
                             </span>
                           </button>
                         </div>
-                        {column.id !== "done" && (
+                        {column.id !== "done" && !readOnly && (
                           <div className="card__actions">
                             {column.id === "todo" && (
                               <button
@@ -185,6 +199,16 @@ export function BoardColumns({ todo, doing, done, showDay, pullToToday = false }
                                 Not yet
                               </button>
                             )}
+                            {column.id === "doing" && othersOn(task) && (
+                              <button
+                                type="button"
+                                className="btn btn--quiet btn--small"
+                                aria-label={`Take over “${task.title}” from ${nameOf(space, task.doingBy)}`}
+                                onClick={() => setTakeOver(task)}
+                              >
+                                Take over
+                              </button>
+                            )}
                           </div>
                         )}
                       </li>
@@ -196,6 +220,17 @@ export function BoardColumns({ todo, doing, done, showDay, pullToToday = false }
           );
         })}
       </div>
+
+      {takeOver && (
+        <Confirm
+          title={`Take over from ${nameOf(space, takeOver.doingBy)}?`}
+          body={`“${takeOver.title}” will show that you are on it.`}
+          confirmLabel="Take over"
+          danger={false}
+          onConfirm={() => space && store.updateTask(takeOver.id, { doingBy: space.userId })}
+          onClose={() => setTakeOver(null)}
+        />
+      )}
     </>
   );
 }
