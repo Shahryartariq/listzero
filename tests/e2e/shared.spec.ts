@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type APIRequestContext, type Browser, type Page } from "@playwright/test";
-import { addTask, row } from "./helpers";
+import { addTask, row, settled } from "./helpers";
 
 /**
  * Shared lists, with two people on two devices, against the real API (playwright.config.ts starts it).
@@ -255,3 +256,84 @@ test("working together: who is on what, taking over, viewers, search and focus",
   await her.goto("/focus");
   await expect(her.getByRole("heading", { name: "Nothing to focus on." })).toBeVisible();
 });
+
+async function expectNoViolations(page: Page) {
+  await settled(page);
+  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
+  expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`)).toEqual([]);
+}
+
+test("a link opened signed out goes through sign-in and back; offline changes wait; the pages pass WCAG checks", async ({
+  browser,
+  request,
+}) => {
+  test.setTimeout(180_000);
+  const sherry = await account(request, person("sherry"));
+  const abdullah = await account(request, person("abdullah"));
+  const her = await device(browser, sherry);
+
+  await her.getByRole("button", { name: "New shared list" }).click();
+  await her.getByLabel("Name").fill("Office");
+  await her.getByRole("button", { name: "Create list" }).click();
+  await expect(her).toHaveURL(/\/shared\/[0-9a-f-]{36}$/);
+  const listId = /\/shared\/(.+)$/.exec(her.url())![1]!;
+  await addTask(her, "Water the plants");
+  await expect(row(her, "Water the plants")).toBeVisible();
+  await expectNoViolations(her);
+
+  // Anyone with the link can edit. The dialog passes the checks with people and a link in it.
+  await her.getByRole("button", { name: "Share", exact: true }).click();
+  const dialog = her.getByRole("dialog", { name: "Share “Office”" });
+  await dialog.getByRole("combobox", { name: "General access" }).click();
+  await her.getByRole("option", { name: "Anyone with the link" }).click();
+  await expect(dialog.getByText("Anyone signed in with the link can join.")).toBeVisible();
+  await dialog.getByLabel("Add people by email").fill("someone-new@listzero.test");
+  await dialog.getByRole("button", { name: "Send" }).click();
+  await expect(dialog.getByRole("status")).toHaveText("Invite sent to someone-new@listzero.test.");
+  await expectNoViolations(her);
+  const link = await her.evaluate(async () => {
+    const r = await fetch("/api/shared/sync", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cursors: {}, changes: [] }) });
+    return ((await r.json()) as { lists: { link: string }[] }).lists[0]!.link;
+  });
+  await dialog.getByRole("button", { name: "Done" }).click();
+
+  // Abdullah opens it before signing in: he is asked to, and comes back to the link after.
+  const context = await browser.newContext({ serviceWorkers: "block" });
+  const his = await context.newPage();
+  await his.goto(new URL(link).pathname);
+  await expect(his.getByRole("heading", { name: "Sign in to join this list." })).toBeVisible();
+  await expectNoViolations(his);
+  await his.getByRole("main").getByRole("link", { name: "Sign in" }).click();
+  await his.getByLabel("Email or username").fill(abdullah.email);
+  await his.getByLabel("Password", { exact: true }).fill(PASSWORD);
+  await his.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(his.getByRole("heading", { name: /shared “Office” with you/ })).toBeVisible();
+  await expectNoViolations(his);
+  await his.getByRole("button", { name: "Join list" }).click();
+  await expect(his).toHaveURL(new RegExp(`/shared/${listId}$`));
+  await expect(row(his, "Water the plants")).toBeVisible();
+
+  // Offline, his changes wait on his device, and go out when he is back.
+  await context.setOffline(true);
+  await his.getByRole("checkbox", { name: "Mark “Water the plants” as done" }).click();
+  await addTask(his, "Buy printer paper");
+  await expect(row(his, "Buy printer paper")).toBeVisible();
+  await her.waitForTimeout(12_000);
+  await expect(row(her, "Water the plants")).toBeVisible();
+  await expect(row(her, "Buy printer paper")).toHaveCount(0);
+  await context.setOffline(false);
+  await his.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect(row(her, "Buy printer paper")).toBeVisible({ timeout: 20_000 });
+  await expect(row(her, "Water the plants")).toHaveCount(0, { timeout: 20_000 });
+
+  // Who is on what passes the checks too, on the board in the dark.
+  await her.emulateMedia({ colorScheme: "dark" });
+  await her.getByRole("button", { name: /^Display/ }).click();
+  const display = her.getByRole("dialog", { name: "Display" });
+  await display.getByRole("radio", { name: "Board" }).click();
+  await display.getByRole("button", { name: "Done", exact: true }).click();
+  await her.getByRole("button", { name: "Start “Buy printer paper”" }).click();
+  await expect(row(her, "Buy printer paper")).toContainText("You are on it");
+  await expectNoViolations(her);
+});
+

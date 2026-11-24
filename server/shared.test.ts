@@ -194,4 +194,25 @@ describe("shared lists", () => {
     expect((await sherry.post("/api/shared/invite", { listId, email: "one-more@listzero.test" })).status).toBe(409);
     t.close();
   });
+
+  it("deleting an account deletes the lists it owns, and leaves the lists it was only in", async () => {
+    const t = await testApp();
+    const sherry = await person(t, "sherry");
+    const abdullah = await person(t, "abdullah");
+    const office = await newList(sherry, "Office", [task("a")]);
+    await sherry.post("/api/shared/invite", { listId: office, email: abdullah.email });
+    const home = await newList(abdullah, "Home");
+    await abdullah.post("/api/shared/invite", { listId: home, email: sherry.email });
+
+    expect((await sherry.post("/api/auth/delete-user", { callbackURL: "/today" })).status).toBe(200);
+    await sherry.visit(linkFor(t.outbox, sherry.email));
+    expect((await sherry.get("/api/auth/get-session")).data).toBeNull();
+
+    const left = await syncOf(abdullah);
+    expect(left.lists.map((l) => [l.name, l.people.length])).toEqual([["Home", 1]]);
+    const { rows } = (await t.db.execute("select count(*)::int as n from shared_item")) as unknown as { rows: { n: number }[] };
+    expect(rows[0]?.n).toBe(0);
+    t.close();
+  });
 });
+

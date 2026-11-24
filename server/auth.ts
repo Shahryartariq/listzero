@@ -13,6 +13,7 @@ import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { deleteAccount, resetPassword, verifyEmail, type Mailer } from "./email";
 import { isListedAdmin, type ServerConfig } from "./env";
 import * as schema from "./schema";
+import { deleteOwnedLists } from "./shared";
 
 export type Database = PgDatabase<PgQueryResultHKT, typeof schema>;
 
@@ -122,6 +123,12 @@ export function createAuth({ db, config, mailer, background }: AuthDeps) {
             if (isListedAdmin(user, config.adminEmails, config.verificationRequired)) {
               return { data: { ...user, role: "admin" } };
             }
+          },
+        },
+        // Runs when people delete their own account and when an admin deletes one.
+        delete: {
+          before: async (user) => {
+            await deleteOwnedLists(db, user.id);
           },
         },
       },
