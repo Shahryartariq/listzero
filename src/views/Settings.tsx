@@ -82,7 +82,7 @@ export function Settings() {
             </button>
           </span>
         </div>
-        <p className="hint">When Today holds more than this, Listzero offers to move the rest to tomorrow.</p>
+        <p className="hint">Past this, Today offers to move the rest to tomorrow.</p>
       </div>
 
       <div className="setting">
@@ -109,7 +109,7 @@ export function Settings() {
             None
           </button>
         </div>
-        <p className="hint">Listzero also follows your device’s “reduce motion” setting.</p>
+        <p className="hint">Your device’s “reduce motion” setting is followed too.</p>
       </div>
 
       <div className="setting">
@@ -137,7 +137,7 @@ export function Settings() {
           </button>
         </div>
         <p className="hint">
-          “Name only” hides dates, lengths and list names in lists, for less to read. The next step still shows.
+          “Name only” hides dates, lengths and lists. The next step still shows.
         </p>
       </div>
 
@@ -153,7 +153,7 @@ export function Settings() {
               same on every device.
             </>
           ) : (
-            "Nothing is stored on a server, so a backup file is the way to move to another device or browser."
+            "Nothing is stored on a server. To move devices, use a backup file."
           )}
         </p>
         <div className="setting__row">
@@ -217,12 +217,12 @@ export function Settings() {
           </button>
         </div>
         <p className="hint">
-          The public site counts which screens are opened, so its maker can see whether it is used. Your tasks,
-          lists and searches are never sent. <Link to="/about#privacy">What is counted</Link>
+          Counts which screens are opened, never your tasks, lists or searches.{" "}
+          <Link to="/about#privacy">What is counted</Link>
         </p>
         {browserObjects(navigator) && (
           <p className="hint">
-            Your browser asks sites not to track you, so nothing is counted, whichever is chosen here.
+            Your browser asks not to be tracked, so nothing is counted.
           </p>
         )}
       </div>

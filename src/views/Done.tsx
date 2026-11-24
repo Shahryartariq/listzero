@@ -20,7 +20,7 @@ export function Done() {
         <div>
           <h1 className="title">Done</h1>
           <p className="subtitle">
-            {counts.today} today, {counts.week} in the last 7 days.
+            {counts.today} today, {counts.week} in the last 7 days
           </p>
         </div>
         {total > 0 && (

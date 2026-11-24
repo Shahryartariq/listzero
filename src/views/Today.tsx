@@ -175,7 +175,7 @@ export function Today() {
               Carried over
             </h2>
             <p className="section__note">
-              {carried.length} from earlier days.
+              {carried.length} from earlier days
             </p>
           </div>
           <TaskRows tasks={carried} quick="today" onMove={(id, to) => store.moveTask("today", carried, id, to)} />

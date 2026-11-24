@@ -88,13 +88,18 @@ test.describe("sidebar look", () => {
     await expect(last).toBeInViewport();
   });
 
-  test("the footer icons name themselves on hover", async ({ page }) => {
+  test("the footer tools are labelled, and named on hover once the sidebar is narrow", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/today");
+    const tools = page.locator(".side__tools");
+    await expect(tools.locator(".side__tool-label")).toHaveText(["Appearance", "Settings", "How it works"]);
+    for (const label of await tools.locator(".side__tool-label").all()) await expect(label).toBeVisible();
+    await page.getByRole("button", { name: "Collapse sidebar" }).click();
     await page.locator(".side").getByRole("button", { name: "Appearance" }).hover();
     await expect(page.locator(".side-tip")).toHaveText("Appearance");
     await page.locator(".side").getByRole("link", { name: "How it works" }).hover();
     await expect(page.locator(".side-tip")).toHaveText("How it works?");
+    await page.getByRole("button", { name: "Expand sidebar" }).click();
     await page.locator(".side").getByRole("link", { name: "Settings" }).click();
     await expect(page).toHaveURL(/\/settings$/);
     await expect(page.locator(".side").getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page");
