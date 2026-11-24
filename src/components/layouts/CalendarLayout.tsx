@@ -161,7 +161,6 @@ export function CalendarLayout({ tasks, defaults, staysHere }: CalendarProps) {
                               type="button"
                               className="cal__task"
                               draggable
-                              data-color={task.color ?? undefined}
                               data-cal-task={task.id}
                               title={task.title}
                               onDragStart={(e) => {

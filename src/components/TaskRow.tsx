@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { REPEAT_LABEL, addDays, describeDay, describeMinutes, describeTime } from "../lib/dates";
 import { nextStep } from "../lib/store";
-import type { Task } from "../lib/types";
+import { PRIORITY_LABEL, type Task } from "../lib/types";
 import { useStore } from "../state/store-context";
 import { useOpenTask } from "../state/useOpenTask";
 import { Icon } from "./Icon";
@@ -99,7 +99,6 @@ export function TaskRow({
       className="row"
       data-done={done}
       data-leaving={leaving}
-      data-color={task.color ?? undefined}
       data-task={leaving ? undefined : task.id}
       data-dragging={dragging || undefined}
       style={dragStyle}
@@ -120,6 +119,12 @@ export function TaskRow({
       >
         <span className="row__title">{task.title}</span>
         <span className="row__meta">
+          {!done && task.priority > 0 && (
+            <span className={`meta meta--p${task.priority}`}>
+              <Icon name="flag" size={15} />
+              {PRIORITY_LABEL[task.priority]}
+            </span>
+          )}
           {task.doing && !done && <span className="meta meta--doing">Doing</span>}
           {next && (
             <span className="meta meta--next">

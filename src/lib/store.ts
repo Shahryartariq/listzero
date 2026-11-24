@@ -2,7 +2,7 @@
 
 import { addDays, nextOccurrence } from "./dates";
 import type { Display } from "./display";
-import { COLOR_NAME, type AppData, type ListColor, type Settings, type Task, type TaskList } from "./types";
+import { type AppData, type ListColor, type Settings, type Task, type TaskList } from "./types";
 
 export type TaskPatch = Partial<Omit<Task, "id" | "createdAt" | "completedAt">>;
 
@@ -255,7 +255,6 @@ export function searchTasks(data: AppData, query: string): Task[] {
         t.notes,
         ...t.steps.map((s) => s.title),
         listNames.get(t.listId ?? "") ?? "",
-        t.color ? COLOR_NAME[t.color] : "",
       ]
         .join("\n")
         .toLowerCase();

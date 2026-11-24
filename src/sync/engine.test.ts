@@ -115,8 +115,8 @@ describe("what a device does with what it receives", () => {
       settings: {
         ...emptyData().settings,
         display: {
-          "list:work": { layout: "board", sort: "smart", filters: { priorities: [], colors: [], lists: [], doing: false, quick: false } },
-          today: { layout: "list", sort: "name", filters: { priorities: [], colors: [], lists: ["work", "home", "inbox"], doing: false, quick: false } },
+          "list:work": { layout: "board", sort: "smart", filters: { priorities: [], lists: [], doing: false, quick: false } },
+          today: { layout: "list", sort: "name", filters: { priorities: [], lists: ["work", "home", "inbox"], doing: false, quick: false } },
         },
       },
     };

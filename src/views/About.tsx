@@ -104,9 +104,6 @@ export function About() {
           Start, or drag a card. Keeping only a few in Doing makes them easier to finish.
         </li>
         <li>
-          Give a task a <strong>colour</strong> in its sheet to tell kinds of work apart at a glance.
-        </li>
-        <li>
           <strong>Display</strong>, at the top of Inbox, Today, Upcoming and every list, changes how that view
           looks: a list, cards, a board, a calendar or a table. It also sorts the tasks and can show only some of
           them, for example only high priority or only quick ones. Filters hide tasks, they never delete them, and

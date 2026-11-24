@@ -1,6 +1,9 @@
 /** 0 = none, 1 = highest. */
 export type Priority = 0 | 1 | 2 | 3;
 
+/** How a priority is named wherever it is shown. 0 is no priority. */
+export const PRIORITY_LABEL: Record<Priority, string> = { 0: "None", 1: "High", 2: "Medium", 3: "Low" };
+
 export type Repeat = "daily" | "weekdays" | "weekly" | "monthly" | "yearly";
 
 export type ThemeChoice = "system" | "light" | "dark";
@@ -39,7 +42,10 @@ export interface Task {
   estimate: number | null;
   steps: Step[];
   repeat: Repeat | null;
-  /** A colour of the user's choosing, to tell tasks apart at a glance. */
+  /**
+   * No longer set or shown: a task's own colour clashed with list colours and priority (Nov 2026).
+   * Kept so older backups and synced copies load and save unchanged.
+   */
   color: ListColor | null;
   /** In progress: sits in the "Doing" column of the board. */
   doing: boolean;

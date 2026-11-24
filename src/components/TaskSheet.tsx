@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
 import { REPEAT_LABEL, addDays, describeDay, describeTime, nextWeekday } from "../lib/dates";
 import { newId } from "../lib/id";
-import { COLOR_NAME, LIST_COLORS, type Priority, type Repeat, type Task } from "../lib/types";
+import { type Priority, type Repeat, type Task } from "../lib/types";
 import { useStore } from "../state/store-context";
 import { useCloseTask } from "../state/useOpenTask";
 import { Icon } from "./Icon";
@@ -353,39 +353,6 @@ function TaskEditor({ task, onClose }: { task: Task; onClose(): void }) {
               onClick={() => store.updateTask(task.id, { priority: p.value })}
             >
               {p.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="detail__group">
-        <span className="label" id="color-label">
-          Colour
-        </span>
-        <div className="swatches" role="radiogroup" aria-labelledby="color-label">
-          <button
-            type="button"
-            role="radio"
-            className="swatch swatch--none"
-            aria-checked={task.color === null}
-            aria-label="No colour"
-            title="No colour"
-            onClick={() => store.updateTask(task.id, { color: null })}
-          >
-            <span className="dot" />
-          </button>
-          {LIST_COLORS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              role="radio"
-              className="swatch"
-              aria-checked={task.color === c}
-              aria-label={COLOR_NAME[c]}
-              title={COLOR_NAME[c]}
-              onClick={() => store.updateTask(task.id, { color: c })}
-            >
-              <span className="dot" style={{ "--dot": `var(--c-${c})` } as React.CSSProperties} />
             </button>
           ))}
         </div>

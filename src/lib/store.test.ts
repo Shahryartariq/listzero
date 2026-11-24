@@ -254,7 +254,8 @@ describe("search and lists", () => {
     expect(searchTasks(data(tasks, lists), "side").map((t) => t.title)).toEqual(["Plan launch"]);
     expect(searchTasks(data(tasks, lists), "   ")).toEqual([]);
     const coloured = [task("Tax form", { color: "blue" }), task("Blue pen"), task("Other", { color: "moss" })];
-    expect(searchTasks(data(coloured), "blue").map((t) => t.title)).toEqual(["Tax form", "Blue pen"]);
+    // A task's old colour is no longer shown, so it is no longer searched either.
+    expect(searchTasks(data(coloured), "blue").map((t) => t.title)).toEqual(["Blue pen"]);
   });
 
   it("matches a typed list name loosely", () => {

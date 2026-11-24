@@ -123,7 +123,6 @@ export function BoardColumns({ todo, doing, done, showDay, pullToToday = false }
                         className="card"
                         draggable
                         data-task={task.id}
-                        data-color={task.color ?? undefined}
                         data-done={done}
                         data-dragging={dragging === task.id}
                         onDragStart={(e) => {

@@ -1092,41 +1092,6 @@ textarea.field {
   box-shadow: var(--bar), var(--tile-shadow);
 }
 
-/* A task's own colour: a soft wash over the tile and a bar down its edge. */
-.row[data-color],
-.card[data-color] {
-  --tile: color-mix(in srgb, var(--tint) 10%, var(--glass));
-  --bar: inset 0.3rem 0 0 0 var(--tint);
-}
-
-[data-color="slate"] {
-  --tint: var(--c-slate);
-}
-
-[data-color="brick"] {
-  --tint: var(--c-brick);
-}
-
-[data-color="ochre"] {
-  --tint: var(--c-ochre);
-}
-
-[data-color="moss"] {
-  --tint: var(--c-moss);
-}
-
-[data-color="teal"] {
-  --tint: var(--c-teal);
-}
-
-[data-color="blue"] {
-  --tint: var(--c-blue);
-}
-
-[data-color="plum"] {
-  --tint: var(--c-plum);
-}
-
 .row:hover,
 .row:focus-within,
 .card:hover,
@@ -1253,6 +1218,22 @@ textarea.field {
   border-radius: 999px;
   background: var(--mark);
   color: var(--mark-ink);
+  font-weight: 600;
+}
+
+/* Priority is named, not only coloured. */
+.meta--p1 {
+  color: var(--p1);
+  font-weight: 600;
+}
+
+.meta--p2 {
+  color: var(--p2);
+  font-weight: 600;
+}
+
+.meta--p3 {
+  color: var(--p3);
   font-weight: 600;
 }
 

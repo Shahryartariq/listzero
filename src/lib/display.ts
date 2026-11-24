@@ -1,7 +1,7 @@
 /** How a view is shown: its layout, its sort order and which tasks are filtered out. Pure functions. */
 
 import { compareTasks } from "./store";
-import { LIST_COLORS, type ListColor, type Priority, type Task } from "./types";
+import type { Priority, Task } from "./types";
 
 export const LAYOUTS = ["list", "cards", "board", "calendar", "table"] as const;
 export type Layout = (typeof LAYOUTS)[number];
@@ -14,8 +14,6 @@ export const QUICK_MINUTES = 15;
 export interface Filters {
   /** Empty means every priority. 0 is "no priority". */
   priorities: Priority[];
-  /** Empty means every colour. "none" is tasks without a colour. */
-  colors: (ListColor | "none")[];
   /** Empty means every list. "inbox" is tasks without a list. */
   lists: string[];
   /** Only tasks in progress. */
@@ -30,13 +28,12 @@ export interface Display {
   filters: Filters;
 }
 
-export const NO_FILTERS: Filters = { priorities: [], colors: [], lists: [], doing: false, quick: false };
+export const NO_FILTERS: Filters = { priorities: [], lists: [], doing: false, quick: false };
 
 export const DEFAULT_DISPLAY: Display = { layout: "list", sort: "smart", filters: NO_FILTERS };
 
 export function matches(task: Task, f: Filters): boolean {
   if (f.priorities.length > 0 && !f.priorities.includes(task.priority)) return false;
-  if (f.colors.length > 0 && !f.colors.includes(task.color ?? "none")) return false;
   if (f.lists.length > 0 && !f.lists.includes(task.listId ?? "inbox")) return false;
   if (f.doing && !task.doing) return false;
   if (f.quick && (task.estimate === null || task.estimate > QUICK_MINUTES)) return false;
@@ -113,7 +110,6 @@ export function applyDisplay(tasks: Task[], display: Display): Task[] {
 export function activeFilters(f: Filters): number {
   return (
     Number(f.priorities.length > 0) +
-    Number(f.colors.length > 0) +
     Number(f.lists.length > 0) +
     Number(f.doing) +
     Number(f.quick)
@@ -140,11 +136,6 @@ export function readDisplay(raw: unknown): Display {
     sort: SORTS.includes(raw.sort as Sort) ? (raw.sort as Sort) : "smart",
     filters: {
       priorities: unique(f.priorities, (v): v is Priority => v === 0 || v === 1 || v === 2 || v === 3, 4),
-      colors: unique(
-        f.colors,
-        (v): v is ListColor | "none" => v === "none" || LIST_COLORS.includes(v as ListColor),
-        LIST_COLORS.length + 1,
-      ),
       lists: unique(f.lists, (v): v is string => typeof v === "string" && /^[\w-]{1,64}$/.test(v), 100),
       doing: f.doing === true,
       quick: f.quick === true,
