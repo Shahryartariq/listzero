@@ -291,6 +291,20 @@ export async function deleteList(db: Database, userId: string, body: Record<stri
   await db.delete(sharedList).where(eq(sharedList.id, listId));
 }
 
+/**
+ * The lists someone owns go with their account: without an owner, nobody could manage them. Lists
+ * they are only in just lose them (that row goes with the account).
+ */
+export async function deleteOwnedLists(db: Database, userId: string): Promise<number> {
+  const owned = await db
+    .select({ listId: sharedMember.listId })
+    .from(sharedMember)
+    .where(and(eq(sharedMember.userId, userId), eq(sharedMember.role, "owner")));
+  if (owned.length === 0) return 0;
+  await db.delete(sharedList).where(inArray(sharedList.id, owned.map((o) => o.listId)));
+  return owned.length;
+}
+
 // ---------------------------------------------------------------- joining by link
 
 const TOKEN = /^[\w-]{16,64}$/;

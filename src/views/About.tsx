@@ -114,6 +114,36 @@ export function About() {
         </li>
       </ul>
 
+      {accounts && (
+        <>
+          <h2 id="sharing">Sharing a list</h2>
+          <p>
+            With an account, you can share a list with a few people, for example the day’s work with a friend at the
+            office. Shared lists sit under <strong>Shared</strong> in the sidebar.
+          </p>
+          <ul>
+            <li>
+              <strong>New shared list</strong> makes one. Or press <strong>Share</strong> on one of your own lists to
+              move it, with its tasks, to Shared.
+            </li>
+            <li>
+              In <strong>Share</strong>, add people by email, or turn on <strong>Anyone with the link</strong> and
+              send the link. Each person can edit or only view. You can change that, remove someone, or make someone
+              else the owner.
+            </li>
+            <li>
+              Press <strong>Start</strong> on the board and the others see that you are on it. Anyone who can edit
+              can still tick it off, and the task shows who did.
+            </li>
+            <li>
+              Shared tasks stay in their list. They never show up in your Today, Upcoming, Board or Focus queue,
+              and they are not in your backups. Search finds them.
+            </li>
+            <li>Changes show for everyone within about ten seconds while the list is open.</li>
+          </ul>
+        </>
+      )}
+
       <h2>Make it yours</h2>
       <ul>
         <li>
@@ -242,11 +272,21 @@ export function About() {
           the account, and everything stored with it, from the Account page.
         </p>
       )}
+      {accounts && (
+        <p>
+          A shared list is stored on the server with its tasks, and everyone in it can see the names and email
+          addresses of the others. Deleting your account deletes the shared lists you own, for everyone in them.
+        </p>
+      )}
 
       <h2>What it does not do</h2>
       <ul>
         <li>No reminders or notifications. Times are shown on the task, but nothing rings.</li>
-        <li>No sharing or team features.</li>
+        <li>
+          {accounts
+            ? "No team spaces, comments or chat. Shared lists are for a few people."
+            : "No sharing or team features."}
+        </li>
         <li>No streaks, points or badges.</li>
       </ul>
 

@@ -9,6 +9,10 @@ describe("what analytics is allowed to see", () => {
     expect(screenPath("/about/")).toBe("/about");
     // A list's id and name never leave the browser.
     expect(screenPath("/list/k3J9s-private-id")).toBe("/list");
+    expect(screenPath("/shared/4b5b254f-0445-4aa5-a8a8-0d7425d64fbe")).toBe("/shared");
+    // A share link is a key to the list: it is never sent.
+    expect(screenPath("/join/Zr8qN2kq0d3VbZ1x2nQwRA")).toBe("/join");
+    expect(screenTitle("/join")).toBe("Join a list | Listzero");
     // Unknown addresses could hold anything someone typed.
     expect(screenPath("/my-secret-plan")).toBe("/not-found");
     expect(screenPath("/list/a/b")).toBe("/not-found");

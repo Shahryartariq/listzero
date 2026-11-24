@@ -9,6 +9,7 @@ import { SignOutSheet, syncLabel } from "../../account/parts";
 import { CannotReach, FormMessage, GoogleMark, PasswordField, TextField } from "../../account/ui";
 import { Confirm } from "../../components/Sheet";
 import { downloadText } from "../../lib/download";
+import { useSpace } from "../../shared/space";
 import { useStore } from "../../state/store-context";
 import { usePageTitle } from "../../state/usePageTitle";
 import { requestSync, useSyncStatus } from "../../sync/status";
@@ -589,6 +590,17 @@ function DeleteSection({ hasPassword, config }: { hasPassword: boolean; config: 
   const [asking, setAsking] = useState(false);
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<Message>({});
+  const owned = (useSpace()?.lists ?? []).filter((l) => l.role === "owner");
+  // Lists with nobody to manage them can't be left behind: they go too, for everyone in them.
+  const sharedNote =
+    owned.length === 0
+      ? ""
+      : ` Shared lists you own are deleted for everyone in them: ${owned
+          .map((l) => {
+            const others = l.people.length - 1;
+            return others > 0 ? `“${l.name}” (${others} ${others === 1 ? "other person" : "other people"})` : `“${l.name}”`;
+          })
+          .join(", ")}.`;
 
   const remove = async (withPassword?: string) => {
     const { error } = await authClient.deleteUser({ callbackURL: "/today", ...(withPassword ? { password: withPassword } : {}) });
@@ -601,7 +613,7 @@ function DeleteSection({ hasPassword, config }: { hasPassword: boolean; config: 
     <Section title="Delete account">
       <p className="hint">
         Deletes your account and its tasks, on every device. Guest tasks in this browser are not affected. It cannot be
-        undone.
+        undone.{sharedNote}
       </p>
       {asking ? (
         <form
@@ -635,9 +647,9 @@ function DeleteSection({ hasPassword, config }: { hasPassword: boolean; config: 
         <Confirm
           title="Delete your account?"
           body={
-            config.email
+            (config.email
               ? "We will email you a link to confirm. Nothing is deleted until you open it."
-              : "Your account and its tasks are deleted. Guest tasks in this browser stay."
+              : "Your account and its tasks are deleted. Guest tasks in this browser stay.") + sharedNote
           }
           confirmLabel={config.email ? "Email me the link" : "Continue"}
           onClose={() => setOpen(false)}

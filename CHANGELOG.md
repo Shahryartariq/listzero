@@ -20,6 +20,19 @@ Notable changes to Listzero. Dates are when the change reached the live site.
   and an admin page for managing accounts.
 - Without the server settings, nothing changes: no sign-in is shown and tasks stay in the browser.
 
+### Shared lists
+
+- Share a list with a few people. Make a new shared list, or move one of your own lists there with its tasks.
+- A Share dialog like Google Drive's: add people by email, or let anyone with the link join (after signing in).
+  Each person can edit or only view. The owner can change roles, remove people, hand the list on, make a new link
+  or delete the list for everyone.
+- Start means "I'm on it": the others see who is on a task, and finished tasks show who finished them. A task
+  someone else is on can be taken over.
+- Shared tasks stay in their list: never in Today, Upcoming, Board, the Focus queue or backups. Search finds them
+  and Focus works on one.
+- Changes show for the others within about ten seconds while the list is open, and offline edits go out later.
+- Deleting an account deletes the shared lists it owns, and says which first.
+
 ## 1.0.0 (2026-11-16)
 
 The first release.

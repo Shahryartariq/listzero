@@ -26,6 +26,8 @@ const SCREENS: Record<string, string> = {
   "/about": "How it works",
   "/menu": "Menu",
   "/list": "List",
+  "/shared": "Shared list",
+  "/join": "Join a list",
   "/sign-in": "Sign in",
   "/sign-up": "Create an account",
   "/verify-email": "Confirm your email",
@@ -40,7 +42,9 @@ const SCREENS: Record<string, string> = {
 /** The address that is safe to report for a path: no ids, no query, no unknown text. */
 export function screenPath(pathname: string): string {
   const clean = pathname.replace(/\/+$/, "") || "/";
-  if (/^\/list\/[^/]+$/.test(clean)) return "/list";
+  // A list's id, and a share link's secret, stay here.
+  const one = /^\/(list|shared|join)\/[^/]+$/.exec(clean);
+  if (one) return `/${one[1]}`;
   return Object.prototype.hasOwnProperty.call(SCREENS, clean) ? clean : "/not-found";
 }
 

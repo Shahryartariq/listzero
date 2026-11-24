@@ -90,12 +90,13 @@ Listzero is built around those three moments.
 
 ### What it does not do
 
-No reminders or notifications. No sharing. No streaks or points.
+No reminders or notifications. No team spaces, comments or chat (shared lists are for a few people). No streaks or
+points.
 
 ## Accounts and sync (optional)
 
-Everything above works without an account. An account adds one thing: your tasks and lists are the same on every
-device you sign in on.
+Everything above works without an account. An account adds two things: your tasks and lists are the same on every
+device you sign in on, and you can share lists with other people.
 
 - **Ways in:** email and password, username and password, Google, or a passkey (fingerprint, face or device PIN).
 - **Email confirmation** before the first sign-in, **password reset** by email, and a check that refuses passwords
@@ -107,6 +108,21 @@ device you sign in on.
   place too, so people who share a browser never see each other's. Signing in with guest tasks asks once whether to
   add them to the account; signing out takes the account's tasks off the browser and shows the guest tasks again.
   Changes made offline are sent later. Appearance and other settings stay per device.
+- **Shared lists.** Share a list with a few people, for example the day's work with a friend at the office:
+  - **New shared list** in the sidebar, or **Share** on one of your own lists to move it there with its tasks.
+  - The Share dialog works like Google Drive's: add people by email, or turn on **Anyone with the link**. Each
+    person can edit or only view; the owner can change roles, remove people, hand the list on, or delete it for
+    everyone. Opening a link asks you to sign in, then adds you to the list, so the owner always sees who is in.
+  - **Start** means "I'm on it": the others see "Abdullah is on it", and anyone who can edit can still tick it off.
+    Finished tasks show who finished them. Someone else's task can be taken over, after a question.
+  - People who can only view get the list as text, with nothing to press.
+  - Shared tasks stay in their list: never in your Today, Upcoming, Board, Focus queue or backups. Search finds them,
+    and Focus works on one at a time.
+  - Changes show for the others within about ten seconds while the list is open (no websockets: the app asks while
+    the list is on screen and when you come back to it). Edits made offline wait and go out later; when two people
+    change the same task, each field keeps its latest change.
+  - Up to 10 people per list and 50 shared lists per person. Deleting your account deletes the shared lists you
+    own, and says which before it does.
 - **An admin page** for the people listed in `ADMIN_EMAILS`: see who has an account, suspend or lift a suspension,
   sign someone out everywhere, change roles, delete an account. Admins never see anyone's tasks and cannot sign in
   as someone else.
@@ -129,6 +145,11 @@ device you sign in on.
   device sends what changed since it last synced and receives everything numbered after its cursor
   (`server/sync.ts`, `src/sync/`). The server checks each item with the same validator as backup files and caps
   the size of an account.
+- **Shared lists are their own space.** Each shared list has its own counter, members with roles, waiting invites
+  and a link token (128 random bits; New link replaces it). The server checks membership and role on every read and
+  write, merges changes field by field, and works out who started or finished a task itself, so a device can't say
+  someone else did (`server/shared.ts`). On the device they live in a separate store (`src/shared/`); a shared
+  list's page swaps in a store for that list, so the same rows, board, calendar, table and task sheet work on it.
 - **Nothing from outside is trusted.** Saved and imported data goes through one validator
   (`src/lib/backup.ts`) that checks and clamps every field. Unreadable saved data is set aside, not overwritten,
   and the app says so.
@@ -159,7 +180,8 @@ src/
   styles/      themes.css (palettes), app.css (layout and components)
   account/     the auth client, sign-in form parts, the sync runner, the guest-task offer and sign-out
   sync/        working out what changed, applying the account's changes, the sync loop
-server/        the API: auth, sync, email, database schema (all tested in-process)
+  shared/      shared lists: their store, sync loop, Share dialog and sidebar section
+server/        the API: auth, sync, shared lists, email, database schema (all tested in-process)
 api/           the Vercel Function entry; the bundled server is built into it
 drizzle/       database migrations
 tests/e2e/     Playwright tests
@@ -212,7 +234,9 @@ npm run test:e2e   # browser tests (Playwright); run `npx playwright install chr
 
 - **API (Vitest, in-process with PGlite):** sign-up, email confirmation, sign-in by email and username, password
   reset, rate limits, admin rights (and that impersonation is refused), sync between two devices, offline batches,
-  quotas, isolation between accounts, and account deletion.
+  quotas, isolation between accounts, and account deletion. Shared lists: who can see and change what, invites
+  waiting for a confirmed address, links and new links, roles and ownership, the people limit, field-by-field
+  merging, who started and finished a task, and what deleting an account takes with it.
 - **Unit (Vitest):** the sync engine, the parser, date maths (month ends, leap days, repeats), the reducer and views, backup
   validation, display filters and sorting, the contrast of every palette in both modes, what analytics may send,
   and the site files (security policy, rewrites, page head, sitemap).
@@ -222,7 +246,9 @@ npm run test:e2e   # browser tests (Playwright); run `npx playwright install chr
   tested end to end against the real API: sign-up with the emailed link, username sign-in, password reset,
   two-factor with a computed code and a backup code, a passkey through a virtual authenticator, sync between two
   browsers, offline catch-up, both ways of signing out, a shared browser, signing other devices out, deleting the
-  account, the admin page, and a copy with accounts turned off.
+  account, the admin page, and a copy with accounts turned off. Shared lists run with two and three people on their
+  own devices: sharing, inviting, joining by link, roles, leaving, deleting, "on it", taking over, a viewer's view,
+  search and focus, with accessibility checks on the list and the Share dialog.
 
 CI runs all of it on every pull request, with CodeQL scanning the code. Releases are made by the `Release`
 workflow from the version in `package.json` and its section of [CHANGELOG.md](CHANGELOG.md).
