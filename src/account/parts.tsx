@@ -64,6 +64,8 @@ const setOfferWaiting = (userId: string | null) => {
  * out: the guest's. The first time someone signs in from guest mode with tasks, it asks once
  * whether to bring them into the account.
  */
+export { SharedRunner } from "../shared/runner";
+
 export function SyncRunner() {
   const store = useStore();
   const latest = useRef(store);
