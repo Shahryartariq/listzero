@@ -14,10 +14,16 @@ interface SheetProps {
 /** A modal built on the native <dialog>, which gives focus trapping, Esc and a backdrop for free. */
 export function Sheet({ title, onClose, children, footer, small, context }: SheetProps) {
   const ref = useRef<HTMLDialogElement>(null);
+  const close = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const dialog = ref.current;
-    if (dialog && !dialog.open) dialog.showModal();
+    if (dialog && !dialog.open) {
+      dialog.showModal();
+      // The browser starts on the first button, Close, and rings it. Start on the sheet itself
+      // instead: screen readers still hear its name, and Tab still reaches Close first.
+      if (document.activeElement === close.current) dialog.focus();
+    }
     return () => {
       if (dialog?.open) dialog.close();
     };
@@ -28,6 +34,7 @@ export function Sheet({ title, onClose, children, footer, small, context }: Shee
       ref={ref}
       className={small ? "sheet sheet--small" : "sheet"}
       aria-label={title}
+      tabIndex={-1}
       onCancel={(e) => {
         e.preventDefault();
         onClose();
@@ -40,7 +47,7 @@ export function Sheet({ title, onClose, children, footer, small, context }: Shee
       <div className="sheet__head">
         <h2 className={context ? "sr-only" : undefined}>{title}</h2>
         {context && <span className="sheet__context">{context}</span>}
-        <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
+        <button type="button" className="icon-btn" ref={close} onClick={onClose} aria-label="Close">
           <Icon name="close" />
         </button>
       </div>

@@ -155,7 +155,7 @@ export function BoardColumns({ todo, doing, done, showDay, pullToToday = false }
                               )}
                               {!done && task.estimate !== null && (
                                 <span className="meta">
-                                  <Icon name="clock" size={15} />
+                                  <Icon name="timer" size={15} />
                                   {describeMinutes(task.estimate)}
                                 </span>
                               )}

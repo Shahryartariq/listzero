@@ -845,6 +845,24 @@ textarea.field {
   font-weight: 500;
 }
 
+/* Chips: the task sheet's row of details. Unset ones show their name, quietly. */
+.picker--chip {
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0.2rem 0.6rem 0.2rem 0.7rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.picker--chip .picker__chev {
+  display: none;
+}
+
+.picker[data-empty] {
+  color: var(--muted);
+  border-style: dashed;
+}
+
 .picker__value {
   flex: 1 1 auto;
   min-width: 0;
@@ -925,19 +943,21 @@ textarea.field {
   margin-left: 0.5rem;
 }
 
-/* A day chip that opens the browser's own calendar, anchored to the chip. */
-.day-pick {
+/* The task sheet's details: one wrapping row of chips. */
+.props {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+}
+
+/* The browser's calendar opens from a date input hidden under the Day chip. */
+.props__day {
   position: relative;
   display: inline-flex;
 }
 
-.day-pick .seg__opt {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-
-.day-pick__input {
+.props__calendar {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -1547,9 +1567,25 @@ dialog.sheet--small {
   overflow: hidden;
 }
 
+/* The name is text you can edit in place: it says so on hover, and while you type. */
+.detail__title {
+  border-radius: var(--r-s);
+  cursor: text;
+  transition: background-color 0.15s;
+}
+
+.detail__title:hover {
+  background: var(--hover);
+}
+
 .detail__title:focus-visible {
   outline: none;
+  background: var(--hover);
   border-bottom-color: var(--ink);
+}
+
+.sheet:focus {
+  outline: none;
 }
 
 .detail__group {

@@ -28,6 +28,10 @@ interface PickerProps<T extends string> {
   empty?: T;
   /** Fills its row like a text field, instead of sitting as a pill. */
   wide?: boolean;
+  /** A small chip, as in the task sheet's row of details. */
+  chip?: boolean;
+  /** Shown, quietly, instead of the option's label while the value is `empty`. */
+  placeholder?: string;
   id?: string;
 }
 
@@ -46,6 +50,8 @@ export function Picker<T extends string>({
   startAt,
   empty,
   wide,
+  chip,
+  placeholder,
   id,
 }: PickerProps<T>) {
   const auto = useId();
@@ -193,7 +199,8 @@ export function Picker<T extends string>({
         id={id}
         type="button"
         role="combobox"
-        className={wide ? "picker picker--wide" : "picker"}
+        className={["picker", wide && "picker--wide", chip && "picker--chip"].filter(Boolean).join(" ")}
+        data-empty={placeholder !== undefined && value === empty ? true : undefined}
         aria-label={label}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -207,7 +214,9 @@ export function Picker<T extends string>({
       >
         {icon && <Icon name={icon} size={18} />}
         {current?.dot && <span className="dot" style={{ "--dot": current.dot } as CSSProperties} />}
-        <span className="picker__value">{current?.label}</span>
+        <span className="picker__value">
+          {placeholder !== undefined && value === empty ? placeholder : current?.label}
+        </span>
         <span className="picker__chev">
           <Icon name="chevronDown" size={16} />
         </span>

@@ -26,7 +26,8 @@ test("the sheet's pickers work with a mouse and with the keyboard", async ({ pag
 
   // Mouse: open, pick.
   const repeat = sheet.getByRole("combobox", { name: "Repeat" });
-  await expect(repeat).toHaveText("Does not repeat");
+  // Unset, a chip shows its name.
+  await expect(repeat).toHaveText("Repeat");
   await repeat.click();
   await expect(repeat).toHaveAttribute("aria-expanded", "true");
   await page.getByRole("option", { name: "Every week", exact: true }).click();
@@ -66,14 +67,26 @@ test("the sheet's pickers work with a mouse and with the keyboard", async ({ pag
   await expect(repeat).toHaveText("Every week");
 });
 
-test("a day from the calendar shows on its chip", async ({ page }) => {
+test("the details are one row of chips, and a day from the calendar shows on its chip", async ({ page }) => {
   await page.goto("/today?task=seed-1");
   const sheet = page.getByRole("dialog");
-  const chip = sheet.getByRole("button", { name: "Pick a day" });
-  await expect(chip).toHaveAttribute("aria-pressed", "false");
+  const details = sheet.getByRole("group", { name: "Details" });
+  await expect(details.getByRole("combobox")).toHaveText(["Today", "Time", "Repeat", "Priority", "Length", "Inbox"]);
+  // The sheet opens without a ring on Close.
+  await expect(sheet.getByRole("button", { name: "Close" })).not.toBeFocused();
 
-  await sheet.locator(".day-pick__input").fill(day(20));
-  await expect(sheet.getByRole("button", { name: "Pick a day" })).toBeHidden();
-  await expect(sheet.locator(".day-pick .seg__opt")).toHaveAttribute("aria-pressed", "true");
-  await expect(sheet.getByRole("button", { name: "Today", exact: true })).toHaveAttribute("aria-pressed", "false");
+  const dayChip = sheet.getByRole("combobox", { name: "Day" });
+  await dayChip.click();
+  await expect(page.getByRole("option", { name: "Pick a date…" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await sheet.locator(".props__calendar").fill(day(20));
+  await expect(dayChip).not.toHaveText("Today");
+  const picked = await dayChip.innerText();
+  await dayChip.click();
+  await expect(page.getByRole("option", { selected: true })).toHaveText(picked);
+
+  // No day hides time and repeat, which need one.
+  await page.getByRole("option", { name: "No day" }).click();
+  await expect(dayChip).toHaveText("No day");
+  await expect(sheet.getByRole("combobox", { name: "Time" })).toHaveCount(0);
 });
