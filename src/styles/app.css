@@ -533,11 +533,17 @@ a {
   padding: 2.75rem clamp(1.25rem, 5vw, 4.5rem) 6rem;
 }
 
-/* The column sits in the middle of the space beside the sidebar, so a wide screen
-   has even margins instead of an empty band on the right. */
+/* One frame for every page: the same left edge and the same width, so moving between pages
+   shifts nothing. Reading pages keep a comfortable column inside it, from its left edge;
+   wide layouts (board, cards, calendar, table) use all of it. */
 .view {
-  max-width: 46rem;
+  --column: 46rem;
+  max-width: 78rem;
   margin-inline: auto;
+}
+
+.view:not(.view--wide) > * {
+  max-width: var(--column);
 }
 
 .tabs {
@@ -559,10 +565,11 @@ a {
   color: var(--muted);
 }
 
+/* Title on the left; any tools sit level with the title's top, on every page. */
 .head {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem 1rem;
   margin-bottom: 1.5rem;
@@ -1897,8 +1904,8 @@ dialog.sheet--small {
 
 /* ---------- Pages with prose (About, Settings) ---------- */
 
-.prose {
-  max-width: 38rem;
+.view.prose {
+  --column: 38rem;
 }
 
 .prose h2 {
@@ -2032,10 +2039,6 @@ kbd,
 }
 
 /* ---------- Board ---------- */
-
-.view--wide {
-  max-width: 78rem;
-}
 
 .board__add {
   max-width: 43rem;
@@ -2174,6 +2177,13 @@ kbd,
 .display-btn {
   flex: none;
   align-self: start;
+}
+
+/* A picker in a page header is the size of the buttons beside it. */
+.head .picker {
+  min-height: 2.25rem;
+  padding-block: 0.25rem;
+  font-size: 0.9375rem;
 }
 
 .display-btn__count {
@@ -2716,6 +2726,11 @@ td[data-today="true"] .cal__num {
   padding-top: 1rem;
 }
 
+/* Outside the app, a page is one column in the middle. */
+.solo .view {
+  max-width: var(--column);
+}
+
 /* The front page: what it is and the two ways in on the left, a working Today on the right. */
 .landing__hero {
   display: grid;
@@ -2854,8 +2869,8 @@ td[data-today="true"] .cal__num {
 /* ---------- Accounts: sign-in screens, the Account page, sync ---------- */
 
 /* The sign-in screens are one narrow column of calm, large fields. */
-.auth {
-  max-width: 26rem;
+.view.auth {
+  --column: 26rem;
 }
 
 .auth__lead {

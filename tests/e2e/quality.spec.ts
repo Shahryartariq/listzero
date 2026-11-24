@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { day, seed } from "./helpers";
+import { day, seed, settled } from "./helpers";
 
 async function loadExamples(page: Page) {
   await page.goto("/today");
@@ -9,6 +9,8 @@ async function loadExamples(page: Page) {
 }
 
 async function expectNoViolations(page: Page) {
+  // Colours are checked once nothing is fading in or out (the tab bar fades back after Focus).
+  await settled(page);
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
   expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`)).toEqual([]);
 }
@@ -101,25 +103,30 @@ test("no view scrolls sideways on a 360px screen", async ({ page }) => {
   }
 });
 
-test("on a wide screen the page sits in the middle of the space beside the sidebar", async ({ page }) => {
+test("on a wide screen every page shares one frame, in the middle of the space beside the sidebar", async ({ page }) => {
   await page.setViewportSize({ width: 1700, height: 800 });
-  for (const path of ["/today", "/inbox", "/settings", "/board"]) {
+  const edges = new Set<number>();
+  for (const path of ["/today", "/inbox", "/settings", "/board", "/done"]) {
     await page.goto(path);
+    await expect(page.locator("main h1").first()).toBeVisible();
     const main = await page.locator("#main").boundingBox();
     const view = await page.locator(".view").boundingBox();
     if (!main || !view) throw new Error("layout not found");
     const left = view.x - main.x;
     const right = main.x + main.width - (view.x + view.width);
     expect(Math.abs(left - right), `${path}: ${left}px left, ${right}px right`).toBeLessThanOrEqual(1);
+    edges.add(Math.round(view.x));
   }
-  // Cards spread across the wide page instead of staying in the narrow column.
+  // The same left edge everywhere, so nothing jumps sideways between pages.
+  expect([...edges]).toHaveLength(1);
+  // Cards spread across the frame instead of staying in the reading column.
   await seed(page, [{ title: "One" }, { title: "Two" }, { title: "Three" }, { title: "Four" }]);
   await page.goto("/inbox");
-  const narrow = (await page.locator(".view").boundingBox())?.width ?? 0;
+  const narrow = (await page.locator("main .rows").first().boundingBox())?.width ?? 0;
   await page.getByRole("button", { name: /^Display/ }).click();
   await page.getByRole("radio", { name: "Cards" }).click();
   await page.keyboard.press("Escape");
-  expect((await page.locator(".view").boundingBox())?.width ?? 0).toBeGreaterThan(narrow + 200);
+  expect((await page.locator("main .rows").first().boundingBox())?.width ?? 0).toBeGreaterThan(narrow + 200);
   const tops = await page.locator(".rows--cards [data-task]").evaluateAll((els) => els.map((el) => el.getBoundingClientRect().top));
   expect(new Set(tops).size).toBe(1);
 });

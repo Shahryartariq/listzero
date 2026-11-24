@@ -103,11 +103,17 @@ test.describe("every screen size", () => {
     await seeded(page);
     await page.setViewportSize({ width: 2560, height: 1440 });
     await page.goto("/focus");
-    const main = await page.locator("main").boundingBox();
-    const focus = await page.locator(".focus").boundingBox();
-    const left = focus!.x - main!.x;
-    const right = main!.x + main!.width - (focus!.x + focus!.width);
-    expect(Math.abs(left - right)).toBeLessThan(80);
+    await page.locator(".focus").waitFor();
+    // Measured together, and again until the sidebar has finished sliding away.
+    const offCentre = () =>
+      page.evaluate(() => {
+        const main = document.querySelector("main")!.getBoundingClientRect();
+        const focus = document.querySelector(".focus")!.getBoundingClientRect();
+        return Math.abs(focus.left - main.left - (main.right - focus.right));
+      });
+    await expect.poll(offCentre).toBeLessThan(80);
+    await expect(page.locator(".side")).toBeHidden();
+    expect(await offCentre()).toBeLessThan(80);
   });
 
   test("a big monitor shows everything a step larger", async ({ page }) => {
