@@ -176,3 +176,18 @@ test.describe("on a phone", () => {
     expect(await page.evaluate(() => document.querySelector(".app")!.getBoundingClientRect().width)).toBe(page.viewportSize()!.width);
   });
 });
+
+test("on a tablet the sidebar starts narrow, and opening it lasts for the visit only", async ({ page }) => {
+  test.skip(isPhone(page), "Phones have no sidebar.");
+  await page.setViewportSize({ width: 900, height: 1100 });
+  await page.goto("/today");
+  await expect.poll(() => sideWidth(page)).toBeLessThan(80);
+  await page.getByRole("button", { name: "Expand sidebar" }).click();
+  await expect.poll(() => sideWidth(page)).toBeGreaterThan(200);
+  // Not saved as the device's choice: wide screens keep their own setting.
+  expect(await saved(page)).toBe(false);
+  await page.reload();
+  await expect.poll(() => sideWidth(page)).toBeLessThan(80);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect.poll(() => sideWidth(page)).toBeGreaterThan(200);
+});

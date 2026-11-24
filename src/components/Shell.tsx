@@ -6,6 +6,7 @@ import { downloadText } from "../lib/download";
 import { lazyView } from "../lib/lazyView";
 import { inboxView, todayView } from "../lib/store";
 import { useStore } from "../state/store-context";
+import { TABLET, useMedia } from "../state/useMedia";
 import { useSeo } from "../state/useSeo";
 import { useTheme } from "../state/useTheme";
 import { AppearanceSheet } from "./Appearance";
@@ -175,16 +176,22 @@ export function Shell() {
   const side = useRef<HTMLElement>(null);
   useTheme(store.data.settings);
 
-  // The narrow sidebar is a per-device choice. public/theme.js sets the same attribute before the
-  // first paint; this keeps it in step when it changes.
-  const narrow = store.data.settings.sidebarCollapsed;
+  // The narrow sidebar is a per-device choice. On a tablet it starts narrow, since the full one
+  // leaves too little room beside it; there the toggle opens it for this visit only.
+  // public/theme.js sets the same attribute before the first paint; this keeps it in step.
+  const tablet = useMedia(TABLET);
+  const [tabletWide, setTabletWide] = useState(false);
+  const narrow = tablet ? !tabletWide : store.data.settings.sidebarCollapsed;
   useLayoutEffect(() => {
     const root = document.documentElement;
     if (narrow) root.dataset.sidebar = "collapsed";
     else delete root.dataset.sidebar;
   }, [narrow]);
   const toggleSide = useRef(() => {});
-  toggleSide.current = () => store.updateSettings({ sidebarCollapsed: !store.read().settings.sidebarCollapsed });
+  toggleSide.current = () =>
+    tablet
+      ? setTabletWide((wide) => !wide)
+      : store.updateSettings({ sidebarCollapsed: !store.read().settings.sidebarCollapsed });
   useSeo(location.pathname);
 
   // Visit counting for the public site. Only the kind of screen is sent; see lib/analytics.
