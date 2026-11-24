@@ -186,3 +186,69 @@ export const syncItem = pgTable(
     index("sync_item_user_rev_idx").on(table.userId, table.rev),
   ],
 );
+
+// ---------------------------------------------------------------- Shared lists
+
+/**
+ * A list shared between people. It lives apart from everyone's own tasks: its tasks are stored once,
+ * here, and every member's app syncs them with this list's own change counter (`rev`).
+ * `access` is "restricted" (only people added) or "link" (anyone signed in with the link joins, with
+ * `linkRole`). Making a new link changes `linkToken`, so the old link stops working.
+ */
+export const sharedList = pgTable("shared_list", {
+  id: id(),
+  name: text("name").notNull(),
+  color: text("color").notNull(),
+  access: text("access").notNull().default("restricted"),
+  linkRole: text("link_role").notNull().default("edit"),
+  linkToken: text("link_token").notNull().unique(),
+  rev: bigint("rev", { mode: "number" }).notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+/** Who is in a shared list, as "owner" (exactly one), "edit" or "view". */
+export const sharedMember = pgTable(
+  "shared_member",
+  {
+    listId: uuid("list_id")
+      .notNull()
+      .references(() => sharedList.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    role: text("role").notNull(),
+    joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.listId, table.userId] }), index("shared_member_user_idx").on(table.userId)],
+);
+
+/** Someone added by an email address that has no account yet. They join when they sign in with it. */
+export const sharedInvite = pgTable(
+  "shared_invite",
+  {
+    listId: uuid("list_id")
+      .notNull()
+      .references(() => sharedList.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    role: text("role").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.listId, table.email] }), index("shared_invite_email_idx").on(table.email)],
+);
+
+/** A task in a shared list. A deleted one keeps its row, marked, so every member's app learns it is gone. */
+export const sharedItem = pgTable(
+  "shared_item",
+  {
+    listId: uuid("list_id")
+      .notNull()
+      .references(() => sharedList.id, { onDelete: "cascade" }),
+    itemId: text("item_id").notNull(),
+    data: jsonb("data"),
+    deleted: boolean("deleted").notNull().default(false),
+    rev: bigint("rev", { mode: "number" }).notNull(),
+    updatedBy: uuid("updated_by"),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.listId, table.itemId] }), index("shared_item_list_rev_idx").on(table.listId, table.rev)],
+);

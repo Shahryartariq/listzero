@@ -56,6 +56,10 @@ export interface Task {
    * have none and sit by when they were added (display.ts `rank`).
    */
   order?: number;
+  /** Shared lists only: who pressed Start ("Abdullah is on it"). Set by the server, never by a device. */
+  doingBy?: string;
+  /** Shared lists only: who ticked it off. Set by the server. */
+  doneBy?: string;
 }
 
 export interface TaskList {

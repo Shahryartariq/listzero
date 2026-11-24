@@ -132,3 +132,14 @@ export const deleteAccount = (name: string, url: string) => ({
     footer: "If you did not ask for this, ignore this email and change your password.",
   }),
 });
+
+export const shareInvite = (from: string, listName: string, url: string) => ({
+  subject: `${from || "Someone"} shared "${listName}" with you on Listzero`,
+  ...layout({
+    heading: `"${listName}" is shared with you`,
+    body: `${from || "Someone"} added you to the list "${listName}" on Listzero. Sign in with this email address to see it under Shared with me.`,
+    action: "Open the list",
+    url,
+    footer: "If you weren't expecting this, you can ignore this email. Nobody can see your own tasks.",
+  }),
+});

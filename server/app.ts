@@ -7,12 +7,28 @@
  *   *    /api/auth/*   Better Auth
  *   POST /api/sync     send and fetch task changes (signed-in only)
  *   POST /api/account/set-password   add a password to an account that signs in with Google
+ *   POST /api/shared/*   shared lists: sync, create, update, invite, member, leave, delete, peek, join
  */
 import { isAPIError } from "better-auth/api";
 import { isPasswordCompromised } from "better-auth/plugins";
 import { createAuth, type Database } from "./auth";
-import type { Mailer } from "./email";
+import { shareInvite, type Mailer } from "./email";
 import type { ServerConfig } from "./env";
+import {
+  changeMember,
+  claimInvites,
+  createList,
+  deleteList,
+  invite,
+  join,
+  leave,
+  listsFor,
+  peek,
+  readSharedSync,
+  SharedError,
+  syncShared,
+  updateList,
+} from "./shared";
 import { readSyncRequest, sync, SyncError } from "./sync";
 
 export interface AppDeps {
@@ -128,9 +144,57 @@ export function createApp(deps: AppDeps): (request: Request) => Promise<Response
         return json(await sync(db, session.user.id, body));
       }
 
+      if (pathname.startsWith("/api/shared/")) {
+        if (request.method !== "POST") return error(405, "METHOD_NOT_ALLOWED", "Use POST");
+        if (!fromSite()) return error(403, "FORBIDDEN", "This request did not come from Listzero");
+        const session = await auth.api.getSession({ headers: request.headers });
+        if (!session) return error(401, "UNAUTHORIZED", "Sign in to use shared lists");
+        const me = session.user.id;
+        const raw = await readJson(request);
+        const body = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
+        const site = config.baseURL;
+        switch (pathname.slice("/api/shared/".length)) {
+          case "sync":
+            await claimInvites(db, me, session.user.email, session.user.emailVerified);
+            return json(await syncShared(db, me, readSharedSync(raw), site));
+          case "create": {
+            const listId = await createList(db, me, body);
+            return json({ listId, lists: await listsFor(db, me, site) });
+          }
+          case "update":
+            await updateList(db, me, body);
+            return json({ lists: await listsFor(db, me, site) });
+          case "invite": {
+            const sent = await invite(db, me, body);
+            if (sent) {
+              const mail = shareInvite(session.user.name, sent.listName, `${site}/shared/${String(body.listId)}`);
+              const delivery = (deps.mailer ?? (async () => undefined))({ to: sent.email, ...mail });
+              if (deps.background) deps.background(delivery);
+              else await delivery;
+            }
+            return json({ status: "sent", lists: await listsFor(db, me, site) });
+          }
+          case "member":
+            await changeMember(db, me, body);
+            return json({ lists: await listsFor(db, me, site) });
+          case "leave":
+            await leave(db, me, body);
+            return json({ lists: await listsFor(db, me, site) });
+          case "delete":
+            await deleteList(db, me, body);
+            return json({ lists: await listsFor(db, me, site) });
+          case "peek":
+            return json(await peek(db, me, body));
+          case "join":
+            return json({ listId: await join(db, me, body), lists: await listsFor(db, me, site) });
+          default:
+            return error(404, "NOT_FOUND", "No such endpoint");
+        }
+      }
+
       return error(404, "NOT_FOUND", "No such endpoint");
     } catch (caught) {
-      if (caught instanceof SyncError) return error(caught.status, caught.code, caught.message);
+      if (caught instanceof SyncError || caught instanceof SharedError) return error(caught.status, caught.code, caught.message);
       console.error("[api]", pathname, caught);
       return error(500, "SERVER_ERROR", "Something went wrong on the server");
     }
