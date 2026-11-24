@@ -35,6 +35,7 @@ const SyncRunner = lazyView(() => import("./account/parts").then((m) => m.SyncRu
 // leave one of them unable to load.
 const SharedRunner = lazyView(() => import("./account/parts").then((m) => m.SharedRunner));
 const SharedListView = lazyView(() => import("./views/Shared").then((m) => m.SharedListView));
+const Join = lazyView(() => import("./views/Join").then((m) => m.Join));
 const Admin = lazyView(() => import("./views/account/Admin").then((m) => m.Admin));
 
 /** Who is signed in decides whose tasks are shown, on every page. Only loaded where accounts exist. */
@@ -70,6 +71,7 @@ export function App() {
             <Route path="board" element={<Board />} />
             <Route path="list/:listId" element={<ListView />} />
             <Route path="shared/:sharedId" element={<SharedListView />} />
+            <Route path="join/:token" element={<Join />} />
             <Route path="done" element={<Done />} />
             <Route path="focus" element={<Focus />} />
             <Route path="search" element={<Search />} />
