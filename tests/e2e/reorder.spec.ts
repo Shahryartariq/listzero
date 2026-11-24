@@ -46,9 +46,7 @@ test.describe("in the Inbox", () => {
 
     // Display says so, and the order survives a reload.
     const sheet = await openDisplay(page);
-    await expect(
-      sheet.getByRole("radio", { name: "My order" }),
-    ).toHaveAttribute("aria-checked", "true");
+    await expect(sheet.getByRole("combobox", { name: "Sort by" })).toHaveText("My order");
     await page.keyboard.press("Escape");
     await page.reload();
     expect(await titles(page)).toEqual(["Two", "Three", "One", "Four"]);
