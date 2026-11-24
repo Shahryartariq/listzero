@@ -116,7 +116,7 @@ export function Landing() {
             it.
           </p>
           <div className="landing__actions">
-            <Link className="btn btn--mark" to="/today">
+            <Link className="btn" to="/today">
               {returning ? "Continue as a guest" : "Start as a guest"}
             </Link>
             {accounts && config?.google && <GoogleStart />}
