@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useRef, type SyntheticEvent } from "react";
 import {
   LAYOUTS,
   QUICK_MINUTES,
@@ -14,7 +14,7 @@ import type { Priority } from "../lib/types";
 import { useStore } from "../state/store-context";
 import { useDisplay } from "../state/useDisplay";
 import { Icon, type IconName } from "./Icon";
-import { Sheet } from "./Sheet";
+import { Picker } from "./Picker";
 
 const LAYOUT_LABEL: Record<Layout, { label: string; icon: IconName }> = {
   list: { label: "List", icon: "list" },
@@ -52,9 +52,19 @@ interface DisplayMenuProps {
   byList?: boolean;
 }
 
-/** The Display button and its sheet: layout, sort, filters and reset for one view. */
+/** Room the panel keeps from the window's edges, and its width. */
+const EDGE = 8;
+const WIDTH = 416;
+
+/**
+ * The Display button and the small panel it opens, just under it: layout, sort, filters and reset
+ * for one view. Changes apply as you make them. The panel is a popover, so a click elsewhere or
+ * Escape closes it, and focus goes back to the button.
+ */
 export function DisplayMenu({ view, byList = false }: DisplayMenuProps) {
-  const [open, setOpen] = useState(false);
+  const id = useId();
+  const button = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
   const store = useStore();
   const { display, set, reset } = useDisplay(view);
   const changes = activeFilters(display.filters) + Number(display.sort !== "smart");
@@ -63,7 +73,13 @@ export function DisplayMenu({ view, byList = false }: DisplayMenuProps) {
 
   return (
     <>
-      <button type="button" className="btn btn--quiet btn--small display-btn" onClick={() => setOpen(true)}>
+      <button
+        ref={button}
+        type="button"
+        className="btn btn--quiet btn--small display-btn"
+        popoverTarget={id}
+        aria-haspopup="dialog"
+      >
         <Icon name="display" size={18} />
         Display
         {changes > 0 && (
@@ -74,142 +90,160 @@ export function DisplayMenu({ view, byList = false }: DisplayMenuProps) {
         )}
       </button>
 
-      {open && (
-        <Sheet
-          title="Display"
-          onClose={() => setOpen(false)}
-          footer={
-            <>
-              <button type="button" className="btn btn--quiet" disabled={isDefault(display)} onClick={reset}>
-                Reset
-              </button>
-              <button type="button" className="btn" onClick={() => setOpen(false)}>
-                Show tasks
-              </button>
-            </>
-          }
-        >
-          <div className="display">
-            <div>
-              <span className="label" id="layout-label">
-                Layout
-              </span>
-              <div className="layouts" role="radiogroup" aria-labelledby="layout-label">
-                {LAYOUTS.map((layout) => (
-                  <button
-                    key={layout}
-                    type="button"
-                    role="radio"
-                    className="layout-opt"
-                    aria-checked={display.layout === layout}
-                    onClick={() => update({ layout })}
-                  >
-                    <Icon name={LAYOUT_LABEL[layout].icon} size={22} />
-                    {LAYOUT_LABEL[layout].label}
-                  </button>
-                ))}
-              </div>
+      <div
+        ref={panel}
+        id={id}
+        className="display-panel"
+        role="dialog"
+        aria-label="Display"
+        popover="auto"
+        onBeforeToggle={(e: SyntheticEvent<HTMLDivElement> & { newState?: string }) => {
+          const anchor = button.current?.getBoundingClientRect();
+          const el = panel.current;
+          if (!anchor || !el || (e.nativeEvent as ToggleEvent).newState !== "open") return;
+          // Under the button, lined up with its right edge, and inside the window.
+          const width = Math.min(WIDTH, window.innerWidth - EDGE * 2);
+          const left = Math.min(Math.max(EDGE, anchor.right - width), window.innerWidth - width - EDGE);
+          el.style.width = `${width}px`;
+          el.style.left = `${left}px`;
+          const top = anchor.bottom + 8;
+          el.style.top = `${top}px`;
+          // Short windows scroll inside the panel, so Done stays in reach.
+          el.style.maxHeight = `${window.innerHeight - top - EDGE}px`;
+        }}
+        onToggle={(e: SyntheticEvent<HTMLDivElement>) => {
+          const el = panel.current;
+          if ((e.nativeEvent as ToggleEvent).newState !== "open" || !el) return;
+          // Start on the chosen layout, unless something in the panel already has focus.
+          if (!el.contains(document.activeElement)) el.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]')?.focus();
+        }}
+      >
+        <div className="display">
+          <div>
+            <span className="label" id="layout-label">
+              Layout
+            </span>
+            <div className="layouts" role="radiogroup" aria-labelledby="layout-label">
+              {LAYOUTS.map((layout) => (
+                <button
+                  key={layout}
+                  type="button"
+                  role="radio"
+                  className="layout-opt"
+                  aria-checked={display.layout === layout}
+                  onClick={() => update({ layout })}
+                >
+                  <Icon name={LAYOUT_LABEL[layout].icon} size={18} />
+                  {LAYOUT_LABEL[layout].label}
+                </button>
+              ))}
             </div>
+          </div>
 
-            <div>
-              <span className="label" id="sort-label">
-                Sort by
+          <div className="display__sort">
+            <span className="label" aria-hidden="true">
+              Sort by
+            </span>
+            <Picker
+              label="Sort by"
+              value={display.sort}
+              options={SORTS.map((sort) => ({ value: sort, label: SORT_LABEL[sort] }))}
+              onChange={(sort) => update({ sort })}
+            />
+          </div>
+
+          <fieldset className="display__filters">
+            <legend className="label">Show only</legend>
+
+            <div className="display__row" role="group" aria-label="Priority">
+              <span className="display__name" aria-hidden="true">
+                Priority
               </span>
-              <div className="seg" role="radiogroup" aria-labelledby="sort-label">
-                {SORTS.map((sort) => (
+              <div className="seg">
+                {PRIORITIES.map((p) => (
                   <button
-                    key={sort}
+                    key={p.value}
                     type="button"
-                    role="radio"
                     className="seg__opt"
-                    aria-checked={display.sort === sort}
-                    onClick={() => update({ sort })}
+                    aria-pressed={display.filters.priorities.includes(p.value)}
+                    onClick={() => filters({ priorities: toggle(display.filters.priorities, p.value) })}
                   >
-                    {SORT_LABEL[sort]}
+                    {p.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            <fieldset className="display__filters">
-              <legend className="label">Show only</legend>
-
-              <div className="display__row" role="group" aria-label="Priority">
+            {byList && store.data.lists.length > 0 && (
+              <div className="display__row" role="group" aria-label="List">
                 <span className="display__name" aria-hidden="true">
-                  Priority
+                  List
                 </span>
                 <div className="seg">
-                  {PRIORITIES.map((p) => (
+                  <button
+                    type="button"
+                    className="seg__opt"
+                    aria-pressed={display.filters.lists.includes("inbox")}
+                    onClick={() => filters({ lists: toggle(display.filters.lists, "inbox") })}
+                  >
+                    Inbox
+                  </button>
+                  {store.data.lists.map((l) => (
                     <button
-                      key={p.value}
+                      key={l.id}
                       type="button"
                       className="seg__opt"
-                      aria-pressed={display.filters.priorities.includes(p.value)}
-                      onClick={() => filters({ priorities: toggle(display.filters.priorities, p.value) })}
+                      aria-pressed={display.filters.lists.includes(l.id)}
+                      onClick={() => filters({ lists: toggle(display.filters.lists, l.id) })}
                     >
-                      {p.label}
+                      {l.name}
                     </button>
                   ))}
                 </div>
               </div>
+            )}
 
-              {byList && store.data.lists.length > 0 && (
-                <div className="display__row" role="group" aria-label="List">
-                  <span className="display__name" aria-hidden="true">
-                    List
-                  </span>
-                  <div className="seg">
-                    <button
-                      type="button"
-                      className="seg__opt"
-                      aria-pressed={display.filters.lists.includes("inbox")}
-                      onClick={() => filters({ lists: toggle(display.filters.lists, "inbox") })}
-                    >
-                      Inbox
-                    </button>
-                    {store.data.lists.map((l) => (
-                      <button
-                        key={l.id}
-                        type="button"
-                        className="seg__opt"
-                        aria-pressed={display.filters.lists.includes(l.id)}
-                        onClick={() => filters({ lists: toggle(display.filters.lists, l.id) })}
-                      >
-                        {l.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="display__row" role="group" aria-label="More filters">
-                <span className="display__name" aria-hidden="true">
-                  Also
-                </span>
-                <div className="seg">
-                  <button
-                    type="button"
-                    className="seg__opt"
-                    aria-pressed={display.filters.doing}
-                    onClick={() => filters({ doing: !display.filters.doing })}
-                  >
-                    In progress
-                  </button>
-                  <button
-                    type="button"
-                    className="seg__opt"
-                    aria-pressed={display.filters.quick}
-                    onClick={() => filters({ quick: !display.filters.quick })}
-                  >
-                    Quick ({QUICK_MINUTES} min or less)
-                  </button>
-                </div>
+            <div className="display__row" role="group" aria-label="More filters">
+              <span className="display__name" aria-hidden="true">
+                Also
+              </span>
+              <div className="seg">
+                <button
+                  type="button"
+                  className="seg__opt"
+                  aria-pressed={display.filters.doing}
+                  onClick={() => filters({ doing: !display.filters.doing })}
+                >
+                  In progress
+                </button>
+                <button
+                  type="button"
+                  className="seg__opt"
+                  aria-pressed={display.filters.quick}
+                  onClick={() => filters({ quick: !display.filters.quick })}
+                >
+                  Quick ({QUICK_MINUTES} min or less)
+                </button>
               </div>
-              <p className="hint">Filters only hide tasks here.</p>
-            </fieldset>
-          </div>
-        </Sheet>
-      )}
+            </div>
+            <p className="hint">Filters only hide tasks here.</p>
+          </fieldset>
+        </div>
+        <div className="display-panel__foot">
+          <button type="button" className="btn btn--ghost btn--small" disabled={isDefault(display)} onClick={reset}>
+            Reset
+          </button>
+          <button
+            type="button"
+            className="btn btn--small"
+            popoverTarget={id}
+            popoverTargetAction="hide"
+            onClick={() => button.current?.focus()}
+          >
+            Done
+          </button>
+        </div>
+      </div>
     </>
   );
 }

@@ -192,7 +192,7 @@ test.describe("flows that were missing", () => {
     await page.goto("/list/work");
     const sheet = await openDisplay(page);
     await sheet.getByRole("radio", { name: "Calendar" }).click();
-    await sheet.getByRole("button", { name: "Show tasks" }).click();
+    await sheet.getByRole("button", { name: "Done", exact: true }).click();
 
     await page.locator(`td[data-day="${monthDay(12)}"] .cal__day`).click();
     const field = page.getByRole("textbox", { name: /^Add a task on .*12/ });
@@ -213,7 +213,7 @@ test.describe("flows that were missing", () => {
     await page.goto("/inbox");
     const sheet = await openDisplay(page);
     await sheet.getByRole("radio", { name: "Calendar" }).click();
-    await sheet.getByRole("button", { name: "Show tasks" }).click();
+    await sheet.getByRole("button", { name: "Done", exact: true }).click();
     await page.locator(`td[data-day="${monthDay(12)}"] .cal__day`).click();
     await page.getByRole("textbox", { name: /^Add a task on/ }).fill("Call the bank today");
     await page.getByRole("button", { name: "Add to this day" }).click();
