@@ -55,7 +55,7 @@ export function Appearance() {
           ))}
         </div>
         <p className="hint" style={{ marginTop: "0.5rem" }}>
-          All six are soft and low-glare, and keep text easy to read.
+          All six are low-glare and easy to read.
         </p>
       </div>
 

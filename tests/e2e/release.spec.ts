@@ -179,7 +179,7 @@ test.describe("visit counting", () => {
     await page.addInitScript(() => Object.defineProperty(Navigator.prototype, "globalPrivacyControl", { get: () => true }));
     await asPublicSite(page);
     await page.goto(`${SITE}/settings`);
-    await expect(page.getByText("Your browser asks sites not to track you")).toBeVisible();
+    await expect(page.getByText("Your browser asks not to be tracked")).toBeVisible();
     await page.goto(`${SITE}/today`);
     await page.waitForTimeout(600);
     expect(await sent(page)).toEqual([]);

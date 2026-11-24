@@ -365,19 +365,41 @@ a {
 }
 
 .side__tools {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.125rem;
-  padding-inline: 0.125rem;
 }
 
-.side__tools .icon-btn {
-  width: 2.375rem;
-  height: 2.375rem;
+/* Icon over a short name, like the tab bar on phones. */
+.side__tool {
+  display: grid;
+  justify-items: center;
+  gap: 0.1rem;
+  min-height: 2.9rem;
+  padding: 0.3rem 0.1rem 0.25rem;
+  border: 0;
+  border-radius: var(--r-m);
+  background: none;
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color 0.15s;
 }
 
-.side__tools .icon-btn[aria-current="page"] {
+.side__tool:hover {
+  background: var(--hover);
+}
+
+.side__tool-label {
+  font-size: 0.75rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* The page you are on: the same yellow as the rows above. */
+.side__tool[aria-current="page"] {
   background: var(--mark);
   color: var(--mark-ink);
+  font-weight: 600;
 }
 
 /* Rows in the sidebar are a little tighter than in the phone menu, so the whole column fits a
@@ -518,9 +540,23 @@ a {
   }
 
   :root[data-sidebar="collapsed"] .side__tools {
-    flex-direction: column;
-    align-items: center;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+  }
+
+  :root[data-sidebar="collapsed"] .side__tool {
+    width: 2.375rem;
+    min-height: 2.375rem;
+    place-items: center;
     padding: 0;
+  }
+
+  :root[data-sidebar="collapsed"] .side__tool-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
   }
 }
 
@@ -1282,9 +1318,9 @@ textarea.field {
   font-weight: 600;
 }
 
+/* Weight in task details is kept for status (priority, Doing). A late day is told by colour. */
 .meta--late {
   color: var(--ink);
-  font-weight: 600;
 }
 
 .row__side {
@@ -2652,15 +2688,24 @@ td[data-today="true"] .cal__num {
 }
 
 .appearance {
+  container-type: inline-size;
   display: grid;
   gap: 1.4rem;
 }
 
-/* Palette picker: each preview carries its own palette attributes, so it shows its real colours. */
+/* Palette picker: each preview carries its own palette attributes, so it shows its real colours.
+   Six themes: one row of six where they fit, otherwise two rows of three, never one left over. */
+
 .palettes {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(6.25rem, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
+}
+
+@container (min-width: 34rem) {
+  .palettes {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
 }
 
 .palette {

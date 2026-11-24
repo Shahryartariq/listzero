@@ -121,7 +121,7 @@ test.describe("finishing", () => {
     await page.goto("/today");
     await page.getByRole("checkbox", { name: "Mark “Send invoice” as done" }).click();
     await page.goto("/done");
-    await expect(page.getByText("1 today, 1 in the last 7 days.")).toBeVisible();
+    await expect(page.getByText("1 today, 1 in the last 7 days")).toBeVisible();
     await page.getByRole("checkbox", { name: "Mark “Send invoice” as not done" }).click();
     await expect(page.getByRole("heading", { name: "Nothing finished yet." })).toBeVisible();
     await page.goto("/today");
@@ -170,7 +170,7 @@ test.describe("one day at a time", () => {
     await expect(page.locator(".zero-head__count")).toHaveText("3");
     const carried = page.getByRole("region", { name: "Carried over" });
     await expect(carried.locator("[data-task]")).toHaveCount(2);
-    await expect(carried).toContainText("2 from earlier days.");
+    await expect(carried).toContainText("2 from earlier days");
 
     await carried.getByRole("button", { name: "Move all to tomorrow" }).click();
     await expect(carried).toBeHidden();

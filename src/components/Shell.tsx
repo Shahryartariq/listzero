@@ -130,14 +130,18 @@ export function NavItems({ onNewList, onAppearance, compact = false }: { onNewLi
             </div>
           )}
           <div className="side__tools">
-            <button type="button" className="icon-btn" onClick={onAppearance} aria-label="Appearance" data-tip="Appearance" data-tip-always>
+            {/* Labelled, like the tab bar; a narrow sidebar shows the icons, with tips. */}
+            <button type="button" className="side__tool" onClick={onAppearance} data-tip="Appearance">
               <Icon name="palette" size={20} />
+              <span className="side__tool-label">Appearance</span>
             </button>
-            <NavLink to="/settings" className="icon-btn" aria-label="Settings" data-tip="Settings" data-tip-keys="g s" data-tip-always>
+            <NavLink to="/settings" className="side__tool" data-tip="Settings" data-tip-keys="g s">
               <Icon name="settings" size={20} />
+              <span className="side__tool-label">Settings</span>
             </NavLink>
-            <NavLink to="/about" className="icon-btn" aria-label="How it works" data-tip="How it works" data-tip-keys="?" data-tip-always>
+            <NavLink to="/about" className="side__tool" data-tip="How it works" data-tip-keys="?">
               <Icon name="about" size={20} />
+              <span className="side__tool-label">How it works</span>
             </NavLink>
           </div>
         </nav>
