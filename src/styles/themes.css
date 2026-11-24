@@ -8,6 +8,10 @@
    The selectors match any element, not just <html>, so a swatch can preview a palette
    by carrying the same two attributes.
 
+   The accent means one thing: here and now. The page you are on, the task you are doing,
+   today in the calendar, the step and timer in Focus. Buttons are ink, never the accent,
+   so the accent always points at the present.
+
    Glass: tiles are a little see-through and the page carries a soft glow of the accent,
    so surfaces read as frosted panes. The glow is weak on purpose; themes.test.ts checks
    text contrast at its strongest point. */

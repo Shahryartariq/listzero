@@ -225,7 +225,7 @@ export function Today() {
 
       {left > 0 && (
         <div className="section__actions" style={{ marginTop: "2rem" }}>
-          <Link to="/focus" className="btn btn--mark">
+          <Link to="/focus" className="btn">
             Start with one task
           </Link>
         </div>

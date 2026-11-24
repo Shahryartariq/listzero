@@ -367,7 +367,7 @@ function FocusTask({ task, position, total, takeFocus, onSkip, onDone }: FocusTa
       </div>
 
       <div className="focus__actions">
-        <button type="button" className="btn btn--mark" onClick={() => finish(onDone)}>
+        <button type="button" className="btn" onClick={() => finish(onDone)}>
           <Icon name="check" size={20} />
           Done
         </button>
