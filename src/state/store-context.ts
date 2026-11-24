@@ -13,6 +13,8 @@ export interface Toast {
    * It is withdrawn as soon as anything else changes, so Undo can never roll back unrelated work.
    */
   undo: AppData | null;
+  /** Undo for something outside the person's own tasks (a shared list). */
+  onUndo?: () => void;
   /** The data version this toast's Undo belongs to. */
   validAt: number;
   expiresAt: number;
@@ -41,6 +43,8 @@ export interface Store {
   dismissToast(id: string): void;
   undoToast(id: string): void;
   notify(message: string): void;
+  /** A message with an Undo that runs `onUndo` (for changes outside the person's own tasks). */
+  notifyUndo(message: string, onUndo: () => void): void;
   addFromText(lines: string[], defaults?: AddDefaults, off?: ReadonlySet<TokenKind>): Task[];
   updateTask(id: string, patch: TaskPatch): void;
   toggleTask(id: string): void;

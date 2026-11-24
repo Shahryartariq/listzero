@@ -24,7 +24,7 @@ export function Toasts() {
         <div className="toast" key={toast.id}>
           <span>{toast.message}</span>
           <span className="toast__actions">
-            {toast.undo && (
+            {(toast.undo || toast.onUndo) && (
               <button type="button" className="toast__undo" onClick={() => undoToast(toast.id)}>
                 Undo
               </button>

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { SharedTools } from "../shared/SharedTools";
+import type { SharedList } from "../shared/space";
 import { useNavigate, useParams } from "react-router";
 import { Icon } from "../components/Icon";
 import { DisplayMenu, FilterNote } from "../components/DisplayMenu";
@@ -133,12 +135,18 @@ export function Upcoming() {
   );
 }
 
-export function ListView() {
+/**
+ * One list's page. A shared list (`shared`) uses the same page, inside SharedScope, so the tasks
+ * shown and changed are that list's, and its header shows who it is shared with.
+ */
+export function ListView({ listId: given, shared }: { listId?: string; shared?: SharedList }) {
   const store = useStore();
   const navigate = useNavigate();
-  const { listId = "" } = useParams();
+  const { listId: param = "" } = useParams();
+  const listId = given ?? param;
   const [editing, setEditing] = useState(false);
-  const viewKey = `list:${listId}`;
+  const viewKey = shared ? `shared:${listId}` : `list:${listId}`;
+  const canAdd = shared?.role !== "view";
   const { display, set } = useDisplay(viewKey);
   const list = store.data.lists.find((l) => l.id === listId);
   usePageTitle(list?.name ?? "List not found");
@@ -158,13 +166,16 @@ export function ListView() {
           <h1 className="title">{list.name}</h1>
         </div>
         <div className="head__tools">
+          {shared && <SharedTools list={shared} />}
           <DisplayMenu view={viewKey} />
-          <button type="button" className="icon-btn" onClick={() => setEditing(true)} aria-label="List options">
-            <Icon name="more" />
-          </button>
+          {!shared && (
+            <button type="button" className="icon-btn" onClick={() => setEditing(true)} aria-label="List options">
+              <Icon name="more" />
+            </button>
+          )}
         </div>
       </header>
-      <QuickAdd defaults={{ listId: list.id }} staysHere={(t) => t.listId === list.id} />
+      {canAdd && <QuickAdd defaults={{ listId: list.id }} staysHere={(t) => t.listId === list.id} />}
       <FilterNote view={viewKey} shown={tasks.length} total={all.length} />
       {display.layout === "list" ? (
         <TaskRows tasks={tasks} showList={false} onMove={(id, to) => store.moveTask(viewKey, tasks, id, to)} />
@@ -185,13 +196,17 @@ export function ListView() {
       {all.length === 0 && (
         <div className="empty">
           <h2 className="empty__title">Nothing open in {list.name}.</h2>
-          <p>
-            Add a task above, or type <span className="code">#{list.name.toLowerCase().replace(/\s+/g, "-")}</span> in
-            any quick add to send it here.
-          </p>
+          {shared ? (
+            <p>{canAdd ? "Add a task above. Everyone in this list sees it." : "Tasks added here show up for you too."}</p>
+          ) : (
+            <p>
+              Add a task above, or type <span className="code">#{list.name.toLowerCase().replace(/\s+/g, "-")}</span>{" "}
+              in any quick add to send it here.
+            </p>
+          )}
         </div>
       )}
-      {editing && (
+      {editing && !shared && (
         <ListSheet
           list={list}
           taken={store.data.lists.map((l) => l.name)}

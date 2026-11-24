@@ -31,6 +31,10 @@ const ResetPassword = lazyView(() => auth().then((m) => m.ResetPassword));
 const TwoFactor = lazyView(() => auth().then((m) => m.TwoFactor));
 const Account = lazyView(() => import("./views/account/Account").then((m) => m.Account));
 const SyncRunner = lazyView(() => import("./account/parts").then((m) => m.SyncRunner));
+// In the same chunk as SyncRunner: loaded together, so going offline right after a page load can't
+// leave one of them unable to load.
+const SharedRunner = lazyView(() => import("./account/parts").then((m) => m.SharedRunner));
+const SharedListView = lazyView(() => import("./views/Shared").then((m) => m.SharedListView));
 const Admin = lazyView(() => import("./views/account/Admin").then((m) => m.Admin));
 
 /** Who is signed in decides whose tasks are shown, on every page. Only loaded where accounts exist. */
@@ -39,6 +43,7 @@ function AccountRuntime() {
   return (
     <Suspense fallback={null}>
       <SyncRunner />
+      <SharedRunner />
     </Suspense>
   );
 }
@@ -64,6 +69,7 @@ export function App() {
             <Route path="upcoming" element={<Upcoming />} />
             <Route path="board" element={<Board />} />
             <Route path="list/:listId" element={<ListView />} />
+            <Route path="shared/:sharedId" element={<SharedListView />} />
             <Route path="done" element={<Done />} />
             <Route path="focus" element={<Focus />} />
             <Route path="search" element={<Search />} />

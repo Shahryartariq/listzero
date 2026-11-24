@@ -1,4 +1,6 @@
 import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { SharedNav } from "../shared/SharedNav";
+import { SharedScope } from "../shared/SharedScope";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { useAccountConfig } from "../account/config";
 import { countScreen } from "../lib/analytics";
@@ -108,6 +110,7 @@ export function NavItems({ onNewList, onAppearance, compact = false }: { onNewLi
           )}
         </nav>
       </div>
+      <SharedNav />
     </>
   );
   return (
@@ -330,11 +333,18 @@ export function Shell() {
             </div>
           </div>
         )}
-        <ScreenBoundary key={location.pathname}>
-          <Suspense fallback={null}>
-            <Outlet context={{ openNewList: () => setNewList(true), openAppearance: () => setAppearance(true) }} />
-          </Suspense>
-        </ScreenBoundary>
+        <SharedScope>
+          <ScreenBoundary key={location.pathname}>
+            <Suspense fallback={null}>
+              <Outlet context={{ openNewList: () => setNewList(true), openAppearance: () => setAppearance(true) }} />
+            </Suspense>
+          </ScreenBoundary>
+          {new URLSearchParams(location.search).has("task") && location.pathname.startsWith("/shared/") && (
+            <Suspense fallback={null}>
+              <TaskSheet />
+            </Suspense>
+          )}
+        </SharedScope>
       </main>
 
       <nav className="tabs" aria-label="Main">
@@ -359,7 +369,7 @@ export function Shell() {
         </NavLink>
       </nav>
 
-      {new URLSearchParams(location.search).has("task") && (
+      {new URLSearchParams(location.search).has("task") && !location.pathname.startsWith("/shared/") && (
         <Suspense fallback={null}>
           <TaskSheet />
         </Suspense>

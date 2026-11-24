@@ -209,6 +209,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const undoToast = useCallback((id: string) => {
     const toast = toastsRef.current.find((t) => t.id === id);
     if (toast?.undo) dispatch({ type: "replace", data: toast.undo });
+    toast?.onUndo?.();
     setToasts((list) => list.filter((t) => t.id !== id));
   }, []);
 
@@ -255,6 +256,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       dismissToast,
       undoToast,
       notify: (message: string) => notify(message),
+      notifyUndo: (message: string, onUndo: () => void) =>
+        setToasts((list) => [
+          ...list.slice(-2),
+          { id: newId(), message, undo: null, onUndo, validAt: Number.MAX_SAFE_INTEGER, expiresAt: Date.now() + TOAST_MS },
+        ]),
 
       addFromText(lines: string[], defaults: AddDefaults = {}, off: ReadonlySet<TokenKind> = new Set()) {
         const now = new Date();
