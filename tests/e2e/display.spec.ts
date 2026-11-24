@@ -52,7 +52,7 @@ test.describe("display: layouts", () => {
     await pick(page, "Board");
     if (isPhone(page)) await page.getByRole("tab", { name: /^Doing/ }).click();
     await expect(page.getByRole("region", { name: "Doing" }).locator("[data-task]")).toHaveText(/Bravo email/);
-    await page.getByRole("button", { name: "Done with “Bravo email”" }).click();
+    await page.getByRole("checkbox", { name: "Mark “Bravo email” as done" }).click();
     if (isPhone(page)) await page.getByRole("tab", { name: /^Done today/ }).click();
     await expect(page.getByRole("region", { name: "Done today" }).locator("[data-task]")).toHaveText(/Bravo email/);
     await expect(page.locator(".zero-head__count")).toHaveText("2");

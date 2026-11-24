@@ -386,7 +386,8 @@ test.describe("board", () => {
     await show(page, "Doing");
     await expect(column(page, "Doing").locator("[data-task]")).toHaveText(/Write report/);
 
-    await page.getByRole("button", { name: "Done with “Write report”" }).click();
+    // Done is the card's own checkbox.
+    await page.getByRole("checkbox", { name: "Mark “Write report” as done" }).click();
     await expect(page.locator(".toasts")).toContainText("Done.");
     await show(page, "Done today");
     await expect(column(page, "Done today").locator("[data-task]")).toHaveText(/Write report/);
@@ -396,7 +397,7 @@ test.describe("board", () => {
     await expect(row(page, "Write report")).toBeHidden();
   });
 
-  test("“Not yet” and “Reopen” move a task back, and a task in progress is marked in lists", async ({ page }) => {
+  test("“Not yet” and unticking move a task back, and a task in progress is marked in lists", async ({ page }) => {
     await seed(page, [{ title: "Draft email", due: day(), doing: true }, { title: "Old win", completedAt: Date.now() - 1000 }]);
     await page.goto("/today");
     await expect(row(page, "Draft email")).toContainText("Doing");
@@ -408,7 +409,8 @@ test.describe("board", () => {
     await expect(column(page, "To do").locator("[data-task]")).toHaveText(/Draft email/);
 
     await show(page, "Done today");
-    await page.getByRole("button", { name: "Reopen “Old win”" }).click();
+    await expect(page.getByRole("button", { name: "Reopen “Old win”" })).toHaveCount(0);
+    await page.getByRole("checkbox", { name: "Mark “Old win” as not done" }).click();
     await show(page, "To do");
     await expect(column(page, "To do").locator("[data-task]")).toHaveCount(2);
     await page.goto("/today");
@@ -467,7 +469,7 @@ test.describe("board", () => {
     await page.goto("/board");
     await show(page, "Doing");
     await expect(page.getByText("4 at once is a lot to hold.")).toBeVisible();
-    await page.getByRole("button", { name: "Done with “A”" }).click();
+    await page.getByRole("checkbox", { name: "Mark “A” as done" }).click();
     await expect(page.getByText("is a lot to hold")).toBeHidden();
   });
 

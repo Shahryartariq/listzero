@@ -6,13 +6,18 @@ import { useStore } from "../../state/store-context";
 import { useOpenTask } from "../../state/useOpenTask";
 import { Zero } from "../TaskRow";
 
-const COLUMNS: { label: string; sort?: Exclude<Sort, "smart"> }[] = [
-  { label: "Task", sort: "name" },
-  { label: "Day", sort: "day" },
-  { label: "Priority", sort: "priority" },
-  { label: "Length", sort: "length" },
-  { label: "List" },
+type Column = "task" | "day" | "priority" | "length" | "list";
+
+const COLUMNS: { id: Column; label: string; sort?: Exclude<Sort, "smart"> }[] = [
+  { id: "task", label: "Task", sort: "name" },
+  { id: "day", label: "Day", sort: "day" },
+  { id: "priority", label: "Priority", sort: "priority" },
+  { id: "length", label: "Length", sort: "length" },
+  { id: "list", label: "List" },
 ];
+
+/** An unset value: blank to the eye, named for screen readers. */
+const Unset = ({ label }: { label: string }) => <span className="sr-only">{label}</span>;
 
 interface TableLayoutProps {
   tasks: Task[];
@@ -24,6 +29,12 @@ interface TableLayoutProps {
 export function TableLayout({ tasks, sort, onSort }: TableLayoutProps) {
   const store = useStore();
   const open = useOpenTask();
+  // A column that would say "None" on every row says nothing, so it is left out.
+  const shown = new Set<Column>(["task", "day"]);
+  if (tasks.some((t) => t.priority > 0)) shown.add("priority");
+  if (tasks.some((t) => t.estimate !== null)) shown.add("length");
+  if (tasks.some((t) => t.listId !== null)) shown.add("list");
+  const columns = COLUMNS.filter((c) => shown.has(c.id));
 
   return (
     <div className="table-scroll" role="region" aria-label="Tasks table" tabIndex={0}>
@@ -33,7 +44,7 @@ export function TableLayout({ tasks, sort, onSort }: TableLayoutProps) {
             <th scope="col">
               <span className="sr-only">Done</span>
             </th>
-            {COLUMNS.map((col) => (
+            {columns.map((col) => (
               <th key={col.label} scope="col" aria-sort={col.sort && sort === col.sort ? "ascending" : undefined}>
                 {col.sort ? (
                   <button
@@ -79,21 +90,25 @@ export function TableLayout({ tasks, sort, onSort }: TableLayoutProps) {
                   </button>
                 </th>
                 <td className={late ? "grid__late" : undefined}>
-                  {task.due ? describeDay(task.due, store.today) : <span className="grid__none">No day</span>}
+                  {task.due ? describeDay(task.due, store.today) : <Unset label="No day" />}
                   {task.time ? `, ${describeTime(task.time)}` : ""}
                 </td>
-                <td>
-                  {task.priority ? PRIORITY_LABEL[task.priority] : <span className="grid__none">None</span>}
-                </td>
-                <td>
-                  {task.estimate !== null ? describeMinutes(task.estimate) : <span className="grid__none">Not set</span>}
-                </td>
-                <td>
-                  <span className="meta">
-                    {list && <span className="dot" style={{ "--dot": `var(--c-${list.color})` } as React.CSSProperties} />}
-                    {list ? list.name : "Inbox"}
-                  </span>
-                </td>
+                {shown.has("priority") && (
+                  <td className={task.priority ? `meta--p${task.priority}` : undefined}>
+                    {task.priority ? PRIORITY_LABEL[task.priority] : <Unset label="No priority" />}
+                  </td>
+                )}
+                {shown.has("length") && (
+                  <td>{task.estimate !== null ? describeMinutes(task.estimate) : <Unset label="No length" />}</td>
+                )}
+                {shown.has("list") && (
+                  <td>
+                    <span className="meta">
+                      {list && <span className="dot" style={{ "--dot": `var(--c-${list.color})` } as React.CSSProperties} />}
+                      {list ? list.name : "Inbox"}
+                    </span>
+                  </td>
+                )}
               </tr>
             );
           })}

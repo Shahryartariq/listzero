@@ -195,7 +195,7 @@ export function Today() {
             </button>
             <button
               type="button"
-              className="btn btn--quiet btn--small"
+              className="btn btn--ghost btn--small"
               onClick={() =>
                 store.setDue(
                   carried.map((t) => t.id),
@@ -208,7 +208,7 @@ export function Today() {
             </button>
             <button
               type="button"
-              className="btn btn--quiet btn--small"
+              className="btn btn--ghost btn--small"
               onClick={() =>
                 store.setDue(
                   carried.map((t) => t.id),

@@ -157,12 +157,6 @@ export function TaskRow({
               {list.name}
             </span>
           )}
-          {details && task.notes && (
-            <span className="meta" title="Has notes">
-              <Icon name="note" size={15} />
-              <span className="sr-only">Has notes</span>
-            </span>
-          )}
         </span>
       </button>
       <span className="row__side">
