@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ClipboardEvent, type FormEvent } from "react";
 import { useLocation } from "react-router";
 import { REPEAT_LABEL, describeDay, describeMinutes, describeTime } from "../lib/dates";
 import { parseTask, splitLines, type Parsed, type Token, type TokenKind } from "../lib/parse";
@@ -56,6 +56,7 @@ export function QuickAdd({ defaults, staysHere }: QuickAddProps) {
   const [off, setOff] = useState<ReadonlySet<TokenKind>>(new Set());
 
   const input = useRef<HTMLInputElement>(null);
+  const hintId = useId();
   const location = useLocation();
   const wantsFocus = (location.state as { add?: number } | null)?.add;
 
@@ -109,6 +110,7 @@ export function QuickAdd({ defaults, staysHere }: QuickAddProps) {
           onChange={(e) => setText(e.target.value)}
           onPaste={onPaste}
           placeholder="Add a task, like “Pay rent friday 9am p1”"
+          aria-describedby={parsed.tokens.length > 0 ? undefined : hintId}
           autoComplete="off"
           enterKeyHint="done"
           maxLength={600}
@@ -134,7 +136,9 @@ export function QuickAdd({ defaults, staysHere }: QuickAddProps) {
             </span>
           ))
         ) : (
-          <span>Paste a list to add many at once.</span>
+          <span className="add__hint" id={hintId}>
+            Paste a list to add many at once.
+          </span>
         )}
       </div>
     </form>

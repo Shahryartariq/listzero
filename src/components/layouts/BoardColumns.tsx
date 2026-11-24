@@ -140,7 +140,8 @@ export function BoardColumns({ todo, doing, done, showDay, pullToToday = false }
                             checked={done}
                             priority={done ? 0 : task.priority}
                             label={done ? `Mark “${task.title}” as not done` : `Mark “${task.title}” as done`}
-                            onToggle={() => store.toggleTask(task.id)}
+                            // Unticking a finished card puts it back in To do, as dragging it there would.
+                            onToggle={() => move(task, done ? "todo" : "done")}
                           />
                           <button type="button" className="card__body" data-row onClick={() => open(task.id)}>
                             <span className="row__title">{task.title}</span>
@@ -161,27 +162,20 @@ export function BoardColumns({ todo, doing, done, showDay, pullToToday = false }
                             </span>
                           </button>
                         </div>
-                        <div className="card__actions">
-                          {column.id === "todo" && (
-                            <button
-                              type="button"
-                              className="btn btn--quiet btn--small"
-                              aria-label={`Start “${task.title}”`}
-                              onClick={() => move(task, "doing")}
-                            >
-                              Start
-                            </button>
-                          )}
-                          {column.id === "doing" && (
-                            <>
+                        {column.id !== "done" && (
+                          <div className="card__actions">
+                            {column.id === "todo" && (
                               <button
                                 type="button"
-                                className="btn btn--small"
-                                aria-label={`Done with “${task.title}”`}
-                                onClick={() => move(task, "done")}
+                                className="btn btn--quiet btn--small"
+                                aria-label={`Start “${task.title}”`}
+                                onClick={() => move(task, "doing")}
                               >
-                                Done
+                                Start
                               </button>
+                            )}
+                            {/* Done and reopen are the checkbox; these only move a card along. */}
+                            {column.id === "doing" && (
                               <button
                                 type="button"
                                 className="btn btn--quiet btn--small"
@@ -190,19 +184,9 @@ export function BoardColumns({ todo, doing, done, showDay, pullToToday = false }
                               >
                                 Not yet
                               </button>
-                            </>
-                          )}
-                          {column.id === "done" && (
-                            <button
-                              type="button"
-                              className="btn btn--quiet btn--small"
-                              aria-label={`Reopen “${task.title}”`}
-                              onClick={() => move(task, "todo")}
-                            >
-                              Reopen
-                            </button>
-                          )}
-                        </div>
+                            )}
+                          </div>
+                        )}
                       </li>
                     );
                   })}

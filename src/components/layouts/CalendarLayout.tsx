@@ -119,6 +119,7 @@ export function CalendarLayout({ tasks, defaults, staysHere }: CalendarProps) {
                     key={day}
                     data-day={day}
                     data-outside={!inMonth(day)}
+                    data-busy={list.length > 0 || undefined}
                     data-today={day === today}
                     data-selected={day === selected}
                     data-over={day === over}
