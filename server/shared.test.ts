@@ -110,6 +110,12 @@ describe("shared lists", () => {
     await syncOf(abdullah, [{ listId, id: "a", data: task("a", { doing: true, doingBy: sherry.id }), fields: ["doing"] }]);
     expect(tasksIn(await syncOf(sherry), listId).a).toMatchObject({ doing: true, doingBy: abdullah.id });
 
+    // Sherry's notes don't take it from him; taking it over does.
+    await syncOf(sherry, [{ listId, id: "a", data: task("a", { doing: true, notes: "Bring the key" }), fields: ["notes"] }]);
+    expect(tasksIn(await syncOf(sherry), listId).a).toMatchObject({ notes: "Bring the key", doingBy: abdullah.id });
+    await syncOf(sherry, [{ listId, id: "a", data: task("a", { doing: true, doingBy: sherry.id }), fields: ["doingBy"] }]);
+    expect(tasksIn(await syncOf(abdullah), listId).a).toMatchObject({ doing: true, doingBy: sherry.id });
+
     // At the same time, from the same starting point: Sherry renames it, Abdullah ticks it off.
     await syncOf(sherry, [{ listId, id: "a", data: task("a", { title: "Renamed" }), fields: ["title"] }]);
     await syncOf(abdullah, [{ listId, id: "a", data: task("a", { completedAt: Date.now() }), fields: ["completedAt"] }]);

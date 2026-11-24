@@ -1763,6 +1763,38 @@ dialog.sheet--small {
   margin-top: 1.4rem;
 }
 
+.detail__set {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* A list someone can only view: the task reads as plain text, at full strength. */
+.detail__set:disabled :is(textarea, .field, .step__title) {
+  opacity: 1;
+  color: inherit;
+  -webkit-text-fill-color: currentColor;
+  cursor: default;
+}
+
+.detail__set:disabled :is(.picker, .zero) {
+  cursor: default;
+}
+
+.detail__set:disabled .zero {
+  color: var(--ring, var(--line-strong));
+}
+
+.detail__set:disabled :is(.detail__title, .chip, .picker button):hover {
+  background: transparent;
+}
+
+.detail__who {
+  margin: 0.25rem 0 0;
+  font-weight: 600;
+}
+
 .detail__row {
   display: flex;
   flex-wrap: wrap;

@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router";
-import { useSpace } from "../shared/space";
+import { useSpace, useSpaceLoading } from "../shared/space";
 import { usePageTitle } from "../state/usePageTitle";
 import { ListView } from "./Lists";
 
@@ -8,8 +8,11 @@ export function SharedListView() {
   const { sharedId = "" } = useParams();
   const space = useSpace();
   const list = space?.lists.find((l) => l.id === sharedId);
+  const loading = useSpaceLoading();
   usePageTitle(list?.name ?? "Shared list");
   if (list) return <ListView listId={list.id} shared={list} />;
+  // Just opened: wait to know who is signed in before saying the list isn't theirs.
+  if (loading) return <div className="view" aria-busy="true" />;
 
   return (
     <div className="view">

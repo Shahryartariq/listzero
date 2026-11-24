@@ -350,7 +350,7 @@ export interface SharedSyncReply {
 }
 
 const FIELDS = new Set<string>([
-  "title", "notes", "due", "time", "priority", "estimate", "steps", "repeat", "doing", "completedAt", "order", "createdAt",
+  "title", "notes", "due", "time", "priority", "estimate", "steps", "repeat", "doing", "doingBy", "completedAt", "order", "createdAt",
 ]);
 
 export function readSharedSync(raw: unknown): SharedSyncRequest {
@@ -381,8 +381,11 @@ export function readSharedSync(raw: unknown): SharedSyncRequest {
   return { cursors, changes: [...byKey.values()] };
 }
 
-/** Who pressed Start and who ticked it off, set from what changed and who changed it. */
-function stamp(next: Task, userId: string, before: Task | null): Task {
+/**
+ * Who pressed Start and who ticked it off, set from what changed and who changed it. `claim` is true
+ * when this change is about who is doing it (Start, or taking a task over from someone).
+ */
+function stamp(next: Task, userId: string, before: Task | null, claim = true): Task {
   // What a device says about who did it is ignored: it is worked out here.
   const task: Task = { ...next };
   delete task.doingBy;
@@ -392,7 +395,7 @@ function stamp(next: Task, userId: string, before: Task | null): Task {
   const doneNow = task.completedAt !== null && before?.completedAt == null;
   return {
     ...task,
-    ...(doing ? { doingBy: startedNow || !before?.doingBy ? userId : before.doingBy } : {}),
+    ...(doing ? { doingBy: startedNow || claim || !before?.doingBy ? userId : before.doingBy } : {}),
     ...(task.completedAt !== null ? { doneBy: doneNow || !before?.doneBy ? userId : before.doneBy } : {}),
   };
 }
@@ -434,7 +437,8 @@ export async function syncShared(
             const checked = readTask({ ...merged, listId: list.id }, null);
             if (!checked) continue;
             if (found?.deleted && change.fields) continue; // Deleted by someone else meanwhile: it stays deleted.
-            data = stamp(checked, userId, current);
+            const claim = !change.fields || change.fields.includes("doing") || change.fields.includes("doingBy");
+            data = stamp(checked, userId, current, claim);
           }
           await tx
             .insert(sharedItem)

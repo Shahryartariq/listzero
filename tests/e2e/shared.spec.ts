@@ -167,3 +167,91 @@ test("sharing like Google Drive: by email, by link, roles, leaving and deleting"
   await his.reload();
   await expect(his.getByRole("heading", { name: "This list isn’t shared with you." })).toBeVisible({ timeout: 20_000 });
 });
+
+test("working together: who is on what, taking over, viewers, search and focus", async ({ browser, request }) => {
+  test.setTimeout(180_000);
+  const sherry = await account(request, person("sherry"));
+  const abdullah = await account(request, person("abdullah"));
+  const ali = await account(request, person("ali"));
+  const her = await device(browser, sherry);
+
+  await her.getByRole("button", { name: "New shared list" }).click();
+  await her.getByLabel("Name").fill("Office");
+  await her.getByRole("button", { name: "Create list" }).click();
+  await expect(her).toHaveURL(/\/shared\/[0-9a-f-]{36}$/);
+  const listId = /\/shared\/(.+)$/.exec(her.url())![1]!;
+  await addTask(her, "Write report");
+  await addTask(her, "Call the bank");
+  for (const [who, role] of [[abdullah, "edit"], [ali, "view"]] as const) {
+    const sent = await her.request.post("/api/shared/invite", { headers: { origin: SITE }, data: { listId, email: who.email, role } });
+    expect(sent.ok()).toBe(true);
+  }
+
+  // Abdullah presses Start on the board: it says he's on it, for him and for Sherry.
+  const his = await device(browser, abdullah);
+  await his.goto(`/shared/${listId}`);
+  await expect(row(his, "Write report")).toBeVisible({ timeout: 20_000 });
+  const board = async (page: Page) => {
+    await page.getByRole("button", { name: /^Display/ }).click();
+    const sheet = page.getByRole("dialog", { name: "Display" });
+    await sheet.getByRole("radio", { name: "Board" }).click();
+    await sheet.getByRole("button", { name: "Done", exact: true }).click();
+    await expect(sheet).toBeHidden();
+  };
+  await board(his);
+  await his.getByRole("button", { name: "Start “Write report”" }).click();
+  await expect(row(his, "Write report")).toContainText("You are on it");
+  await her.reload();
+  await expect(row(her, "Write report")).toContainText("Abdullah is on it", { timeout: 20_000 });
+
+  // Sherry takes it over, after saying yes.
+  await board(her);
+  await her.getByRole("button", { name: "Take over “Write report” from Abdullah" }).click();
+  const ask = her.getByRole("dialog", { name: "Take over from Abdullah?" });
+  await ask.getByRole("button", { name: "Take over" }).click();
+  await expect(row(her, "Write report")).toContainText("You are on it");
+  await expect(her.getByRole("button", { name: /^Take over/ })).toHaveCount(0);
+  await expect(row(his, "Write report")).toContainText("Sherry is on it", { timeout: 20_000 });
+
+  // Anyone who can edit can tick it off; the card says who did.
+  await his.getByRole("checkbox", { name: "Mark “Call the bank” as done" }).click();
+  await expect(row(his, "Call the bank")).toContainText("Done by you");
+  await expect(row(her, "Call the bank")).toContainText("Done by Abdullah", { timeout: 20_000 });
+
+  // Ali can only look: no add box, no ticking, and the task opens as text with nothing to change.
+  const theirs = await device(browser, ali);
+  await theirs.goto(`/shared/${listId}`);
+  await expect(row(theirs, "Write report")).toContainText("Sherry is on it", { timeout: 20_000 });
+  await expect(theirs.getByRole("textbox", { name: "Add a task" })).toHaveCount(0);
+  await expect(theirs.getByRole("checkbox", { name: "Mark “Write report” as done" })).toBeDisabled();
+  await row(theirs, "Write report").getByRole("button", { name: /Write report/ }).first().click();
+  const view = theirs.getByRole("dialog", { name: "Task" });
+  await expect(view.getByText("Sherry is on it")).toBeVisible();
+  await expect(view.getByText("You can view this list, not change it.")).toBeVisible();
+  await expect(view.getByRole("textbox", { name: "Task name" })).toBeDisabled();
+  await expect(view.getByRole("button", { name: "Delete" })).toHaveCount(0);
+  await expect(view.getByRole("button", { name: "Focus on this" })).toHaveCount(0);
+  await expect(view.getByRole("button", { name: "Save" })).toHaveCount(0);
+  await theirs.keyboard.press("Escape");
+  await expect(view).toBeHidden();
+
+  // Search finds shared tasks, under their own heading; opening one goes to its list.
+  await her.goto("/search?q=report");
+  await expect(her.getByRole("heading", { name: "In shared lists" })).toBeVisible();
+  await expect(her.getByText("1 task found.")).toBeVisible();
+  await row(her, "Write report").getByRole("button", { name: /Write report/ }).first().click();
+  await expect(her).toHaveURL(new RegExp(`/shared/${listId}\\?task=`));
+  const sheet = her.getByRole("dialog", { name: "Task" });
+  await expect(sheet.getByText("You are on it")).toBeVisible();
+
+  // Focus works on this one task, and finishing it goes back to the list.
+  await sheet.getByRole("button", { name: "Focus on this" }).click();
+  await expect(her).toHaveURL(/\/focus\?shared=/);
+  await expect(her.getByText("From “Office”")).toBeVisible();
+  await her.getByRole("button", { name: "Done", exact: true }).click();
+  await expect(her).toHaveURL(new RegExp(`/shared/${listId}$`));
+  await expect(row(her, "Write report")).toContainText("Done by you");
+  // Her own Today queue never had it.
+  await her.goto("/focus");
+  await expect(her.getByRole("heading", { name: "Nothing to focus on." })).toBeVisible();
+});

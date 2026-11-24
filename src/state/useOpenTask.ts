@@ -1,11 +1,15 @@
-import { useCallback } from "react";
+import { createContext, useCallback, useContext } from "react";
 import { useLocation, useNavigate } from "react-router";
+
+/** Opens tasks somewhere else than this page: search results from a shared list open on that list's page. */
+export const OpenTaskContext = createContext<((id: string) => void) | null>(null);
 
 /** Opens the task sheet by putting the task id in the URL, so Back closes it and the link can be shared. */
 export function useOpenTask() {
   const navigate = useNavigate();
   const location = useLocation();
-  return useCallback(
+  const elsewhere = useContext(OpenTaskContext);
+  const here = useCallback(
     (id: string) => {
       const params = new URLSearchParams(location.search);
       params.set("task", id);
@@ -13,6 +17,7 @@ export function useOpenTask() {
     },
     [navigate, location.pathname, location.search],
   );
+  return elsewhere ?? here;
 }
 
 export function useCloseTask() {

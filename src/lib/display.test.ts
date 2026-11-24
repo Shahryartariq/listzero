@@ -149,11 +149,12 @@ describe("saved display settings", () => {
     const saved = readDisplays({
       today: { layout: "board" },
       "list:work": { sort: "name" },
+      "shared:4b5b254f-0445-4aa5-a8a8-0d7425d64fbe": { layout: "board" },
       inbox: { layout: "list", sort: "smart" },
       settings: { layout: "table" },
       "list:<script>": { layout: "table" },
     });
-    expect(Object.keys(saved)).toEqual(["today", "list:work"]);
+    expect(Object.keys(saved)).toEqual(["today", "list:work", "shared:4b5b254f-0445-4aa5-a8a8-0d7425d64fbe"]);
   });
 
   it("travels with a backup, and older backups get none", () => {

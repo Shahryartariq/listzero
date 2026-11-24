@@ -143,12 +143,15 @@ export function readDisplay(raw: unknown): Display {
   };
 }
 
-/** Saved display settings for every view, keyed by "inbox", "today", "upcoming" or "list:<id>". */
+/**
+ * Saved display settings for every view, keyed by "inbox", "today", "upcoming", "list:<id>", or
+ * "shared:<id>" for a shared list (how it looks is each person's own choice).
+ */
 export function readDisplays(raw: unknown): Record<string, Display> {
   if (!isObject(raw)) return {};
   const out: Record<string, Display> = {};
   for (const [key, value] of Object.entries(raw).slice(0, 150)) {
-    if (!/^(inbox|today|upcoming|list:[\w-]{1,64})$/.test(key)) continue;
+    if (!/^(inbox|today|upcoming|(list|shared):[\w-]{1,64})$/.test(key)) continue;
     const display = readDisplay(value);
     if (!isDefault(display)) out[key] = display;
   }

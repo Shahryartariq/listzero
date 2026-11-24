@@ -17,6 +17,7 @@ import {
   registerSharedRunner,
   setSharedStatus,
   setSpace,
+  settleSpace,
   type SharedReply,
 } from "./space";
 
@@ -37,6 +38,7 @@ export function SharedRunner() {
   const session = authClient.useSession();
   const userId = session.data?.user.id ?? null;
   const known = !session.isPending && !session.error;
+  const pending = session.isPending;
 
   // Follow the session: this account's shared lists, or none.
   useEffect(() => {
@@ -51,6 +53,11 @@ export function SharedRunner() {
     }
     if (current?.userId !== userId) setSpace(loadSpace(userId));
   }, [known, userId]);
+
+  // Pages showing a shared list wait for this, then show it or say why they can't.
+  useEffect(() => {
+    if (!pending) settleSpace();
+  }, [pending]);
 
   useEffect(() => {
     if (!userId) return;

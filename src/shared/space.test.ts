@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Task } from "../lib/types";
-import { applyReply, pendingChanges, type SharedList, type Space } from "./space";
+import { stampHere } from "./sharedStore";
+import { applyReply, doneByLabel, nameOf, onItLabel, pendingChanges, type SharedList, type Space } from "./space";
 
 const L = "11111111-1111-4111-8111-111111111111";
 const list: SharedList = { id: L, name: "Office", color: "blue", role: "edit", access: "restricted", linkRole: "edit", link: null, people: [], invited: [] };
@@ -48,5 +49,30 @@ describe("shared lists on the device", () => {
     expect(next.tasks).toEqual([]);
     expect(next.known).toEqual({});
     expect(next.lists).toEqual([]);
+  });
+
+  it("shows who is on a task and who finished it straight away", () => {
+    const started = stampHere(task("a", { doing: true }), task("a"), "me");
+    expect(started.doingBy).toBe("me");
+    // Editing a task someone else is on leaves it theirs; taking it over makes it yours.
+    const theirs = task("a", { doing: true, doingBy: "abdullah" });
+    expect(stampHere({ ...theirs, notes: "Key" }, theirs, "me").doingBy).toBe("abdullah");
+    expect(stampHere({ ...theirs, doingBy: "me" }, theirs, "me").doingBy).toBe("me");
+    // Back to To do: nobody is on it. Ticked off: done by whoever ticked it; reopened: by nobody.
+    expect(stampHere({ ...theirs, doing: false }, theirs, "me").doingBy).toBeUndefined();
+    const done = stampHere({ ...theirs, doing: false, completedAt: 5 }, theirs, "me");
+    expect(done).toMatchObject({ doneBy: "me" });
+    expect(done.doingBy).toBeUndefined();
+    expect(stampHere({ ...done, completedAt: null }, done, "me").doneBy).toBeUndefined();
+  });
+
+  it("names people by their first name, and you as you", () => {
+    const s = { ...space([], []), lists: [{ ...list, people: [{ id: "a1", name: "Abdullah Khan", email: "a@x.test", role: "edit" as const }] }] };
+    expect(onItLabel(nameOf(s, "a1"))).toBe("Abdullah is on it");
+    expect(onItLabel(nameOf(s, "me"))).toBe("You are on it");
+    expect(doneByLabel(nameOf(s, "me"))).toBe("Done by you");
+    expect(nameOf(s, "gone")).toBe("Someone");
+    const unnamed = { ...s, lists: [{ ...list, people: [{ id: "b1", name: "", email: "ali.raza@x.test", role: "view" as const }] }] };
+    expect(nameOf(unnamed, "b1")).toBe("Ali");
   });
 });

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { doneByLabel, nameOf, onItLabel, useSpace } from "../shared/space";
 import { REPEAT_LABEL, addDays, describeDay, describeMinutes, describeTime } from "../lib/dates";
 import { nextStep } from "../lib/store";
 import { PRIORITY_LABEL, type Task } from "../lib/types";
@@ -33,11 +34,13 @@ export function Zero({
   priority = 0,
   label,
   onToggle,
+  disabled = false,
 }: {
   checked: boolean;
   priority?: number;
   label: string;
   onToggle(): void;
+  disabled?: boolean;
 }) {
   return (
     <button
@@ -48,6 +51,7 @@ export function Zero({
       aria-label={label}
       data-priority={priority}
       onClick={onToggle}
+      disabled={disabled}
     >
       <span className="zero__ring">
         <span className="zero__check">
@@ -71,6 +75,7 @@ export function TaskRow({
   dragging = false,
 }: TaskRowProps) {
   const store = useStore();
+  const space = useSpace();
   const open = useOpenTask();
   const done = task.completedAt !== null;
   const list = showList ? store.data.lists.find((l) => l.id === task.listId) : undefined;
@@ -109,6 +114,7 @@ export function TaskRow({
         priority={done || leaving ? 0 : task.priority}
         label={done ? `Mark “${task.title}” as not done` : `Mark “${task.title}” as done`}
         onToggle={toggle}
+        disabled={store.readOnly}
       />
       <button
         type="button"
@@ -125,7 +131,10 @@ export function TaskRow({
               {PRIORITY_LABEL[task.priority]}
             </span>
           )}
-          {task.doing && !done && <span className="meta meta--doing">Doing</span>}
+          {task.doing && !done && (
+            <span className="meta meta--doing">{task.doingBy ? onItLabel(nameOf(space, task.doingBy)) : "Doing"}</span>
+          )}
+          {done && task.doneBy && <span className="meta">{doneByLabel(nameOf(space, task.doneBy))}</span>}
           {next && (
             <span className="meta meta--next">
               Next: {next}
@@ -160,7 +169,7 @@ export function TaskRow({
         </span>
       </button>
       <span className="row__side">
-        {quick && !done && (
+        {quick && !done && !store.readOnly && (
           <button
             type="button"
             className="btn btn--quiet btn--small"
@@ -209,11 +218,13 @@ export function TaskRows({
   const store = useStore();
   const list = useRef<HTMLUListElement>(null);
   const help = useId();
+  // Nothing moves in a list the person can only view.
+  const move = store.readOnly ? undefined : onMove;
   // While a finished row lingers, the rows are not where the list says: no dragging until it goes.
   const reorder = useReorder(
     tasks.map((t) => t.id),
     list,
-    onMove,
+    move,
   );
   const [ghosts, setGhosts] = useState<{ task: Task; index: number }[]>([]);
   const timers = useRef<number[]>([]);
@@ -243,13 +254,13 @@ export function TaskRows({
   }
 
   if (rows.length === 0) return null;
-  const sortable = Boolean(onMove) && ghosts.length === 0;
+  const sortable = Boolean(move) && ghosts.length === 0;
   return (
     <>
       <ul
         ref={list}
         className={cards ? "rows rows--cards" : "rows"}
-        data-sortable={onMove ? true : undefined}
+        data-sortable={move ? true : undefined}
         data-dragging={reorder.dragging || undefined}
       >
         {rows.map(({ task, leaving }) => {
@@ -269,7 +280,7 @@ export function TaskRows({
           );
         })}
       </ul>
-      {onMove && (
+      {move && (
         <>
           <p id={help} hidden>
             Drag up or down, or use the arrow keys.

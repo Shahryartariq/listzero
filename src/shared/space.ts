@@ -8,6 +8,7 @@
  * talking to the server; this module holds the state and the pure parts of sync.
  */
 import { useSyncExternalStore } from "react";
+import { useAccountConfig } from "../account/config";
 import { readTask, safeStorage } from "../lib/backup";
 import type { ListColor, Task, TaskList } from "../lib/types";
 
@@ -60,7 +61,7 @@ const keyOf = (listId: string, id: string) => `${listId}:${id}`;
 
 /** The fields a person can change, in the order they are compared. */
 const FIELDS = [
-  "title", "notes", "due", "time", "priority", "estimate", "steps", "repeat", "doing", "completedAt", "order", "createdAt",
+  "title", "notes", "due", "time", "priority", "estimate", "steps", "repeat", "doing", "doingBy", "completedAt", "order", "createdAt",
 ] as const;
 
 // ---------------------------------------------------------------- state
@@ -93,6 +94,30 @@ export function useSpace(): Space | null {
     },
     () => space,
   );
+}
+
+// Until the app knows who is signed in, "no shared lists" can't be told apart from "not loaded yet".
+let settled = false;
+
+/** Called once it is known who is signed in (or that nobody is). */
+export function settleSpace() {
+  if (settled) return;
+  settled = true;
+  for (const listener of listeners) listener();
+}
+
+/** True while it isn't known yet whether this person has shared lists: pages wait instead of saying no. */
+export function useSpaceLoading(): boolean {
+  const config = useAccountConfig();
+  const known = useSyncExternalStore(
+    (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    () => settled,
+  );
+  if (config === null) return true;
+  return config.accounts === true && !known;
 }
 
 const emptySpace = (userId: string): Space => ({ userId, lists: [], tasks: [], cursors: {}, known: {} });
@@ -207,13 +232,22 @@ export function applyReply(now: Space, base: Space, reply: SharedReply): Space {
 /** A shared list, shaped like one of the person's own lists, for the screens that show lists. */
 export const asTaskList = (list: SharedList): TaskList => ({ id: list.id, name: list.name, color: list.color, createdAt: 0 });
 
+/** "Abdullah is on it", "You are on it". */
+export const onItLabel = (name: string) => `${name} ${name === "You" ? "are" : "is"} on it`;
+
+/** "Done by Abdullah", "Done by you". */
+export const doneByLabel = (name: string) => `Done by ${name === "You" ? "you" : name}`;
+
 /** Someone's first name, for "Abdullah is on it". */
 export function nameOf(s: Space | null, userId: string | undefined): string {
   if (!s || !userId) return "Someone";
   if (userId === s.userId) return "You";
   for (const list of s.lists) {
     const person = list.people.find((p) => p.id === userId);
-    if (person) return (person.name || person.email).split(/\s+/)[0] ?? "Someone";
+    if (!person) continue;
+    // "abdullah khan" → "Abdullah"; no name → the start of the email address.
+    const first = (person.name.trim() || person.email.split(/[@._+-]/)[0] || "").split(/\s+/)[0] ?? "";
+    return first ? first[0]!.toUpperCase() + first.slice(1) : "Someone";
   }
   return "Someone";
 }
