@@ -63,9 +63,8 @@ describe("filters", () => {
     expect(titles(applyDisplay(tasks, withFilters({ priorities: [0] })))).toEqual(["plain", "doing moss"]);
   });
 
-  it("filters by colour, including tasks with none", () => {
-    expect(titles(applyDisplay(tasks, withFilters({ colors: ["blue", "moss"] })))).toEqual(["urgent blue", "doing moss"]);
-    expect(titles(applyDisplay(tasks, withFilters({ colors: ["none"] })))).toEqual(["medium", "plain"]);
+  it("ignores task colours, which are no longer shown", () => {
+    expect(titles(applyDisplay(tasks, withFilters({})))).toEqual(titles(tasks));
   });
 
   it("filters by list, with the Inbox as a choice", () => {
@@ -84,7 +83,7 @@ describe("filters", () => {
   });
 
   it("requires every group that is on, and counts the groups", () => {
-    const f = { ...NO_FILTERS, colors: ["blue" as const, "moss" as const], quick: true, doing: true };
+    const f = { ...NO_FILTERS, lists: ["inbox", "home"], quick: true, doing: true };
     expect(titles(tasks.filter((t) => matches(t, f)))).toEqual(["doing moss"]);
     expect(activeFilters(f)).toBe(3);
   });
@@ -141,7 +140,8 @@ describe("saved display settings", () => {
     ).toEqual({
       layout: "calendar",
       sort: "day",
-      filters: { priorities: [1], colors: ["blue", "none"], lists: ["work"], doing: false, quick: true },
+      // A colour filter saved before colours were dropped is let go.
+      filters: { priorities: [1], lists: ["work"], doing: false, quick: true },
     });
   });
 

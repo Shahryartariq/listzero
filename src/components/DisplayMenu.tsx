@@ -10,7 +10,7 @@ import {
   type Layout,
   type Sort,
 } from "../lib/display";
-import { COLOR_NAME, LIST_COLORS, type ListColor, type Priority } from "../lib/types";
+import type { Priority } from "../lib/types";
 import { useStore } from "../state/store-context";
 import { useDisplay } from "../state/useDisplay";
 import { Icon, type IconName } from "./Icon";
@@ -150,37 +150,6 @@ export function DisplayMenu({ view, byList = false }: DisplayMenuProps) {
                       {p.label}
                     </button>
                   ))}
-                </div>
-              </div>
-
-              <div className="display__row" role="group" aria-label="Colour">
-                <span className="display__name" aria-hidden="true">
-                  Colour
-                </span>
-                <div className="swatches">
-                  {LIST_COLORS.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      className="swatch"
-                      aria-pressed={display.filters.colors.includes(c)}
-                      aria-label={COLOR_NAME[c]}
-                      title={COLOR_NAME[c]}
-                      onClick={() => filters({ colors: toggle<ListColor | "none">(display.filters.colors, c) })}
-                    >
-                      <span className="dot" style={{ "--dot": `var(--c-${c})` } as React.CSSProperties} />
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    className="swatch swatch--none"
-                    aria-pressed={display.filters.colors.includes("none")}
-                    aria-label="No colour"
-                    title="No colour"
-                    onClick={() => filters({ colors: toggle<ListColor | "none">(display.filters.colors, "none") })}
-                  >
-                    <span className="dot" />
-                  </button>
                 </div>
               </div>
 

@@ -63,9 +63,9 @@ test.describe("display: layouts", () => {
     await page.goto("/today");
     await pick(page, "Table");
     const table = page.getByRole("table");
-    await expect(table.getByRole("columnheader")).toHaveText(["Done", "Task", "Day", "Priority", "Length", "List", "Colour"]);
+    await expect(table.getByRole("columnheader")).toHaveText(["Done", "Task", "Day", "Priority", "Length", "List"]);
     const report = table.getByRole("row", { name: /Charlie report/ });
-    await expect(report.getByRole("cell")).toHaveText(["", "Today", "High", "45m", "Work", "Blue"]);
+    await expect(report.getByRole("cell")).toHaveText(["", "Today", "High", "45m", "Work"]);
     await expect(names(page)).toHaveText(["Bravo email", "Charlie report", "alpha call"]);
 
     await table.getByRole("button", { name: "Task" }).click();
@@ -195,22 +195,11 @@ test.describe("display: sort, filter and reset", () => {
     await expect(page.getByText(/Showing \d of/)).toBeHidden();
   });
 
-  test("filter by colour, by list and by in progress", async ({ page }) => {
+  test("filter by list and by in progress; there is no colour filter", async ({ page }) => {
     await seed(page, SEED, LISTS);
     await page.goto("/today");
     let sheet = await openDisplay(page);
-    await sheet.getByRole("group", { name: "Colour" }).getByRole("button", { name: "Moss" }).click();
-    await sheet.getByRole("button", { name: "Show tasks" }).click();
-    await expect(names(page)).toHaveText(["Bravo email"]);
-
-    sheet = await openDisplay(page);
-    await sheet.getByRole("group", { name: "Colour" }).getByRole("button", { name: "Moss" }).click();
-    await sheet.getByRole("group", { name: "Colour" }).getByRole("button", { name: "No colour" }).click();
-    await sheet.getByRole("button", { name: "Show tasks" }).click();
-    await expect(names(page)).toHaveText(["alpha call"]);
-
-    sheet = await openDisplay(page);
-    await sheet.getByRole("button", { name: "Reset" }).click();
+    await expect(sheet.getByRole("group", { name: "Colour" })).toHaveCount(0);
     await sheet.getByRole("group", { name: "List" }).getByRole("button", { name: "Work" }).click();
     await sheet.getByRole("button", { name: "Show tasks" }).click();
     await expect(names(page)).toHaveText(["Charlie report"]);
@@ -226,7 +215,7 @@ test.describe("display: sort, filter and reset", () => {
     await seed(page, SEED, LISTS);
     await page.goto("/today");
     const sheet = await openDisplay(page);
-    await sheet.getByRole("group", { name: "Colour" }).getByRole("button", { name: "Plum" }).click();
+    await sheet.getByRole("group", { name: "Priority" }).getByRole("button", { name: "Medium" }).click();
     await sheet.getByRole("button", { name: "Show tasks" }).click();
     await expect(page.getByText("None of the 3 tasks here match your filters.")).toBeVisible();
     await expect(names(page)).toHaveCount(0);

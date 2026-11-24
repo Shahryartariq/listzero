@@ -480,38 +480,26 @@ test.describe("board", () => {
   });
 });
 
-test.describe("task colours", () => {
-  test("a colour set in the sheet tints the task everywhere and is saved", async ({ page }) => {
-    await seed(page, [{ title: "Tax form", due: day() }, { title: "Plain task", due: day() }]);
+test.describe("priority", () => {
+  test("is named on the task, not only coloured, and a task has no colour of its own", async ({ page }) => {
+    await seed(page, [
+      { title: "Tax form", due: day(), priority: 1 },
+      { title: "Plain task", due: day() },
+      // An older task that still carries a colour shows no trace of it.
+      { title: "Old coloured task", due: day(), color: "moss", priority: 3 },
+    ]);
     await page.goto("/today");
-    const plain = await row(page, "Plain task").evaluate((el) => getComputedStyle(el).backgroundColor);
+    await expect(row(page, "Tax form").locator(".meta--p1")).toHaveText("High");
+    await expect(row(page, "Old coloured task").locator(".meta--p3")).toHaveText("Low");
+    await expect(row(page, "Plain task").locator("[class*='meta--p']")).toHaveCount(0);
+    await expect(row(page, "Old coloured task")).not.toHaveAttribute("data-color");
+
     await row(page, "Tax form").locator("[data-row]").click();
     const sheet = page.getByRole("dialog", { name: "Task" });
-    await expect(sheet.getByRole("radio", { name: "No colour" })).toBeChecked();
-    await sheet.getByRole("radio", { name: "Blue" }).click();
-    await expect(sheet.getByRole("radio", { name: "Blue" })).toBeChecked();
+    await expect(sheet.getByText("Colour", { exact: true })).toHaveCount(0);
+    await sheet.getByRole("radiogroup", { name: "Priority" }).getByRole("radio", { name: "Medium" }).click();
     await sheet.getByRole("button", { name: "Close" }).click();
-
-    await expect(row(page, "Tax form")).toHaveAttribute("data-color", "blue");
-    const tinted = await row(page, "Tax form").evaluate((el) => getComputedStyle(el).backgroundColor);
-    expect(tinted).not.toBe(plain);
-
-    await page.reload();
-    await expect(row(page, "Tax form")).toHaveAttribute("data-color", "blue");
-    await page.goto("/board");
-    await expect(page.locator(".card", { hasText: "Tax form" })).toHaveAttribute("data-color", "blue");
-    await page.goto("/search?q=blue");
-    await expect(page.locator("[data-task]")).toHaveText(/Tax form/);
-  });
-
-  test("the colour can be removed again", async ({ page }) => {
-    await seed(page, [{ title: "Tax form", due: day(), color: "moss" }]);
-    await page.goto("/today?task=seed-1");
-    const sheet = page.getByRole("dialog", { name: "Task" });
-    await expect(sheet.getByRole("radio", { name: "Moss" })).toBeChecked();
-    await sheet.getByRole("radio", { name: "No colour" }).click();
-    await sheet.getByRole("button", { name: "Close" }).click();
-    await expect(row(page, "Tax form")).not.toHaveAttribute("data-color");
+    await expect(row(page, "Tax form").locator(".meta--p2")).toHaveText("Medium");
   });
 });
 

@@ -1,12 +1,10 @@
 import { describeDay, describeMinutes, describeTime } from "../../lib/dates";
 import type { Sort } from "../../lib/display";
 import { nextStep } from "../../lib/store";
-import { COLOR_NAME, type Task } from "../../lib/types";
+import { PRIORITY_LABEL, type Task } from "../../lib/types";
 import { useStore } from "../../state/store-context";
 import { useOpenTask } from "../../state/useOpenTask";
 import { Zero } from "../TaskRow";
-
-const PRIORITY = ["", "High", "Medium", "Low"];
 
 const COLUMNS: { label: string; sort?: Exclude<Sort, "smart"> }[] = [
   { label: "Task", sort: "name" },
@@ -14,7 +12,6 @@ const COLUMNS: { label: string; sort?: Exclude<Sort, "smart"> }[] = [
   { label: "Priority", sort: "priority" },
   { label: "Length", sort: "length" },
   { label: "List" },
-  { label: "Colour" },
 ];
 
 interface TableLayoutProps {
@@ -86,7 +83,7 @@ export function TableLayout({ tasks, sort, onSort }: TableLayoutProps) {
                   {task.time ? `, ${describeTime(task.time)}` : ""}
                 </td>
                 <td>
-                  {task.priority ? PRIORITY[task.priority] : <span className="grid__none">None</span>}
+                  {task.priority ? PRIORITY_LABEL[task.priority] : <span className="grid__none">None</span>}
                 </td>
                 <td>
                   {task.estimate !== null ? describeMinutes(task.estimate) : <span className="grid__none">Not set</span>}
@@ -96,16 +93,6 @@ export function TableLayout({ tasks, sort, onSort }: TableLayoutProps) {
                     {list && <span className="dot" style={{ "--dot": `var(--c-${list.color})` } as React.CSSProperties} />}
                     {list ? list.name : "Inbox"}
                   </span>
-                </td>
-                <td>
-                  {task.color ? (
-                    <span className="meta">
-                      <span className="dot" style={{ "--dot": `var(--c-${task.color})` } as React.CSSProperties} />
-                      {COLOR_NAME[task.color]}
-                    </span>
-                  ) : (
-                    <span className="grid__none">None</span>
-                  )}
                 </td>
               </tr>
             );
