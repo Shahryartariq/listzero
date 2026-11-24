@@ -32,7 +32,10 @@
   root.dataset.palette = palette;
   if (large) root.dataset.text = "large";
   // The sidebar's width is part of the layout, so it is set before the first paint too.
-  if (narrowSide) root.dataset.sidebar = "collapsed";
+  // A tablet starts with it narrow too (TABLET in src/state/useMedia.ts).
+  if (narrowSide || window.matchMedia("(min-width: 48.0625rem) and (max-width: 64rem)").matches) {
+    root.dataset.sidebar = "collapsed";
+  }
   var meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", PAPER[palette][dark ? 1 : 0]);
 })();

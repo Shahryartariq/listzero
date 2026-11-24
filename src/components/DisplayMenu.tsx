@@ -81,7 +81,7 @@ export function DisplayMenu({ view, byList = false }: DisplayMenuProps) {
         aria-haspopup="dialog"
       >
         <Icon name="display" size={18} />
-        Display
+        <span className="display-btn__label">Display</span>
         {changes > 0 && (
           <span className="display-btn__count">
             {changes}

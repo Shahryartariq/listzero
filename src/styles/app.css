@@ -3407,9 +3407,48 @@ p > .sync-dot {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
+  /* Today's Display sits in the header's corner as an icon, instead of on a row of its own. */
+  .zero-head {
+    position: relative;
+  }
+
   .zero-head .display-btn {
-    grid-column: 1 / -1;
-    justify-self: start;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 2.5rem;
+    min-height: 2.5rem;
+    padding: 0;
+  }
+
+  .zero-head .display-btn__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .zero-head .display-btn__count {
+    position: absolute;
+    top: -0.35rem;
+    right: -0.35rem;
+  }
+
+  /* The board's tabs already name the column and count its cards, and there is nothing to drag
+     between: one column shows at a time. */
+  .column__head {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .board__drag {
+    display: none;
   }
 
   .display__row {

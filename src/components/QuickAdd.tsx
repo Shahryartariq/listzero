@@ -5,6 +5,7 @@ import { parseTask, splitLines, type Parsed, type Token, type TokenKind } from "
 import { findList } from "../lib/store";
 import type { Task, TaskList } from "../lib/types";
 import { useStore, type AddDefaults } from "../state/store-context";
+import { useMedia } from "../state/useMedia";
 import { Icon } from "./Icon";
 
 interface QuickAddProps {
@@ -57,6 +58,8 @@ export function QuickAdd({ defaults, staysHere }: QuickAddProps) {
 
   const input = useRef<HTMLInputElement>(null);
   const hintId = useId();
+  // On a small phone the example doesn't fit, and a cut-off one reads as a mistake.
+  const small = useMedia("(max-width: 30rem)");
   const location = useLocation();
   const wantsFocus = (location.state as { add?: number } | null)?.add;
 
@@ -109,7 +112,7 @@ export function QuickAdd({ defaults, staysHere }: QuickAddProps) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onPaste={onPaste}
-          placeholder="Add a task, like “Pay rent friday 9am p1”"
+          placeholder={small ? "Add a task" : "Add a task, like “Pay rent friday 9am p1”"}
           aria-describedby={parsed.tokens.length > 0 ? undefined : hintId}
           autoComplete="off"
           enterKeyHint="done"
