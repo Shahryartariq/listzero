@@ -13,6 +13,8 @@ describe("what analytics is allowed to see", () => {
     // A share link is a key to the list: it is never sent.
     expect(screenPath("/join/Zr8qN2kq0d3VbZ1x2nQwRA")).toBe("/join");
     expect(screenTitle("/join")).toBe("Join a list | Listzero");
+    // The admin pages are not a screen visitors know about.
+    expect(screenPath("/admin")).toBe("/not-found");
     // Unknown addresses could hold anything someone typed.
     expect(screenPath("/my-secret-plan")).toBe("/not-found");
     expect(screenPath("/list/a/b")).toBe("/not-found");

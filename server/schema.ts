@@ -45,6 +45,8 @@ export const user = pgTable("user", {
   banned: boolean("banned").default(false),
   banReason: text("ban_reason"),
   banExpires: timestamp("ban_expires"),
+  // last-login-method plugin: "email", "username", "google" or "passkey", shown to admins
+  lastLoginMethod: text("last_login_method"),
 });
 
 export const session = pgTable(
@@ -251,4 +253,24 @@ export const sharedItem = pgTable(
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => [primaryKey({ columns: [table.listId, table.itemId] }), index("shared_item_list_rev_idx").on(table.listId, table.rev)],
+);
+
+// ---------------------------------------------------------------- For admins
+
+/**
+ * When each signed-in device last talked to the server (any sync), so admins can see who is online
+ * now. One row per session, gone when the session is; written at most every 30 seconds.
+ */
+export const activity = pgTable(
+  "activity",
+  {
+    sessionId: uuid("session_id")
+      .primaryKey()
+      .references(() => session.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    seenAt: timestamp("seen_at").notNull(),
+  },
+  (table) => [index("activity_user_id_idx").on(table.userId), index("activity_seen_at_idx").on(table.seenAt)],
 );

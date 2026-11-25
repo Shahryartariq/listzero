@@ -35,7 +35,6 @@ const SCREENS: Record<string, string> = {
   "/reset-password": "Choose a new password",
   "/two-factor": "Two-factor code",
   "/account": "Account",
-  "/admin": "People",
   "/not-found": "Page not found",
 };
 
@@ -115,6 +114,8 @@ function start(): Gtag {
 
 /** Counts one screen view, or does nothing when counting is not allowed. */
 export function countScreen(pathname: string, setting: boolean): void {
+  // The admin pages are not counted at all: they are not there for visitors.
+  if (/^\/admin(\/|$)/.test(pathname)) return;
   const flags = window as unknown as Record<string, boolean>;
   if (!analyticsAllowed(setting, window.location.hostname, navigator as Signals)) {
     // Google's own switch: a tag that is already loaded stops sending.

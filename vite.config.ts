@@ -15,6 +15,26 @@ const securityHeaders = Object.fromEntries(
     .map((h) => [h.key, h.value]),
 );
 
+// The headers vercel.json sets on some addresses only (the admin pages' "don't index this"), so the
+// preview, and the browser tests, see them too.
+function pathHeaders(): Plugin {
+  const rules = vercel.headers
+    .filter((h) => h.source !== "/(.*)")
+    .map((h) => ({ match: new RegExp(`^${h.source}$`), headers: h.headers }));
+  return {
+    name: "listzero:path-headers",
+    configurePreviewServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const path = (req.url ?? "/").split("?")[0] ?? "/";
+        for (const rule of rules) {
+          if (rule.match.test(path)) for (const h of rule.headers) res.setHeader(h.key, h.value);
+        }
+        next();
+      });
+    },
+  };
+}
+
 // The script that sets the saved look before the first paint is tiny, so the built page carries it
 // inline instead of waiting on another request. The Content-Security-Policy allows exactly this
 // script by its hash (vercel.json); src/lib/site.test.ts fails if the two drift apart.
@@ -42,6 +62,7 @@ export default defineConfig({
   plugins: [
     react(),
     inlineThemeScript(),
+    pathHeaders(),
     VitePWA({
       registerType: "autoUpdate",
       // Registered from src/main.tsx after the page has loaded, so it is not render-blocking.

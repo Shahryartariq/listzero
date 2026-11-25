@@ -29,6 +29,7 @@ const VerifyEmail = lazyView(() => auth().then((m) => m.VerifyEmail));
 const ForgotPassword = lazyView(() => auth().then((m) => m.ForgotPassword));
 const ResetPassword = lazyView(() => auth().then((m) => m.ResetPassword));
 const TwoFactor = lazyView(() => auth().then((m) => m.TwoFactor));
+const AdminSignIn = lazyView(() => auth().then((m) => m.AdminSignIn));
 const Account = lazyView(() => import("./views/account/Account").then((m) => m.Account));
 const SyncRunner = lazyView(() => import("./account/parts").then((m) => m.SyncRunner));
 // In the same chunk as SyncRunner: loaded together, so going offline right after a page load can't
@@ -63,6 +64,8 @@ export function App() {
             <Route path="forgot-password" element={<ForgotPassword />} />
             <Route path="reset-password" element={<ResetPassword />} />
             <Route path="two-factor" element={<TwoFactor />} />
+            {/* Not linked from anywhere; see src/views/account/Admin.tsx. */}
+            <Route path="admin/login" element={<AdminSignIn />} />
           </Route>
           <Route element={<Shell />}>
             <Route path="today" element={<Today />} />

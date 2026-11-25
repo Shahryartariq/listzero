@@ -19,7 +19,8 @@ function head<T extends HTMLElement>(selector: string, create: () => T): T {
 /**
  * Tells search engines which screens are pages and which are just the app.
  * The front page and "How it works" are indexed; a visitor's Today, Inbox, Settings and the rest
- * are empty to a crawler, so they are marked noindex and carry no canonical address.
+ * are empty to a crawler, so they are marked noindex and carry no canonical address. The admin pages
+ * also ask not to be followed or kept (vercel.json sends the same as a header).
  */
 export function useSeo(pathname: string) {
   useEffect(() => {
@@ -30,7 +31,8 @@ export function useSeo(pathname: string) {
       meta.name = "robots";
       return meta;
     });
-    robots.content = canonical ? "index, follow" : "noindex, follow";
+    const hidden = /^\/admin(\/|$)/.test(clean);
+    robots.content = canonical ? "index, follow" : hidden ? "noindex, nofollow, noarchive" : "noindex, follow";
 
     const link = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     if (canonical) {

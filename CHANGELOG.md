@@ -33,6 +33,13 @@ Notable changes to Listzero. Dates are when the change reached the live site.
 - Changes show for the others within about ten seconds while the list is open, and offline edits go out later.
 - Deleting an account deletes the shared lists it owns, and says which first.
 
+### Admin panel
+
+- Admins sign in at their own address. The panel shows the numbers at a glance, who is online now, everyone
+  (searchable and filterable), and one person's details: sign-in methods, two-factor, devices, and counts of their
+  tasks and lists, never the tasks themselves.
+- To anyone who isn't an admin it is a page that doesn't exist, and search engines are told not to index it.
+
 ## 1.0.0 (2026-11-16)
 
 The first release.

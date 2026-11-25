@@ -7,6 +7,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { authClient } from "../../account/client";
 import { useAccountConfig } from "../../account/config";
 import { authMessage, checkEmail, checkPassword, checkUsername, oauthMessage, safeNext } from "../../account/messages";
+import { isAdminRole } from "../../account/roles";
 import { FormMessage, GoogleMark, PasswordField, TextField } from "../../account/ui";
 import { Icon } from "../../components/Icon";
 import { usePageTitle } from "../../state/usePageTitle";
@@ -99,12 +100,42 @@ const Divider = () => (
   </p>
 );
 
-export function SignIn() {
-  usePageTitle("Sign in");
+/**
+ * /admin/login, the way into the admin panel. Nothing links to it. Once signed in, an admin goes on
+ * to the panel; anyone else is told this account can't open it.
+ */
+export function AdminSignIn() {
+  const session = authClient.useSession();
+  const gate = useGate();
+  if (gate !== "on" || !session.data) return <SignIn admin />;
+  if (isAdminRole(session.data.user.role)) return <Navigate to="/admin" replace />;
+  return <NotAnAdmin email={session.data.user.email} />;
+}
+
+function NotAnAdmin({ email }: { email: string }) {
+  usePageTitle("Admin sign-in");
+  return (
+    <AuthPage title="Not an admin account" lead={`You are signed in as ${email}, which can't open the admin panel.`}>
+      <p>To use an admin account, sign out from Account first, then come back here.</p>
+      <div className="setting__row">
+        <Link to="/account" className="btn">
+          Go to Account
+        </Link>
+        <Link to="/today" className="btn btn--quiet">
+          Go to Today
+        </Link>
+      </div>
+    </AuthPage>
+  );
+}
+
+export function SignIn({ admin = false }: { admin?: boolean }) {
+  usePageTitle(admin ? "Admin sign-in" : "Sign in");
   const gate = useGate();
   const config = useAccountConfig();
   const [params] = useSearchParams();
-  const next = safeNext(params.get("next"));
+  // An admin comes back to /admin/login, which sends them on to the panel (or says it can't).
+  const next = admin ? "/admin/login" : safeNext(params.get("next"));
   const navigate = useNavigate();
   const session = authClient.useSession();
 
@@ -166,7 +197,10 @@ export function SignIn() {
   };
 
   return (
-    <AuthPage title="Sign in" lead="Signing in backs up your tasks and keeps them the same on all your devices.">
+    <AuthPage
+      title={admin ? "Admin sign-in" : "Sign in"}
+      lead={admin ? "For Listzero admins." : "Signing in backs up your tasks and keeps them the same on all your devices."}
+    >
       {config?.google && (
         <>
           <GoogleButton next={next} label="Continue with Google" />
@@ -193,11 +227,19 @@ export function SignIn() {
         <Icon name="key" size={20} />
         Sign in with a passkey
       </button>
-      <p className="auth__links">
-        <Link to="/forgot-password">Forgot your password?</Link>
-        <Link to={next === "/today" ? "/sign-up" : `/sign-up?next=${encodeURIComponent(next)}`}>Create an account</Link>
-      </p>
-      <p className="hint">You do not need an account to use Listzero. Without one, tasks stay in this browser.</p>
+      {admin ? (
+        <p className="auth__links">
+          <Link to="/forgot-password">Forgot your password?</Link>
+        </p>
+      ) : (
+        <>
+          <p className="auth__links">
+            <Link to="/forgot-password">Forgot your password?</Link>
+            <Link to={next === "/today" ? "/sign-up" : `/sign-up?next=${encodeURIComponent(next)}`}>Create an account</Link>
+          </p>
+          <p className="hint">You do not need an account to use Listzero. Without one, tasks stay in this browser.</p>
+        </>
+      )}
     </AuthPage>
   );
 }

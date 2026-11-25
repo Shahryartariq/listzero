@@ -8,9 +8,11 @@
  *   POST /api/sync     send and fetch task changes (signed-in only)
  *   POST /api/account/set-password   add a password to an account that signs in with Google
  *   POST /api/shared/*   shared lists: sync, create, update, invite, member, leave, delete, peek, join
+ *   POST /api/admin/*    the admin panel: overview, people, person (admins only; 404 for anyone else)
  */
 import { isAPIError } from "better-auth/api";
 import { isPasswordCompromised } from "better-auth/plugins";
+import { AdminError, overview, people, personDetails, touch } from "./admin";
 import { createAuth, type Database } from "./auth";
 import { shareInvite, type Mailer } from "./email";
 import type { ServerConfig } from "./env";
@@ -112,6 +114,37 @@ export function createApp(deps: AppDeps): (request: Request) => Promise<Response
         return origin !== null && config.trustedOrigins.includes(origin);
       };
 
+      // Each signed-in request says this device is still here (for "online now" in the admin panel).
+      // It never gets in the way of the request itself.
+      const seen = async (s: { session: { id: string }; user: { id: string } }) => {
+        try {
+          await touch(db, s.session.id, s.user.id);
+        } catch (caught) {
+          console.error("[api] activity", caught);
+        }
+      };
+
+      if (pathname === "/api/admin" || pathname.startsWith("/api/admin/")) {
+        // Anyone but a signed-in admin gets the answer an address that doesn't exist gets.
+        const hidden = () => error(404, "NOT_FOUND", "No such endpoint");
+        if (request.method !== "POST" || !fromSite()) return hidden();
+        const session = await auth.api.getSession({ headers: request.headers });
+        if (!session || !(session.user.role ?? "").split(",").includes("admin")) return hidden();
+        await seen(session);
+        const raw = await readJson(request);
+        const body = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
+        switch (pathname.slice("/api/admin/".length)) {
+          case "overview":
+            return json(await overview(db));
+          case "people":
+            return json(await people(db, body));
+          case "person":
+            return json(await personDetails(db, body));
+          default:
+            return hidden();
+        }
+      }
+
       if (pathname === "/api/account/set-password") {
         // Better Auth only offers this on the server. Signed in already (with Google), the person adds a
         // password and stays signed in everywhere: a reset by email would sign every device out.
@@ -119,7 +152,9 @@ export function createApp(deps: AppDeps): (request: Request) => Promise<Response
         if (!fromSite()) return error(403, "FORBIDDEN", "This request did not come from Listzero");
         const body = (await readJson(request)) as { newPassword?: unknown } | null;
         const newPassword = typeof body?.newPassword === "string" ? body.newPassword : "";
-        if (!(await auth.api.getSession({ headers: request.headers }))) return error(401, "UNAUTHORIZED", "Sign in first");
+        const signedIn = await auth.api.getSession({ headers: request.headers });
+        if (!signedIn) return error(401, "UNAUTHORIZED", "Sign in first");
+        await seen(signedIn);
         try {
           if (config.pwnedPasswordCheck && newPassword && (await isPasswordCompromised(newPassword))) {
             return error(400, "PASSWORD_COMPROMISED", "This password has appeared in a data breach. Please choose a different one.");
@@ -140,6 +175,7 @@ export function createApp(deps: AppDeps): (request: Request) => Promise<Response
         if (!fromSite()) return error(403, "FORBIDDEN", "This request did not come from Listzero");
         const session = await auth.api.getSession({ headers: request.headers });
         if (!session) return error(401, "UNAUTHORIZED", "Sign in to sync");
+        await seen(session);
         const body = readSyncRequest(await readJson(request));
         return json(await sync(db, session.user.id, body));
       }
@@ -149,6 +185,7 @@ export function createApp(deps: AppDeps): (request: Request) => Promise<Response
         if (!fromSite()) return error(403, "FORBIDDEN", "This request did not come from Listzero");
         const session = await auth.api.getSession({ headers: request.headers });
         if (!session) return error(401, "UNAUTHORIZED", "Sign in to use shared lists");
+        await seen(session);
         const me = session.user.id;
         const raw = await readJson(request);
         const body = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
@@ -194,7 +231,9 @@ export function createApp(deps: AppDeps): (request: Request) => Promise<Response
 
       return error(404, "NOT_FOUND", "No such endpoint");
     } catch (caught) {
-      if (caught instanceof SyncError || caught instanceof SharedError) return error(caught.status, caught.code, caught.message);
+      if (caught instanceof SyncError || caught instanceof SharedError || caught instanceof AdminError) {
+        return error(caught.status, caught.code, caught.message);
+      }
       console.error("[api]", pathname, caught);
       return error(500, "SERVER_ERROR", "Something went wrong on the server");
     }

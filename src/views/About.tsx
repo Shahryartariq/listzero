@@ -267,8 +267,9 @@ export function About() {
       {accounts && (
         <p>
           If you create an account, the server stores your email, name, username, a scrambled form of your password
-          that cannot be read back, and your tasks and lists. They are used to sign you in and to sync, and for
-          nothing else. Emails that confirm your address or reset a password are sent through Gmail. You can delete
+          that cannot be read back, your tasks and lists, and when each of your signed-in devices last synced. They
+          are used to sign you in and to sync, and for nothing else. The people who run Listzero can see your name,
+          email, devices, when you were last here and how many tasks you have, never what your tasks say. Emails that confirm your address or reset a password are sent through Gmail. You can delete
           the account, and everything stored with it, from the Account page.
         </p>
       )}
