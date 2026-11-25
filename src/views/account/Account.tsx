@@ -706,7 +706,7 @@ export function Account() {
       {isAdminRole(user.role) && (
         <Section title="Admin">
           <div className="setting__row">
-            <Link to="/admin" className="btn btn--quiet">
+            <Link to="/admin/login" className="btn btn--quiet">
               Open the admin panel
             </Link>
           </div>

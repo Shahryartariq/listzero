@@ -24,8 +24,12 @@ async function confirm(request: APIRequestContext, email: string) {
   let link = "";
   await expect
     .poll(async () => {
-      const mails = (await (await request.get(`/api/__test/outbox?to=${encodeURIComponent(email)}`)).json()) as { subject: string; text: string }[];
-      link = /https?:\/\/\S+/.exec(mails.filter((m) => /^Confirm your email/.test(m.subject)).at(-1)?.text ?? "")?.[0] ?? "";
+      const mails = (await (await request.get(`/api/__test/outbox?to=${encodeURIComponent(email)}`)).json()) as {
+        subject: string;
+        text: string;
+      }[];
+      link =
+        /https?:\/\/\S+/.exec(mails.filter((m) => /^Confirm your email/.test(m.subject)).at(-1)?.text ?? "")?.[0] ?? "";
       return link;
     })
     .not.toBe("");
@@ -56,11 +60,17 @@ async function device(browser: Browser) {
 
 async function expectNoViolations(page: Page) {
   await settled(page);
-  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
   expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`)).toEqual([]);
 }
 
-test("the admin panel is hidden: not found for guests and people, never indexed, never listed", async ({ page, request, browser }) => {
+test("the admin panel is hidden: not found for guests and people, never indexed, never listed", async ({
+  page,
+  request,
+  browser,
+}) => {
   // To a guest, /admin is an address that doesn't exist.
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "This page does not exist." })).toBeVisible();
@@ -90,7 +100,16 @@ test("the admin panel is hidden: not found for guests and people, never indexed,
   await expect(theirs.page.getByRole("heading", { name: "Not an admin account" })).toBeVisible();
   await theirs.page.goto("/admin");
   await expect(theirs.page.getByRole("heading", { name: "This page does not exist." })).toBeVisible();
-  const asked = await theirs.page.evaluate(async () => (await fetch("/api/admin/people", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" })).status);
+  const asked = await theirs.page.evaluate(
+    async () =>
+      (
+        await fetch("/api/admin/people", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: "{}",
+        })
+      ).status,
+  );
   expect(asked).toBe(404);
   // No way to it from their own pages either.
   await theirs.page.goto("/account");
@@ -98,9 +117,17 @@ test("the admin panel is hidden: not found for guests and people, never indexed,
   await theirs.context.close();
 });
 
-test("admins sign in at /admin/login and see who is online, everyone, and one person's details", async ({ page, request, browser }, testInfo) => {
+test("admins sign in at /admin/login and see who is online, everyone, and one person's details", async ({
+  page,
+  request,
+  browser,
+}, testInfo) => {
   test.setTimeout(90_000);
-  const boss = await account(request, { email: `boss-${testInfo.project.name}@listzero.test`, username: `boss_${testInfo.project.name}` }, "Boss");
+  const boss = await account(
+    request,
+    { email: `boss-${testInfo.project.name}@listzero.test`, username: `boss_${testInfo.project.name}` },
+    "Boss",
+  );
   const ana = await account(request, person("ana"));
 
   // Ana is using Listzero on another device, with a task.

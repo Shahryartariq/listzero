@@ -11,8 +11,9 @@ import { createAccessControl } from "better-auth/plugins/access";
 import { defaultStatements } from "better-auth/plugins/admin/access";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { deleteAccount, resetPassword, verifyEmail, type Mailer } from "./email";
-import { isListedAdmin, type ServerConfig } from "./env";
+import type { ServerConfig } from "./env";
 import * as schema from "./schema";
+import { checkRole, roleFor, signInMethodOf } from "./admin";
 import { deleteOwnedLists } from "./shared";
 
 export type Database = PgDatabase<PgQueryResultHKT, typeof schema>;
@@ -29,7 +30,8 @@ export const USERNAME_PATTERN = /^[a-z0-9](?:[a-z0-9._-]{1,28})[a-z0-9]$/i;
 // setting another person's password or email.
 const access = createAccessControl(defaultStatements);
 const roles = {
-  admin: access.newRole({ user: ["list", "get", "set-role", "ban", "delete"], session: ["list", "revoke", "delete"] }),
+  // No "set-role" and no "create": admins come from ADMIN_EMAILS only (server/admin.ts).
+  admin: access.newRole({ user: ["list", "get", "ban", "delete"], session: ["list", "revoke", "delete"] }),
   user: access.newRole({ user: [], session: [] }),
 };
 
@@ -99,6 +101,9 @@ export function createAuth({ db, config, mailer, background }: AuthDeps) {
       // No cookie cache: every request checks the session in the database, so signing out
       // elsewhere, a password change or a ban takes effect at once.
       cookieCache: { enabled: false },
+      additionalFields: {
+        signInMethod: { type: "string", required: false, input: false },
+      },
     },
     rateLimit: {
       enabled: config.production,
@@ -119,16 +124,34 @@ export function createAuth({ db, config, mailer, background }: AuthDeps) {
     databaseHooks: {
       user: {
         create: {
-          before: async (user) => {
-            if (isListedAdmin(user, config.adminEmails, config.verificationRequired)) {
-              return { data: { ...user, role: "admin" } };
-            }
+          // ADMIN_EMAILS decides, whatever role a request asked for.
+          before: async (user) => ({
+            data: { ...user, role: roleFor(user, config.adminEmails, config.verificationRequired) },
+          }),
+        },
+        update: {
+          // Roles come from ADMIN_EMAILS only (server/admin.ts), so no update through Better Auth
+          // may change one: "Make admin" and its API are refused.
+          before: async (data) => {
+            if ("role" in data) return false;
           },
         },
         // Runs when people delete their own account and when an admin deletes one.
         delete: {
           before: async (user) => {
             await deleteOwnedLists(db, user.id);
+          },
+        },
+      },
+      session: {
+        create: {
+          // Remember how each session started: admin tools need Google when it is on.
+          before: async (session, context) => ({
+            data: { ...session, signInMethod: signInMethodOf(context?.path) },
+          }),
+          // Each sign-in brings that person's role in line with ADMIN_EMAILS.
+          after: async (session) => {
+            await checkRole(db, session.userId, config.adminEmails, config.verificationRequired);
           },
         },
       },

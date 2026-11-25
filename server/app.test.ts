@@ -221,7 +221,8 @@ describe("accounts", () => {
     const listed = await boss.get("/api/auth/admin/list-users?limit=10");
     expect(listed.status).toBe(200);
     expect((listed.data?.users as { email: string }[]).map((u) => u.email).sort()).toEqual(["boss@a.test", "sam@a.test"]);
-    expect((await sam.get("/api/auth/admin/list-users?limit=10")).status).toBe(403);
+    // To anyone else the admin tools are an address that doesn't exist.
+    expect((await sam.get("/api/auth/admin/list-users?limit=10")).status).toBe(404);
 
     const samId = (await sam.get("/api/auth/get-session")).data?.user as { id: string };
     // An admin cannot sign in as someone else, or set their password.

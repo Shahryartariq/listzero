@@ -12,7 +12,7 @@
  */
 import { isAPIError } from "better-auth/api";
 import { isPasswordCompromised } from "better-auth/plugins";
-import { AdminError, overview, people, personDetails, touch } from "./admin";
+import { AdminError, checkRoles, mayAdmin, overview, people, personDetails, touch } from "./admin";
 import { createAuth, type Database } from "./auth";
 import { shareInvite, type Mailer } from "./email";
 import type { ServerConfig } from "./env";
@@ -89,6 +89,18 @@ export function createApp(deps: AppDeps): (request: Request) => Promise<Response
     email: Boolean(auth && config?.emailDelivery),
   };
 
+  // Once per server start, everyone's role is brought in line with ADMIN_EMAILS (tried again on the
+  // next request if it fails).
+  let rolesChecked: Promise<void> | null = null;
+  const checkRolesOnce = () => {
+    if (!db || !config) return Promise.resolve();
+    rolesChecked ??= checkRoles(db, config.adminEmails, config.verificationRequired).catch((caught: unknown) => {
+      console.error("[api] admin roles", caught);
+      rolesChecked = null;
+    });
+    return rolesChecked;
+  };
+
   return async function handle(request: Request): Promise<Response> {
     const { pathname } = new URL(request.url);
     try {
@@ -99,6 +111,21 @@ export function createApp(deps: AppDeps): (request: Request) => Promise<Response
 
       if (!auth || !config || !db) {
         return error(503, "ACCOUNTS_OFF", "Accounts are not set up on this copy of Listzero");
+      }
+
+      await checkRolesOnce();
+      // The same answer as an address that doesn't exist, for anything admin-only.
+      const hidden = () => error(404, "NOT_FOUND", "No such endpoint");
+
+      // Better Auth's own admin tools (suspend, sign out everywhere, delete): only for an admin
+      // session (signed in with Google when that is on). Roles can't be changed at all: they come
+      // from ADMIN_EMAILS.
+      if (pathname.startsWith("/api/auth/admin/")) {
+        const session = await auth.api.getSession({ headers: request.headers });
+        if (!session || !mayAdmin(session, Boolean(config.google))) return hidden();
+        if (pathname === "/api/auth/admin/set-role") {
+          return error(403, "ROLES_FROM_SETTINGS", "Admins are set by ADMIN_EMAILS in the server settings");
+        }
       }
 
       if (pathname === "/api/auth" || pathname.startsWith("/api/auth/")) {
@@ -126,10 +153,9 @@ export function createApp(deps: AppDeps): (request: Request) => Promise<Response
 
       if (pathname === "/api/admin" || pathname.startsWith("/api/admin/")) {
         // Anyone but a signed-in admin gets the answer an address that doesn't exist gets.
-        const hidden = () => error(404, "NOT_FOUND", "No such endpoint");
         if (request.method !== "POST" || !fromSite()) return hidden();
         const session = await auth.api.getSession({ headers: request.headers });
-        if (!session || !(session.user.role ?? "").split(",").includes("admin")) return hidden();
+        if (!session || !mayAdmin(session, Boolean(config.google))) return hidden();
         await seen(session);
         const raw = await readJson(request);
         const body = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
