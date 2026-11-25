@@ -7,7 +7,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { authClient } from "../../account/client";
 import { useAccountConfig } from "../../account/config";
 import { authMessage, checkEmail, checkPassword, checkUsername, oauthMessage, safeNext } from "../../account/messages";
-import { isAdminRole } from "../../account/roles";
+import { isAdminRole, mayAdmin } from "../../account/roles";
 import { FormMessage, GoogleMark, PasswordField, TextField } from "../../account/ui";
 import { Icon } from "../../components/Icon";
 import { usePageTitle } from "../../state/usePageTitle";
@@ -101,15 +101,38 @@ const Divider = () => (
 );
 
 /**
- * /admin/login, the way into the admin panel. Nothing links to it. Once signed in, an admin goes on
- * to the panel; anyone else is told this account can't open it.
+ * /admin/login, the way into the admin panel. Nothing links to it. With Google sign-in on (as in
+ * production), the admin signs in with Google and nothing else: the server opens the admin tools
+ * only to a Google session, so a Listzero password never opens them. Without Google (a local copy),
+ * the usual sign-in form. Once signed in, an admin goes on to the panel; anyone else is told no.
  */
 export function AdminSignIn() {
   const session = authClient.useSession();
   const gate = useGate();
-  if (gate !== "on" || !session.data) return <SignIn admin />;
-  if (isAdminRole(session.data.user.role)) return <Navigate to="/admin" replace />;
-  return <NotAnAdmin email={session.data.user.email} />;
+  const config = useAccountConfig();
+  if (gate !== "on" || !config) return <SignIn admin />;
+  const data = session.data;
+  if (mayAdmin(data, config.google)) return <Navigate to="/admin" replace />;
+  if (data && !isAdminRole(data.user.role)) return <NotAnAdmin email={data.user.email} />;
+  if (config.google) return <AdminWithGoogle again={Boolean(data)} />;
+  return <SignIn admin />;
+}
+
+/** Google only: the admin account is guarded by Google's own sign-in and two-step verification. */
+function AdminWithGoogle({ again }: { again: boolean }) {
+  usePageTitle("Admin sign-in");
+  return (
+    <AuthPage
+      title="Admin sign-in"
+      lead={
+        again
+          ? "The admin panel opens only when you sign in with Google. Sign in with Google to continue."
+          : "Sign in with the Google account that runs Listzero."
+      }
+    >
+      <GoogleButton next="/admin/login" label="Continue with Google" />
+    </AuthPage>
+  );
 }
 
 function NotAnAdmin({ email }: { email: string }) {

@@ -39,6 +39,8 @@ Notable changes to Listzero. Dates are when the change reached the live site.
   (searchable and filterable), and one person's details: sign-in methods, two-factor, devices, and counts of their
   tasks and lists, never the tasks themselves.
 - To anyone who isn't an admin it is a page that doesn't exist, and search engines are told not to index it.
+- Only the addresses in `ADMIN_EMAILS` are admins, checked at every sign-in and server start; roles can't be
+  changed from the app. With Google sign-in on, the admin signs in with Google only.
 
 ## 1.0.0 (2026-11-16)
 

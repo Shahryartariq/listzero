@@ -1,7 +1,8 @@
 /**
  * The admin panel, at /admin. To anyone who isn't a signed-in admin it is the ordinary "page not
  * found", and its API answers 404, so nothing tells a visitor it is there. Admins sign in at
- * /admin/login (src/views/account/Auth.tsx), which nothing links to.
+ * /admin/login (src/views/account/Auth.tsx), which nothing links to: with Google, when Google
+ * sign-in is on. Who is an admin comes from ADMIN_EMAILS on the server, never from this page.
  *
  * Admins see who has an account, who is online now, and one person's details: how they sign in,
  * their devices, and how much they keep here (counts, never the tasks themselves).
@@ -11,13 +12,12 @@ import { authClient, type SessionUser } from "../../account/client";
 import { useAccountConfig } from "../../account/config";
 import { describeDevice } from "../../account/devices";
 import { authMessage } from "../../account/messages";
-import { isAdminRole } from "../../account/roles";
+import { isAdminRole, mayAdmin } from "../../account/roles";
 import { FormMessage } from "../../account/ui";
 import { Picker } from "../../components/Picker";
 import { Confirm, Sheet } from "../../components/Sheet";
 import { usePageTitle } from "../../state/usePageTitle";
 import { NotFound } from "../Menu";
-
 
 type Filter = "all" | "online" | "admins" | "suspended" | "unconfirmed";
 
@@ -67,7 +67,14 @@ interface PersonDetails extends PersonRow {
   methods: string[];
   passkeys: number;
   lastLoginMethod: string | null;
-  devices: { id: string; userAgent: string | null; signedInAt: string; expiresAt: string; seenAt: string | null; online: boolean }[];
+  devices: {
+    id: string;
+    userAgent: string | null;
+    signedInAt: string;
+    expiresAt: string;
+    seenAt: string | null;
+    online: boolean;
+  }[];
   counts: { tasks: number; openTasks: number; lists: number; sharedOwned: number; sharedIn: number };
 }
 
@@ -78,12 +85,22 @@ async function ask<T>(action: string, body: Record<string, unknown> = {}): Promi
     credentials: "same-origin",
     body: JSON.stringify(body),
   });
-  if (!response.ok) throw new Error(response.status === 404 ? "That account no longer exists, or you are no longer an admin." : "The server did not answer. Try again.");
+  if (!response.ok)
+    throw new Error(
+      response.status === 404
+        ? "That account no longer exists, or you are no longer an admin."
+        : "The server did not answer. Try again.",
+    );
   return (await response.json()) as T;
 }
 
 const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
-const DATE_TIME = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+const DATE_TIME = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  hour: "numeric",
+  minute: "2-digit",
+});
 const day = (iso: string) => DATE.format(new Date(iso));
 
 /** "just now", "4 min ago", "3 h ago", "yesterday", then a date. */
@@ -98,7 +115,13 @@ export function ago(iso: string | null, now = Date.now()): string {
   return DATE.format(new Date(iso));
 }
 
-const METHOD: Record<string, string> = { password: "Password", google: "Google", passkey: "Passkey", email: "Email and password", username: "Username and password" };
+const METHOD: Record<string, string> = {
+  password: "Password",
+  google: "Google",
+  passkey: "Passkey",
+  email: "Email and password",
+  username: "Username and password",
+};
 
 function status(p: PersonRow): string {
   if (p.banned) return `Suspended${p.banReason ? `: ${p.banReason}` : ""}`;
@@ -110,8 +133,9 @@ export function Admin() {
   const session = authClient.useSession();
   if (config === null || (session.isPending && !session.data)) return null;
   const me = session.data?.user;
-  // Not signed in, not an admin, or no accounts here: the same page as any address that doesn't exist.
-  if (!config.accounts || !me || !isAdminRole(me.role)) return <NotFound />;
+  // Not signed in, not an admin (or not with Google), or no accounts here: the same page as any
+  // address that doesn't exist.
+  if (!config.accounts || !me || !mayAdmin(session.data, config.google)) return <NotFound />;
   return <Panel me={me} />;
 }
 
@@ -129,7 +153,10 @@ function Panel({ me }: { me: SessionUser }) {
 
   const load = useCallback(async () => {
     try {
-      const [o, p] = await Promise.all([ask<Overview>("overview"), ask<PeoplePage>("people", { page, search, filter })]);
+      const [o, p] = await Promise.all([
+        ask<Overview>("overview"),
+        ask<PeoplePage>("people", { page, search, filter }),
+      ]);
       setOverview(o);
       setList(p);
       setNow(Date.now());
@@ -333,13 +360,23 @@ function Panel({ me }: { me: SessionUser }) {
 
         {list && list.pages > 1 && (
           <div className="setting__row">
-            <button type="button" className="btn btn--quiet" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+            <button
+              type="button"
+              className="btn btn--quiet"
+              disabled={page === 0}
+              onClick={() => setPage((p) => p - 1)}
+            >
               Previous
             </button>
             <span>
               Page {page + 1} of {list.pages}
             </span>
-            <button type="button" className="btn btn--quiet" disabled={page + 1 >= list.pages} onClick={() => setPage((p) => p + 1)}>
+            <button
+              type="button"
+              className="btn btn--quiet"
+              disabled={page + 1 >= list.pages}
+              onClick={() => setPage((p) => p + 1)}
+            >
               Next
             </button>
           </div>
@@ -395,7 +432,10 @@ function Details({
     void load();
   }, [load]);
 
-  const act = async (work: () => Promise<{ error: { code?: string; message?: string; status?: number } | null }>, done: string) => {
+  const act = async (
+    work: () => Promise<{ error: { code?: string; message?: string; status?: number } | null }>,
+    done: string,
+  ) => {
     setMessage({});
     const { error } = await work();
     if (error) return setMessage({ error: authMessage(error) });
@@ -413,8 +453,15 @@ function Details({
         ["Status", status(person) + (person.banned && person.banExpires ? `, until ${day(person.banExpires)}` : "")],
         ["Last seen", person.online ? "Online now" : ago(person.seenAt, now)],
         ["Joined", day(person.createdAt)],
-        ["Signs in with", person.methods.map((m) => (m === "passkey" ? `Passkey (${person.passkeys})` : (METHOD[m] ?? m))).join(", ") || "Nothing yet"],
-        ["Last sign-in", person.lastLoginMethod ? (METHOD[person.lastLoginMethod] ?? person.lastLoginMethod) : "Unknown"],
+        [
+          "Signs in with",
+          person.methods.map((m) => (m === "passkey" ? `Passkey (${person.passkeys})` : (METHOD[m] ?? m))).join(", ") ||
+            "Nothing yet",
+        ],
+        [
+          "Last sign-in",
+          person.lastLoginMethod ? (METHOD[person.lastLoginMethod] ?? person.lastLoginMethod) : "Unknown",
+        ],
         ["Two-factor", person.twoFactor ? "On" : "Off"],
         ["Tasks", `${person.counts.openTasks} open, ${person.counts.tasks - person.counts.openTasks} done`],
         ["Lists", String(person.counts.lists)],
@@ -470,23 +517,16 @@ function Details({
               <>
                 <h3 className="label">Actions</h3>
                 <div className="setting__row">
-                  <button
-                    type="button"
-                    className="btn btn--quiet btn--small"
-                    onClick={() =>
-                      void act(
-                        () => authClient.admin.setRole({ userId: person.id, role: admin ? "user" : "admin" }),
-                        admin ? `${person.name} is now a user.` : `${person.name} is now an admin.`,
-                      )
-                    }
-                  >
-                    {admin ? "Make user" : "Make admin"}
-                  </button>
                   {person.banned ? (
                     <button
                       type="button"
                       className="btn btn--quiet btn--small"
-                      onClick={() => void act(() => authClient.admin.unbanUser({ userId: person.id }), `${person.name} can sign in again.`)}
+                      onClick={() =>
+                        void act(
+                          () => authClient.admin.unbanUser({ userId: person.id }),
+                          `${person.name} can sign in again.`,
+                        )
+                      }
                     >
                       Lift suspension
                     </button>
@@ -507,7 +547,12 @@ function Details({
                     type="button"
                     className="btn btn--quiet btn--small"
                     disabled={person.devices.length === 0}
-                    onClick={() => void act(() => authClient.admin.revokeUserSessions({ userId: person.id }), `${person.name} was signed out everywhere.`)}
+                    onClick={() =>
+                      void act(
+                        () => authClient.admin.revokeUserSessions({ userId: person.id }),
+                        `${person.name} was signed out everywhere.`,
+                      )
+                    }
                   >
                     Sign out everywhere
                   </button>
@@ -555,7 +600,13 @@ function Details({
             <label className="label" htmlFor="ban-reason">
               Reason (they see this)
             </label>
-            <input id="ban-reason" className="field" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} />
+            <input
+              id="ban-reason"
+              className="field"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={200}
+            />
             <span className="label" aria-hidden="true">
               For how long
             </span>

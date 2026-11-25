@@ -61,6 +61,9 @@ export const session = pgTable(
       .notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
+    // How this session was started: "google", "passkey", "password" or "other" (see server/admin.ts).
+    // Admin tools need "google" when Google sign-in is on.
+    signInMethod: text("sign_in_method"),
     userId: uuid("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),

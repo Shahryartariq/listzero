@@ -8,6 +8,7 @@
  */
 import { and, asc, count, desc, eq, ilike, or, sql, type AnyColumn, type SQL } from "drizzle-orm";
 import type { Database } from "./auth";
+import { isListedAdmin } from "./env";
 import { account, activity, passkey, session, sharedMember, syncItem, user } from "./schema";
 
 export const ONLINE_MINUTES = 3;
@@ -23,6 +24,80 @@ export class AdminError extends Error {
     super(message);
   }
 }
+
+// ---------------------------------------------------------------- who is an admin
+
+/**
+ * ADMIN_EMAILS is the only way to be an admin: a listed address (confirmed, or from Google) is an
+ * admin, everyone else is a user. Nobody can make someone an admin from the app (server/auth.ts
+ * refuses role changes), so the list in the environment is the whole truth.
+ */
+export const isAdminRole = (role: string | null | undefined): boolean => (role ?? "").split(",").includes("admin");
+
+export function roleFor(
+  person: { email: string; emailVerified: boolean },
+  adminEmails: string[],
+  verificationRequired: boolean,
+): "admin" | "user" {
+  return isListedAdmin(person, adminEmails, verificationRequired) ? "admin" : "user";
+}
+
+/** Brings one person's role in line with ADMIN_EMAILS (each time they sign in). */
+export async function checkRole(db: Database, userId: string, adminEmails: string[], verificationRequired: boolean) {
+  const [row] = await db
+    .select({ email: user.email, emailVerified: user.emailVerified, role: user.role })
+    .from(user)
+    .where(eq(user.id, userId));
+  if (!row) return;
+  const role = roleFor(row, adminEmails, verificationRequired);
+  if (isAdminRole(row.role) !== (role === "admin")) await db.update(user).set({ role }).where(eq(user.id, userId));
+}
+
+/**
+ * Brings everyone's role in line with ADMIN_EMAILS, once per server start, so changing the list (and
+ * redeploying) takes effect at once: removed admins become users, newly listed ones admins.
+ */
+export async function checkRoles(db: Database, adminEmails: string[], verificationRequired: boolean) {
+  const listed = adminEmails.map((email) => sql`${email}`);
+  const isListed = listed.length > 0 ? sql`lower(${user.email}) in (${sql.join(listed, sql`, `)})` : sql`false`;
+  await db
+    .update(user)
+    .set({ role: "user" })
+    .where(and(sql`coalesce(${user.role}, '') like '%admin%'`, sql`not (${isListed})`));
+  await db
+    .update(user)
+    .set({ role: "admin" })
+    .where(
+      and(
+        isListed,
+        sql`coalesce(${user.role}, '') not like '%admin%'`,
+        verificationRequired ? undefined : eq(user.emailVerified, true),
+      ),
+    );
+}
+
+/** How a session was started, from the Better Auth endpoint that started it. */
+export function signInMethodOf(path: string | undefined): "google" | "passkey" | "password" | "other" {
+  if (!path) return "other";
+  if (path === "/callback/:id" || path === "/callback/google" || path === "/one-tap/callback") return "google";
+  if (path.includes("/passkey/verify-authentication")) return "passkey";
+  if (path.startsWith("/sign-in/") || path.startsWith("/two-factor/")) return "password";
+  return "other";
+}
+
+/**
+ * Whether this session may use the admin tools: an admin, and, when Google sign-in is on, signed in
+ * with Google. So a guessed or leaked Listzero password never opens them; Google's own sign-in (with
+ * its two-step verification) guards the admin account.
+ */
+export function mayAdmin(
+  session: { user: { role?: string | null }; session: { signInMethod?: string | null } },
+  googleOn: boolean,
+): boolean {
+  return isAdminRole(session.user.role) && (!googleOn || session.session.signInMethod === "google");
+}
+
+// ---------------------------------------------------------------- online now
 
 /** Notes that this device is still here. Writes at most every 30 seconds per device. */
 export async function touch(db: Database, sessionId: string, userId: string): Promise<void> {
@@ -44,7 +119,8 @@ const iso = (value: Date | string | null | undefined): string | null =>
  * database's (UTC); a driver reading one could take it for the server's local time, so it is never
  * left to the driver.
  */
-const isoOf = (time: SQL | SQL.Aliased | AnyColumn) => sql<string | null>`to_char(${time}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`;
+const isoOf = (time: SQL | SQL.Aliased | AnyColumn) =>
+  sql<string | null>`to_char(${time}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`;
 
 export interface OnlinePerson {
   id: string;
@@ -148,7 +224,9 @@ export async function people(
 
   const conditions: (SQL | undefined)[] = [];
   if (search) {
-    conditions.push(or(ilike(user.email, like(search)), ilike(user.name, like(search)), ilike(user.username, like(search))));
+    conditions.push(
+      or(ilike(user.email, like(search)), ilike(user.name, like(search)), ilike(user.username, like(search))),
+    );
   }
   if (filter === "online") conditions.push(sql`${seen.seenAt} > now() - ${ONLINE}`);
   if (filter === "admins") conditions.push(sql`${user.role} like '%admin%'`);
@@ -264,7 +342,10 @@ export async function personDetails(db: Database, body: Record<string, unknown>)
   const [items] = await db
     .select({
       tasks: sql<number>`count(*) filter (where ${syncItem.kind} = 'task')`.mapWith(Number),
-      openTasks: sql<number>`count(*) filter (where ${syncItem.kind} = 'task' and ${syncItem.data}->>'completedAt' is null)`.mapWith(Number),
+      openTasks:
+        sql<number>`count(*) filter (where ${syncItem.kind} = 'task' and ${syncItem.data}->>'completedAt' is null)`.mapWith(
+          Number,
+        ),
       lists: sql<number>`count(*) filter (where ${syncItem.kind} = 'list')`.mapWith(Number),
     })
     .from(syncItem)
